@@ -9,67 +9,67 @@ const hash = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt
 // One character, Abood. The avatar changes his look; Baba always calls him by his name.
 export const AVATARS = [
   { id: 'classic', price: 0 },
-  { id: 'glasses', price: 120000 },
-  { id: 'shades', price: 180000 },
+  { id: 'glasses', price: 1200 },
+  { id: 'shades', price: 1800 },
 ];
 export const ROBES = [
   { id: 'white', col: '#fbfaf4', shade: '#dcd8cb', price: 0 },
-  { id: 'cream', col: '#f1e6cf', shade: '#d4c3a0', price: 60000 },
-  { id: 'grey', col: '#d9dbe0', shade: '#b0b5c0', price: 80000 },
-  { id: 'blue', col: '#cfe3f2', shade: '#a1c0da', price: 110000 },
-  { id: 'brown', col: '#9a7353', shade: '#775638', price: 150000 },
+  { id: 'cream', col: '#f1e6cf', shade: '#d4c3a0', price: 600 },
+  { id: 'grey', col: '#d9dbe0', shade: '#b0b5c0', price: 800 },
+  { id: 'blue', col: '#cfe3f2', shade: '#a1c0da', price: 1100 },
+  { id: 'brown', col: '#9a7353', shade: '#775638', price: 1500 },
   { id: 'gold', col: '#f4e3a8', shade: '#d4b96e', price: 0, badge: 'dist10000', perk: 'perk_gold', slow: 0.6 },
   // football kits named after five UAE clubs (colours only, no badges are drawn); each slows Baba by 20%
-  { id: 'kit_purple', col: '#5b2a86', shade: '#43206a', price: 150000, perk: 'perk_kit', slow: 0.8, kit: { main: '#5b2a86', trim: '#ffffff', shorts: '#ffffff', sock: '#5b2a86', num: '#ffffff' } },
-  { id: 'kit_yellow', col: '#f2c230', shade: '#c99a16', price: 150000, perk: 'perk_kit', slow: 0.8, kit: { main: '#f2c230', trim: '#1d1d1d', shorts: '#1d1d1d', sock: '#f2c230', num: '#1d1d1d', stripes: 1 } },
-  { id: 'kit_red', col: '#c8202b', shade: '#9a1520', price: 150000, perk: 'perk_kit', slow: 0.8, kit: { main: '#c8202b', trim: '#1d1d1d', shorts: '#1d1d1d', sock: '#c8202b', num: '#ffffff', band: 1 } },
-  { id: 'kit_blue', col: '#1f4fa0', shade: '#173b78', price: 150000, perk: 'perk_kit', slow: 0.8, kit: { main: '#1f4fa0', trim: '#ffffff', shorts: '#ffffff', sock: '#1f4fa0', num: '#ffffff' } },
-  { id: 'kit_white', col: '#fbfaf4', shade: '#dcd8cb', price: 150000, perk: 'perk_kit', slow: 0.8, kit: { main: '#fbfaf4', trim: '#c8202b', shorts: '#fbfaf4', sock: '#fbfaf4', num: '#c8202b', band: 1 } },
+  { id: 'kit_purple', col: '#5b2a86', shade: '#43206a', price: 1500, perk: 'perk_kit', slow: 0.8, kit: { main: '#5b2a86', trim: '#ffffff', shorts: '#ffffff', sock: '#5b2a86', num: '#ffffff' } },
+  { id: 'kit_yellow', col: '#f2c230', shade: '#c99a16', price: 1500, perk: 'perk_kit', slow: 0.8, kit: { main: '#f2c230', trim: '#1d1d1d', shorts: '#1d1d1d', sock: '#f2c230', num: '#1d1d1d', stripes: 1 } },
+  { id: 'kit_red', col: '#c8202b', shade: '#9a1520', price: 1500, perk: 'perk_kit', slow: 0.8, kit: { main: '#c8202b', trim: '#1d1d1d', shorts: '#1d1d1d', sock: '#c8202b', num: '#ffffff', band: 1 } },
+  { id: 'kit_blue', col: '#1f4fa0', shade: '#173b78', price: 1500, perk: 'perk_kit', slow: 0.8, kit: { main: '#1f4fa0', trim: '#ffffff', shorts: '#ffffff', sock: '#1f4fa0', num: '#ffffff' } },
+  { id: 'kit_white', col: '#fbfaf4', shade: '#dcd8cb', price: 1500, perk: 'perk_kit', slow: 0.8, kit: { main: '#fbfaf4', trim: '#c8202b', shorts: '#fbfaf4', sock: '#fbfaf4', num: '#c8202b', band: 1 } },
 ];
 export const HEADS = [
   { id: 'shemagh', price: 0 },
-  { id: 'ghutra', price: 70000 },
-  { id: 'blackshemagh', price: 130000 },
-  { id: 'tagiyah', price: 100000 },
+  { id: 'ghutra', price: 700 },
+  { id: 'blackshemagh', price: 1300 },
+  { id: 'tagiyah', price: 1000 },
 ];
 export const BOOSTERS = [
-  { id: 'vimto', price: 1500 }, { id: 'magnet', price: 1200 }, { id: 'headstart', price: 2500 }, { id: 'shield', price: 2000 }, { id: 'revive', price: 12000 },
+  { id: 'vimto', price: 15 }, { id: 'magnet', price: 12 }, { id: 'headstart', price: 25 }, { id: 'shield', price: 20 }, { id: 'revive', price: 120 },
 ];
 // badges: `run` is checked against this run, `life` against lifetime stats
 export const BADGES = [
-  { id: 'first', reward: 500, life: s => s.runs >= 1 },
-  { id: 'dist500', reward: 1250, run: r => r.dist >= 500 },
-  { id: 'dist1000', reward: 2500, run: r => r.dist >= 1000 },
-  { id: 'dist2000', reward: 5000, run: r => r.dist >= 2000 },
-  { id: 'dist5000', reward: 10000, run: r => r.dist >= 5000 },
-  { id: 'dist10000', reward: 25000, run: r => r.dist >= 10000, unlock: 'robe:gold' },
-  { id: 'zone1', reward: 1000, life: s => s.zones.includes(1) },
-  { id: 'zone2', reward: 1500, life: s => s.zones.includes(2) },
-  { id: 'zone3', reward: 2000, life: s => s.zones.includes(3) },
-  { id: 'sweets100', reward: 1250, life: s => s.sweets >= 100 },
-  { id: 'sweets1000', reward: 3750, life: s => s.sweets >= 1000 },
-  { id: 'close10', reward: 2000, run: r => r.close >= 10 },
-  { id: 'sandal10', reward: 1500, life: s => s.dodged >= 10 },
-  { id: 'smash10', reward: 1500, life: s => s.smash >= 10 },
-  { id: 'powers', reward: 2000, life: s => s.powers.length >= 5 },
-  { id: 'streak7', reward: 3750, life: s => s.streak >= 7 },
-  { id: 'shopper', reward: 750, life: s => s.bought >= 1 },
-  { id: 'revived', reward: 750, life: s => s.revivesUsed >= 1 },
+  { id: 'first', reward: 5, life: s => s.runs >= 1 },
+  { id: 'dist500', reward: 12, run: r => r.dist >= 500 },
+  { id: 'dist1000', reward: 25, run: r => r.dist >= 1000 },
+  { id: 'dist2000', reward: 50, run: r => r.dist >= 2000 },
+  { id: 'dist5000', reward: 100, run: r => r.dist >= 5000 },
+  { id: 'dist10000', reward: 250, run: r => r.dist >= 10000, unlock: 'robe:gold' },
+  { id: 'zone1', reward: 10, life: s => s.zones.includes(1) },
+  { id: 'zone2', reward: 15, life: s => s.zones.includes(2) },
+  { id: 'zone3', reward: 20, life: s => s.zones.includes(3) },
+  { id: 'sweets100', reward: 12, life: s => s.sweets >= 100 },
+  { id: 'sweets1000', reward: 37, life: s => s.sweets >= 1000 },
+  { id: 'close10', reward: 20, run: r => r.close >= 10 },
+  { id: 'sandal10', reward: 15, life: s => s.dodged >= 10 },
+  { id: 'smash10', reward: 15, life: s => s.smash >= 10 },
+  { id: 'powers', reward: 20, life: s => s.powers.length >= 5 },
+  { id: 'streak7', reward: 37, life: s => s.streak >= 7 },
+  { id: 'shopper', reward: 7, life: s => s.bought >= 1 },
+  { id: 'revived', reward: 7, life: s => s.revivesUsed >= 1 },
 ];
 const MISSIONS = [
-  { kind: 'runDist', goals: [400, 700, 1000], reward: g => g * 3 + 1500 },
-  { kind: 'daySweets', goals: [80, 150, 250], reward: g => g * 10 + 1500 },
-  { kind: 'dayClose', goals: [5, 10], reward: g => g * 200 + 1500 },
-  { kind: 'dayDodge', goals: [3, 6], reward: g => g * 400 + 1500 },
-  { kind: 'dayPower', goals: [4, 8], reward: g => g * 250 + 1500 },
-  { kind: 'dayRuns', goals: [3, 5], reward: g => g * 500 + 1000 },
-  { kind: 'runZone', goals: [2, 3], reward: g => g * 1200 + 1000 },
+  { kind: 'runDist', goals: [400, 700, 1000], reward: g => Math.round(g * 0.03 + 15) },
+  { kind: 'daySweets', goals: [80, 150, 250], reward: g => Math.round(g * 0.1 + 15) },
+  { kind: 'dayClose', goals: [5, 10], reward: g => g * 2 + 15 },
+  { kind: 'dayDodge', goals: [3, 6], reward: g => g * 4 + 15 },
+  { kind: 'dayPower', goals: [4, 8], reward: g => Math.round(g * 2.5 + 15) },
+  { kind: 'dayRuns', goals: [3, 5], reward: g => g * 5 + 10 },
+  { kind: 'runZone', goals: [2, 3], reward: g => g * 12 + 10 },
 ];
-export const DAILY_BONUS = 3000; // for finishing all three missions in a day
-export const LOGIN = [300, 400, 500, 600, 800, 1000, 2500];
+export const DAILY_BONUS = 30; // for finishing all three missions in a day
+export const LOGIN = [3, 4, 5, 6, 8, 10, 25];
 
 const fresh = () => ({
-  econ: 2, coins: 500, avatar: 'classic', robe: 'white', head: 'shemagh',
+  econ: 3, coins: 5, avatar: 'classic', robe: 'white', head: 'shemagh',
   owned: { avatar: ['classic'], robe: ['white'], head: ['shemagh'] },
   boosters: { vimto: 0, magnet: 0, headstart: 0, shield: 0, revive: 0 },
   stats: { runs: 0, sweets: 0, close: 0, dodged: 0, smash: 0, zones: [0], powers: [], revivesUsed: 0, bought: 0, best: 0, streak: 0 },
@@ -78,7 +78,8 @@ const fresh = () => ({
 let S = fresh();
 try {
   const raw = localStorage.getItem(KEY);
-  if (raw) { const d = JSON.parse(raw); if (d.econ !== 2) { const f = fresh(); if (d.login) f.login = d.login; Object.keys(d).forEach(k => delete d[k]); Object.assign(d, f); } S = Object.assign(fresh(), d); S.stats = Object.assign(fresh().stats, d.stats || {}); S.owned = Object.assign(fresh().owned, d.owned || {}); S.boosters = Object.assign(fresh().boosters, d.boosters || {}); }
+  if (raw) { const d = JSON.parse(raw); if (d.econ === 2) { d.coins = Math.round((d.coins || 0) / 100); d.econ = 3; }
+    if (d.econ !== 3) { const f = fresh(); if (d.login) f.login = d.login; Object.keys(d).forEach(k => delete d[k]); Object.assign(d, f); } S = Object.assign(fresh(), d); S.stats = Object.assign(fresh().stats, d.stats || {}); S.owned = Object.assign(fresh().owned, d.owned || {}); S.boosters = Object.assign(fresh().boosters, d.boosters || {}); }
   else { const old = +localStorage.getItem('abood-best') || 0; S.stats.best = old; }
 } catch (e) {}
 (function migrate() {
@@ -164,7 +165,7 @@ export function checkBadges(run) {
 // Called when a run ends (and again if the player revives and ends later): pays only what has not been paid yet.
 export function endRun(run) {
   bumpMissions(run);
-  const pay = Math.max(0, Math.floor(run.dist / 40) + Math.floor(run.sweets / 8) - (run.paid || 0)); // small change: missions are the real income
+  const pay = Math.max(0, Math.floor(run.dist / 1000) + Math.floor(run.sweets / 200) - (run.paid || 0)); // small change: missions are the real income
   run.paid = (run.paid || 0) + pay; S.coins += pay;
   const nb = Math.floor(run.dist) > S.stats.best; if (nb) S.stats.best = Math.floor(run.dist);
   const badges = checkBadges(run);
@@ -187,7 +188,7 @@ export function equip(kind, id) {
   S[kind] = id;
   save(); return true;
 }
-export const REVIVE_PRICE = 12000;
+export const REVIVE_PRICE = 120;
 // pay for something on the spot (used for a paid second chance on the game-over screen)
 export function spend(n) { if (S.coins < n) return false; S.coins -= n; save(); return true; }
 export function useBooster(id) { if ((S.boosters[id] || 0) <= 0) return false; S.boosters[id]--; save(); return true; }
