@@ -1,6 +1,6 @@
 # اركض يا عبود! · Run, Abood!
 
-لعبة جري في المتصفح: عبود بالكندورة والشماغ الأحمر يهرب من أبوه، وأبوه وراه بغترة معوجّة والنعال في يده. اركض في الفريج والسوق القديم والكورنيش لين توصل البر.
+لعبة جري في المتصفح: عبود بالكندورة والشماغ الأحمر يهرب من أبوه، وأبوه وراه بغترة معوجّة والنعال في يده. اركض على شاطئ جميرا، وفي وسط مدينة دبي، وجنب بحر الممزر، لين توصل سوق الشارقة القديم.
 
 An endless runner for the browser. Abood, in his kandura and red shemagh, runs from Baba along the beach at Jumeirah, through Downtown Dubai, past the boats at Al Mamzar and into Sharjah Old Souq. Arabic is the default language. The flag buttons switch to English.
 
