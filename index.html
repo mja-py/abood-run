@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>اركض يا عبود!</title>
+<meta name="description" content="لعبة جري: عبود بالكندورة والشماغ الأحمر يهرب من أبوه في الفريج والسوق والكورنيش والبر. Run, Abood! An endless runner set in a Gulf neighbourhood.">
+<meta name="theme-color" content="#232a52">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="عبود">
+<meta property="og:title" content="اركض يا عبود! Run, Abood!">
+<meta property="og:description" content="Abood runs from Baba through the fareej, the souq, the corniche and the desert.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="preload" href="assets/fonts/baloo-bhaijaan-2-arabic-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/baloo-bhaijaan-2-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="modulepreload" href="js/game.js?v=__BUILD__">
+<link rel="stylesheet" href="css/style.css?v=__BUILD__">
+</head>
+<body>
+<canvas id="cv" aria-label="اركض يا عبود"></canvas>
+
+<div class="hud" id="hud" hidden>
+  <div class="stat" id="distBox"><span id="mDist">0</span><small data-i18n="m">م</small></div>
+  <div class="chase"><span data-i18n="baba">بابا</span><div class="bar" id="bar"><i id="leadFill"></i></div><span data-i18n="abood">عبود</span></div>
+  <div class="stat" id="candyBox"><span id="mCandy">0</span><small data-i18n="sweets">حلاوة</small></div>
+</div>
+<div id="powers"></div>
+<button class="corner" id="pauseBtn" data-i18n-aria="pause" aria-label="إيقاف مؤقت" hidden>II</button>
+<button class="corner" id="mute" data-i18n-aria="sound" aria-label="الصوت والموسيقى" hidden>♪</button>
+
+<div class="overlay" id="menu" hidden>
+  <div class="panel">
+    <div class="panel-top"><p class="kicker" dir="auto" data-i18n="kicker">Run, Abood!</p><button class="lang" type="button"></button></div>
+    <div class="menu-body">
+    <div class="menu-text"><h1 data-i18n="title">اركض يا عبود!</h1>
+    <p data-i18n="story"></p></div>
+    <ul class="legend">
+      <li><canvas data-icon="vimto" width="76" height="76"></canvas><span><b data-i18n="it_vimto"></b><span data-i18n="it_vimto_d"></span></span></li>
+      <li><canvas data-icon="marbles" width="76" height="76"></canvas><span><b data-i18n="it_marbles"></b><span data-i18n="it_marbles_d"></span></span></li>
+      <li><canvas data-icon="phone" width="76" height="76"></canvas><span><b data-i18n="it_phone"></b><span data-i18n="it_phone_d"></span></span></li>
+      <li><canvas data-icon="scooter" width="76" height="76"></canvas><span><b data-i18n="it_scooter"></b><span data-i18n="it_scooter_d"></span></span></li>
+      <li><canvas data-icon="magnet" width="76" height="76"></canvas><span><b data-i18n="it_magnet"></b><span data-i18n="it_magnet_d"></span></span></li>
+      <li><canvas data-icon="sandal" width="76" height="76"></canvas><span><b data-i18n="it_sandal"></b><span data-i18n="it_sandal_d"></span></span></li>
+    </ul>
+    </div>
+    <p class="rotate" id="rotateHint" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M21 12a9 9 0 0 1-9 9"/><path d="M21 16v-4h-4"/></svg><span data-i18n="rotate"></span></p>
+    <div class="actions"><button class="btn" id="startBtn" type="button" data-i18n="start">يلا اركض!</button>
+    <button class="ghost" id="fsBtn" type="button" data-i18n="fullscreen" hidden></button></div>
+    <p class="hint" data-i18n="hint"></p>
+    <p class="hint" id="iosHint" data-i18n="ios" hidden></p>
+    <p class="hint best" id="menuBest" hidden></p>
+  </div>
+</div>
+
+<div class="overlay" id="over" hidden>
+  <div class="panel">
+    <div class="panel-top"><p class="kicker" id="overQuote">مسكتك!</p><button class="lang" type="button"></button></div>
+    <h2 id="overTitle"></h2>
+    <p id="overMsg"></p>
+    <div class="score">
+      <div><b id="sDist">0</b><span data-i18n="sMetres"></span></div>
+      <div><b id="sBest">0</b><span data-i18n="sBest"></span></div>
+      <div><b id="sCandy">0</b><span data-i18n="sSweets"></span></div>
+      <div><b id="sClose">0</b><span data-i18n="sClose"></span></div>
+    </div>
+    <button class="btn" id="againBtn" type="button" data-i18n="again"></button>
+    <p class="hint" data-i18n="againHint"></p>
+  </div>
+</div>
+
+<div id="toast" hidden><span data-i18n="update"></span><button type="button" id="toastBtn" data-i18n="updateBtn"></button></div>
+
+<div id="loader" role="status" aria-live="polite">
+  <div class="ld-card">
+    <canvas id="ldCv" width="480" height="300" aria-hidden="true"></canvas>
+    <p class="ld-title" data-i18n="title">اركض يا عبود!</p>
+    <div class="ld-bar"><i id="ldFill"></i></div>
+    <p class="ld-text"><span id="ldMsg">جاري التحميل…</span> <b id="ldPct" dir="ltr">0%</b></p>
+    <p class="ld-tip" id="ldTip"></p>
+  </div>
+</div>
+<noscript><p style="position:fixed;inset:auto 0 40%;text-align:center;color:#fffaf0;font-size:18px">هذي اللعبة تحتاج JavaScript. This game needs JavaScript.</p></noscript>
+
+<script type="module" src="js/game.js?v=__BUILD__"></script>
+</body>
+</html>
