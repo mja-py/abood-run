@@ -27,7 +27,7 @@ export const HEADS = [
   { id: 'tagiyah', price: 50 },
 ];
 export const BOOSTERS = [
-  { id: 'vimto', price: 50 }, { id: 'magnet', price: 40 }, { id: 'headstart', price: 80 }, { id: 'shield', price: 60 }, { id: 'revive', price: 120 },
+  { id: 'vimto', price: 50 }, { id: 'magnet', price: 40 }, { id: 'headstart', price: 80 }, { id: 'shield', price: 60 }, { id: 'revive', price: 400 },
 ];
 // badges: `run` is checked against this run, `life` against lifetime stats
 export const BADGES = [
