@@ -194,6 +194,7 @@ const dad = { y: GROUND, vy: 0, on: true, ph: 0, slow: 0, freeze: 0, say: '', sa
 let best = 0; try { best = +localStorage.getItem('abood-best') || 0; } catch (e) {}
 try { muted = localStorage.getItem('abood-muted') === '1'; } catch (e) {}
 
+const runSpeed = d => 320 + Math.min(330, d * 0.12); // 440 at 1 km, 650 from 2.75 km
 function reset() {
   t = 0; worldX = 0; lead = 0.6; dist = 0; candies = 0; candyCount = 0; boost = 0; shake = 0; camZ = 1; combo = 0; comboT = 0; closeCalls = 0; zoneNow = 0; banner = null;
   gaps = []; plats = []; obs = []; items = []; parts = []; sandals = []; genX = 900;
@@ -211,14 +212,14 @@ function candyArc(x0, x1, yBase, h) { const n = Math.max(3, Math.round((x1 - x0)
 function power() { const r = Math.random(); return r < 0.24 ? 'vimto' : r < 0.46 ? 'marbles' : r < 0.62 ? 'phone' : r < 0.82 ? 'magnet' : 'scooter'; }
 function gen() {
   while (genX < worldX + W + 400) {
-    const z = ZONES[zoneOfM(genX / 40)], r = Math.random(), hard = Math.min(1, dist / 1500);
+    const z = ZONES[zoneOfM(genX / 40)], r = Math.random(), hard = Math.min(1, dist / 6000), k = Math.sqrt(runSpeed(dist) / 320); // spacing grows with speed so it stays jumpable
     if (r < 0.34) {
       const k = pick(z.obs); addObs(genX, k);
       if (Math.random() < 0.5) candyArc(genX - 50, genX + OB[k].w + 50, GROUND - 50, 62);
-      if (Math.random() < 0.2 + hard * 0.35) { addObs(genX + rnd(200, 250), pick(z.obs)); genX += 240; }
-      genX += rnd(270, 450);
+      if (Math.random() < 0.2 + hard * 0.45) { const dx = rnd(200, 250) * k; addObs(genX + dx, pick(z.obs)); genX += dx; }
+      genX += rnd(270, 450) * k;
     } else if (r < 0.52) {
-      const w = rnd(90, 118 + hard * 50); gaps.push({ x0: genX, x1: genX + w });
+      const w = rnd(90, 118 + hard * 60); gaps.push({ x0: genX, x1: genX + w });
       candyArc(genX - 30, genX + w + 30, GROUND - 60, 72); genX += w + rnd(250, 340);
     } else if (r < 0.72) {
       const w = rnd(170, 260), y = GROUND - rnd(85, 120); plats.push({ x: genX, y, w, z: zoneOfM(genX / 40) });
@@ -382,14 +383,14 @@ function update(dt) {
   if (st === 'over') { updParts(dt); kid.ph += dt * 16; return; }
   if (st !== 'play') return;
 
-  const base = 320 + Math.min(230, dist * 0.2);
+  const base = runSpeed(dist);
   speed = base * Math.max(boost > 0 ? 1.3 : 1, kid.scoot > 0 ? 1.42 : 1) * (kid.stumble > 0 ? 0.65 : 1);
   worldX += speed * dt; dist = worldX / 40;
   const z = zoneOfM(dist); if (z !== zoneNow) { zoneNow = z; showBanner(z); sfx.zone(); lead = Math.min(1, lead + 0.05); M.track('zone', z); }
   if (run) run.zoneMax = Math.max(run.zoneMax, Math.min(3, Math.floor(dist / ZLEN)));
   badgeTimer -= dt; if (badgeTimer <= 0 && run) { badgeTimer = 1; for (const b of M.checkBadges({ dist, close: closeCalls })) { runBadges.push(b); floatText(T('f_badge', T('bg_' + b.id)), worldX + 60, 140, '#ffe066'); sfx.zone(); } }
 
-  let dl = -(0.04 + Math.min(0.05, dist * 0.00005));
+  let dl = -(0.04 + Math.min(0.15, dist * 0.00004)); // Baba keeps closing in faster: 0.08/s at 1 km, 0.12/s at 2 km, 0.16/s at 3 km, 0.19/s from 3.75 km
   if (dad.freeze > 0) dl = 0.12; else if (dad.slow > 0) dl = 0.065;
   if (boost > 0) dl += 0.09; if (kid.scoot > 0) dl += 0.1;
   lead = clamp(lead + dl * dt, 0, 1);
@@ -470,7 +471,7 @@ function update(dt) {
   // sandal throwing
   dad.cd -= dt;
   if (dist > 100 && dad.cd <= 0 && dad.has && dad.freeze <= 0 && dad.slow <= 0 && dad.windup <= 0 && dad.on) { dad.windup = 0.85; shout(pick(T('s_throw')), 1.2); }
-  if (dad.windup > 0) { dad.windup -= dt; if (dad.windup <= 0) { sandals.push({ sx: dadScreenX() + 16, y: GROUND - 10, age: 0, rot: 0, hit: false, passed: false }); dad.has = false; dad.regrab = 1.6; dad.cd = rnd(6.5, 10.5) - Math.min(3.5, dist / 500); sfx.whoosh(); } }
+  if (dad.windup > 0) { dad.windup -= dt; if (dad.windup <= 0) { sandals.push({ sx: dadScreenX() + 16, y: GROUND - 10, age: 0, rot: 0, hit: false, passed: false }); dad.has = false; dad.regrab = 1.6; dad.cd = rnd(6.5, 10.5) - Math.min(4.5, dist / 800); sfx.whoosh(); } }
   if (!dad.has) { dad.regrab -= dt; if (dad.regrab <= 0) dad.has = true; }
   // kid chatter
   kid.sayT -= dt; kid.next -= dt;
@@ -1637,7 +1638,7 @@ function drawAvatar(cnv, look, ph, mood, still) {
   person(c, 0, 0, ph, false, Object.assign({}, look, { s: 1, mouth: mood || 'grin', still: !!still, lean: 0.02 }));
   c.restore();
 }
-const BCOL = { first: '#4a90e2', dist500: '#9aa3b2', dist1000: '#e3b23c', dist2000: '#e3b23c', zone1: '#2b6cb0', zone2: '#1f9e8f', zone3: '#a8322d', sweets100: '#ff5a5f', sweets1000: '#d94a7a',
+const BCOL = { first: '#4a90e2', dist500: '#9aa3b2', dist1000: '#e3b23c', dist2000: '#e3b23c', dist5000: '#d9822b', dist10000: '#f2c230', zone1: '#2b6cb0', zone2: '#1f9e8f', zone3: '#a8322d', sweets100: '#ff5a5f', sweets1000: '#d94a7a',
   close10: '#7a3f8e', sandal10: '#8a4b25', smash10: '#e23b4a', powers: '#33b679', streak7: '#2c5d9e', shopper: '#f28c28', revived: '#1f7a74' };
 function drawMedal(c, id, on, size) {
   c.setTransform(size / 40, 0, 0, size / 40, 0, 0); c.clearRect(0, 0, 40, 40); c.lineJoin = 'round';
@@ -1646,7 +1647,7 @@ function drawMedal(c, id, on, size) {
   c.fillStyle = on ? BCOL[id] || '#e3b23c' : '#cfc9ba'; c.strokeStyle = INK; c.lineWidth = 1.6; c.beginPath(); c.arc(20, 25, 13, 0, TAU); c.fill(); c.stroke();
   c.strokeStyle = on ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.4)'; c.lineWidth = 1.2; c.beginPath(); c.arc(20, 25, 10, 0, TAU); c.stroke();
   c.fillStyle = '#fffaf0'; c.strokeStyle = INK; c.lineWidth = 1; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '800 8px ' + FONT;
-  const txt = { dist500: '500', dist1000: '1K', dist2000: '2K', streak7: '7', zone1: '2', zone2: '3', zone3: '4' }[id];
+  const txt = { dist500: '500', dist1000: '1K', dist2000: '2K', dist5000: '5K', dist10000: '10K', streak7: '7', zone1: '2', zone2: '3', zone3: '4' }[id];
   if (txt) { c.fillText(txt, 20, 25.5); }
   else if (id === 'sweets100' || id === 'sweets1000') { c.save(); c.translate(20, 25); c.scale(0.7, 0.7); drawItem(c, 'candy', 0, 0, 1, true); c.restore(); }
   else if (id === 'sandal10') { c.save(); c.translate(20, 26); c.rotate(1.1); c.translate(0, -7); c.scale(0.9, 0.9); sandalShape(c); c.restore(); }

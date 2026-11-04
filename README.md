@@ -18,7 +18,9 @@ Progress is saved on the device: in-game dirhams (no real payments), a shop with
 
 - Buying every look, kandura and headwear costs **1,000,000 د.إ** in total.
 - Daily missions are the main income: about 2,300–4,600 each, plus **3,000** for finishing all three in a day. With the 7-day login gift (300 → 2,500) that is roughly 14,000 a day, so the full wardrobe takes about 70 days of daily play.
-- Runs pay only small change (about 1 per 40 m and 1 per 8 sweets). Badges pay 31,000 in total, once.
+- Runs pay only small change (about 1 per 40 m and 1 per 8 sweets). Badges pay 66,000 in total, once.
+- The gold kandura is only unlocked by the 10,000 m badge.
+- Difficulty keeps rising with distance: Baba closes in at 0.08/s at 1 km, 0.16/s at 3 km and 0.19/s from 3.75 km, top speed is reached at 2.75 km, and obstacles, holes and sandal throws get denser. Long runs are meant to need second chances.
 - Boosters: Vimto 1,500 · magnet 1,200 · head start 2,500 · shield 2,000 · second chance 12,000. The first second chance in every run is free.
 - All numbers live in `js/meta.js`.
 

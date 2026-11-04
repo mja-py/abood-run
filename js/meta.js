@@ -18,7 +18,7 @@ export const ROBES = [
   { id: 'grey', col: '#d9dbe0', shade: '#b0b5c0', price: 80000 },
   { id: 'blue', col: '#cfe3f2', shade: '#a1c0da', price: 110000 },
   { id: 'brown', col: '#9a7353', shade: '#775638', price: 150000 },
-  { id: 'gold', col: '#f4e3a8', shade: '#d4b96e', price: 0, badge: 'dist2000' },
+  { id: 'gold', col: '#f4e3a8', shade: '#d4b96e', price: 0, badge: 'dist10000' },
 ];
 export const HEADS = [
   { id: 'shemagh', price: 0 },
@@ -34,7 +34,9 @@ export const BADGES = [
   { id: 'first', reward: 500, life: s => s.runs >= 1 },
   { id: 'dist500', reward: 1250, run: r => r.dist >= 500 },
   { id: 'dist1000', reward: 2500, run: r => r.dist >= 1000 },
-  { id: 'dist2000', reward: 5000, run: r => r.dist >= 2000, unlock: 'robe:gold' },
+  { id: 'dist2000', reward: 5000, run: r => r.dist >= 2000 },
+  { id: 'dist5000', reward: 10000, run: r => r.dist >= 5000 },
+  { id: 'dist10000', reward: 25000, run: r => r.dist >= 10000, unlock: 'robe:gold' },
   { id: 'zone1', reward: 1000, life: s => s.zones.includes(1) },
   { id: 'zone2', reward: 1500, life: s => s.zones.includes(2) },
   { id: 'zone3', reward: 2000, life: s => s.zones.includes(3) },
