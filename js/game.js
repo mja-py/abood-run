@@ -230,12 +230,12 @@ function candyArc(x0, x1, yBase, h) { const n = Math.max(3, Math.round((x1 - x0)
 function power() { const r = Math.random(); return r < 0.24 ? 'vimto' : r < 0.46 ? 'marbles' : r < 0.62 ? 'phone' : r < 0.82 ? 'magnet' : 'scooter'; }
 function gen() {
   while (genX < worldX + W + 400) {
-    const z = ZONES[zoneOfM(genX / 40)], r = Math.random(), hard = Math.min(1, dist / 8000), k = Math.sqrt(runSpeed(dist) / 320); // spacing grows with speed so it stays jumpable
+    const z = ZONES[zoneOfM(genX / 40)], r = Math.random(), hard = Math.min(1, dist / 8000), spread = Math.sqrt(runSpeed(dist) / 320); // spacing grows with speed so it stays jumpable
     if (r < 0.34) {
       const k = pick(z.obs); addObs(genX, k);
       if (Math.random() < 0.5) candyArc(genX - 50, genX + OB[k].w + 50, GROUND - 50, 62);
-      if (Math.random() < 0.12 + hard * 0.38) { const dx = rnd(200, 250) * k; addObs(genX + dx, pick(z.obs)); genX += dx; }
-      genX += rnd(270, 450) * k;
+      if (Math.random() < 0.12 + hard * 0.38) { const dx = rnd(200, 250) * spread; addObs(genX + dx, pick(z.obs)); genX += dx; }
+      genX += rnd(270, 450) * spread;
     } else if (r < 0.52) {
       const w = rnd(85, 110 + hard * 50); gaps.push({ x0: genX, x1: genX + w });
       candyArc(genX - 30, genX + w + 30, GROUND - 60, 72); genX += w + rnd(250, 340);
@@ -253,6 +253,7 @@ function gen() {
       items.push({ x: genX, y: GROUND - 74, kind: power() }); genX += rnd(260, 340);
     }
   }
+  if (!Number.isFinite(genX)) genX = worldX + W + 100;
   const cut = worldX - ABX - 200;
   compact(gaps, g => g.x1 > cut); compact(plats, p => p.x + p.w > cut); compact(obs, o => o.x + o.hx + 80 > cut && o.hy < 300); compact(items, i => i.x > cut && !i.got);
 }
@@ -1897,7 +1898,7 @@ async function boot() {
 // test / tooling hook
 window.__abood = {
   get say() { return dad.sayT > 0 ? dad.say : ''; },
-  get state() { return { paceT, assist: +assist.toFixed(2), mercyT, st, dist, lead, zone: zoneNow, qLevel, res: RES, bakeRes, tiles: TILES.size, sprites: SPR.size, build: BUILD }; },
+  get state() { return { genAhead: Math.round(genX - worldX), obs: obs.length, items: items.length, gaps: gaps.length, paceT, assist: +assist.toFixed(2), mercyT, st, dist, lead, zone: zoneNow, qLevel, res: RES, bakeRes, tiles: TILES.size, sprites: SPR.size, build: BUILD }; },
   goto: d => { worldX = d * 40; dist = d; zoneNow = zoneOfM(d); genX = worldX + 500; gaps = []; obs = []; items = []; plats = []; lead = 0.6; },
   quality: q => { qLevel = clamp(q, 0, QDPR.length - 1); resize(); },
   portrait: (size, pad = 1) => {
