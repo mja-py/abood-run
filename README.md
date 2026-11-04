@@ -2,7 +2,9 @@
 
 لعبة جري في المتصفح: عبود بالكندورة والشماغ الأحمر يهرب من أبوه، وأبوه وراه بغترة معوجّة والنعال في يده. اركض في الفريج والسوق القديم والكورنيش لين توصل البر.
 
-An endless runner for the browser. Abood, in his kandura and red shemagh, runs from Baba through a Gulf neighbourhood. Arabic is the default language. The flag button switches to English.
+An endless runner for the browser. Abood, in his kandura and red shemagh, runs from Baba along the beach at Jumeirah, through Downtown Dubai, past the boats at Al Mamzar and into Sharjah Old Souq. Arabic is the default language. The flag buttons switch to English.
+
+Progress is saved on the device: in-game dirhams (no real payments), a shop with boosters and a second-chance revive, a wardrobe with three characters and outfits, 16 badges with rewards, three daily missions, and a 7-day login gift.
 
 ## How to play
 
@@ -51,6 +53,7 @@ index.html              page, loading screen, menus
 css/style.css           layout, RTL, phone breakpoints, self-hosted font faces
 js/game.js              the game: world, physics, drawing, caching, loader
 js/i18n.js              Arabic and English text, language switch
+js/meta.js              save data, dirhams, shop, wardrobe, badges, missions, login gift
 js/vendor/zzfx.js       ZzFX sound synth (MIT)
 assets/fonts/           Baloo Bhaijaan 2 (SIL OFL 1.1)
 assets/icons/           app icons, generated from the game's own drawing of Abood
