@@ -80,11 +80,11 @@ Then open <http://localhost:8000>.
 
 ## Publish on GitHub Pages
 
-1. Push this folder to the `main` branch of a GitHub repository.
-2. In the repository, open **Settings → Pages** and set **Source** to **GitHub Actions**.
-3. The workflow in `.github/workflows/pages.yml` deploys every push to `main`. The game is then at `https://<user>.github.io/<repo>/`.
+Every push to `main` runs `.github/workflows/pages.yml`, which stamps the build version and publishes the game to the `gh-pages` branch. The game is then at `https://<user>.github.io/<repo>/`.
 
-On each deploy, the workflow stamps the commit id into `sw.js`, `index.html` and `js/game.js`. That gives every release a new cache name and new asset URLs, so players get the update without clearing anything. Players who already have the game open see a "new version is ready" message on the menu.
+If the site does not appear after the first deploy, open **Settings → Pages** and set **Source** to **Deploy from a branch**, branch **gh-pages**, folder **/ (root)**.
+
+On each deploy the commit id is stamped into `sw.js`, `index.html` and `js/game.js`, so every release gets a new cache name and new asset URLs and players get the update without clearing anything. Players who have the game open see a "new version is ready" message on the menu.
 
 ## Phones and offline play
 

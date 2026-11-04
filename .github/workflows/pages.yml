@@ -1,14 +1,14 @@
 name: Deploy to GitHub Pages
 
+# Publishes the game to the gh-pages branch on every push to main.
+# GitHub serves that branch at https://<user>.github.io/<repo>/.
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
@@ -17,9 +17,6 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -28,13 +25,14 @@ jobs:
         run: |
           V="${GITHUB_SHA::8}"
           sed -i "s/__BUILD__/$V/g" index.html sw.js js/game.js
+          mkdir -p _site
+          cp -r index.html sw.js manifest.webmanifest .nojekyll css js assets _site/
           echo "Build $V"
 
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: .
-
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./_site
+          publish_branch: gh-pages
+          force_orphan: true
