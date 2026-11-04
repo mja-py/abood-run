@@ -323,7 +323,8 @@ function fillOver() {
   const strip = $('overBadges'); strip.innerHTML = '';
   if (!runBadges.length) strip.innerHTML = '<span class="hint">' + T('o_none') + '</span>';
   for (const b of runBadges) { const el = document.createElement('span'); el.className = 'badge-chip'; const cnv = mk(56, 56); drawMedal(cnv.getContext('2d'), b.id, true, 56); el.appendChild(cnv); el.append(T('bg_' + b.id) + ' · ' + T('bg_reward', b.reward)); strip.appendChild(el); }
-  const rv = M.data().boosters.revive || 0; $('reviveBtn').hidden = rv <= 0; $('reviveBtn').textContent = T('o_revive', rv);
+  const rv = M.data().boosters.revive || 0; $('reviveBtn').hidden = false;
+  $('reviveBtn').textContent = !run || !run.freeRevive ? T('o_reviveFree') : rv > 0 ? T('o_revive', rv) : T('o_reviveBuy', M.REVIVE_PRICE);
   syncCoins();
 }
 function settleRun() {
@@ -340,7 +341,10 @@ function gameOver(why) {
   setTimeout(() => { if (st === 'over') { $('over').hidden = false; maybeToast(); } }, 1100);
 }
 function revive() {
-  if (st !== 'over' || !M.useBooster('revive')) return;
+  if (st !== 'over') return;
+  // the first second chance in every run is free; after that use a bought one, or pay on the spot
+  if (run && !run.freeRevive) run.freeRevive = true;
+  else if (!M.useBooster('revive') && !M.spend(M.REVIVE_PRICE)) { note(T('notEnough')); return; }
   M.track('revive'); for (const b of M.checkBadges(null)) runBadges.push(b);
   st = 'play'; stT = 0; $('over').hidden = true; $('hud').hidden = false; $('pauseBtn').hidden = false; hudCache.fill(null);
   lead = 0.6; kid.y = GROUND; kid.vy = 0; kid.on = true; kid.inv = 2.5; kid.stumble = 0; kid.sayT = 0; dad.sayT = 0; dad.windup = 0; dad.cd = 6;

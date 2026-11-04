@@ -62,7 +62,7 @@ export const LOGIN = [20, 30, 40, 50, 60, 80, 150];
 const fresh = () => ({
   coins: 100, avatar: 'classic', robe: 'white', head: 'shemagh',
   owned: { avatar: ['classic'], robe: ['white'], head: ['shemagh'] },
-  boosters: { vimto: 0, magnet: 0, headstart: 0, shield: 0, revive: 1 },
+  boosters: { vimto: 0, magnet: 0, headstart: 0, shield: 0, revive: 0 },
   stats: { runs: 0, sweets: 0, close: 0, dodged: 0, smash: 0, zones: [0], powers: [], revivesUsed: 0, bought: 0, best: 0, streak: 0 },
   badges: {}, daily: null, login: { last: null, streak: 0 },
 });
@@ -176,5 +176,8 @@ export function equip(kind, id) {
   S[kind] = id;
   save(); return true;
 }
+export const REVIVE_PRICE = 400;
+// pay for something on the spot (used for a paid second chance on the game-over screen)
+export function spend(n) { if (S.coins < n) return false; S.coins -= n; save(); return true; }
 export function useBooster(id) { if ((S.boosters[id] || 0) <= 0) return false; S.boosters[id]--; save(); return true; }
 export const bestDist = () => S.stats.best;
