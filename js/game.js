@@ -343,7 +343,7 @@ function fillOver() {
   $('avNameOver').textContent = kname();
   const strip = $('overBadges'); strip.innerHTML = '';
   if (!runBadges.length) strip.innerHTML = '<span class="hint">' + T('o_none') + '</span>';
-  for (const b of runBadges) { const el = document.createElement('span'); el.className = 'badge-chip'; const cnv = mk(56, 56); drawMedal(cnv.getContext('2d'), b.id, true, 56); el.appendChild(cnv); el.append(T('bg_' + b.id) + ' · ' + T('bg_reward', b.reward)); strip.appendChild(el); }
+  for (const b of runBadges) { const el = document.createElement('span'); el.className = 'badge-chip'; const cnv = mk(56, 56); drawMedal(cnv.getContext('2d'), b.id, b.cat ? b.tier : 2, 56); el.appendChild(cnv); el.append(badgeName(b) + ' · ' + T('bg_reward', b.reward)); strip.appendChild(el); }
   const rv = M.data().boosters.revive || 0; $('reviveBtn').hidden = false;
   $('reviveBtn').textContent = !run || !run.freeRevive ? T('o_reviveFree') : rv > 0 ? T('o_revive', rv) : T('o_reviveBuy', M.REVIVE_PRICE);
   syncCoins();
@@ -409,7 +409,7 @@ function update(dt) {
   worldX += speed * dt; dist = worldX / 40;
   const z = zoneOfM(dist); if (z !== zoneNow) { zoneNow = z; showBanner(z); sfx.zone(); lead = Math.min(1, lead + 0.05); M.track('zone', z); }
   if (run) run.zoneMax = Math.max(run.zoneMax, Math.min(3, Math.floor(dist / ZLEN)));
-  badgeTimer -= dt; if (badgeTimer <= 0 && run) { badgeTimer = 1; for (const b of M.checkBadges({ dist, close: closeCalls })) { runBadges.push(b); floatText(T('f_badge', T('bg_' + b.id)), worldX + 60, 140, '#ffe066'); sfx.zone(); } }
+  badgeTimer -= dt; if (badgeTimer <= 0 && run) { badgeTimer = 1; for (const b of M.checkBadges({ dist, close: closeCalls })) { runBadges.push(b); floatText(T('f_badge', badgeName(b)), worldX + 60, 140, '#ffe066'); sfx.zone(); } }
 
   director(dt);
   focusT += dt; const fl = Math.min(FOCUS_MAX, Math.floor(focusT / FOCUS_STEP));
@@ -1687,28 +1687,33 @@ function drawAvatar(cnv, look, ph, mood, still) {
   person(c, 0, 0, ph, false, Object.assign({}, look, { s: 1, mouth: mood || 'grin', still: !!still, lean: 0.02 }));
   c.restore();
 }
-const BCOL = { first: '#4a90e2', dist500: '#9aa3b2', dist1000: '#e3b23c', dist2000: '#e3b23c', dist5000: '#d9822b', dist10000: '#f2c230', zone1: '#2b6cb0', zone2: '#1f9e8f', zone3: '#a8322d', sweets100: '#ff5a5f', sweets1000: '#d94a7a',
-  close10: '#7a3f8e', sandal10: '#8a4b25', smash10: '#e23b4a', powers: '#33b679', streak7: '#2c5d9e', shopper: '#f28c28', revived: '#1f7a74' };
-function drawMedal(c, id, on, size) {
+const TIER_COL = ['#c8823f', '#c3c8d1', '#f2c230'], TIER_RIB = ['#8a4b25', '#6b7280', '#c8202b'];
+const SPECIAL_COL = { first: '#4a90e2', dist10000: '#f2c230', shopper: '#f28c28' };
+// tier: -1 locked, 0 bronze, 1 silver, 2 gold (special badges pass 2 when earned)
+function drawMedal(c, id, tier, size) {
   c.setTransform(size / 40, 0, 0, size / 40, 0, 0); c.clearRect(0, 0, 40, 40); c.lineJoin = 'round';
-  c.fillStyle = on ? '#c8202b' : '#b9b3a5'; c.beginPath(); c.moveTo(10, 1); c.lineTo(18, 1); c.lineTo(22, 14); c.lineTo(15, 14); c.closePath(); c.fill();
+  const on = tier >= 0, base = !on ? '#cfc9ba' : SPECIAL_COL[id] && tier === 2 && !TIER_COL[3] && SPECIAL_COL[id] || TIER_COL[tier];
+  c.fillStyle = on ? TIER_RIB[tier] : '#b9b3a5'; c.beginPath(); c.moveTo(10, 1); c.lineTo(18, 1); c.lineTo(22, 14); c.lineTo(15, 14); c.closePath(); c.fill();
   c.fillStyle = on ? '#1f7a74' : '#a9a397'; c.beginPath(); c.moveTo(22, 1); c.lineTo(30, 1); c.lineTo(25, 14); c.lineTo(18, 14); c.closePath(); c.fill();
-  c.fillStyle = on ? BCOL[id] || '#e3b23c' : '#cfc9ba'; c.strokeStyle = INK; c.lineWidth = 1.6; c.beginPath(); c.arc(20, 25, 13, 0, TAU); c.fill(); c.stroke();
-  c.strokeStyle = on ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.4)'; c.lineWidth = 1.2; c.beginPath(); c.arc(20, 25, 10, 0, TAU); c.stroke();
+  c.fillStyle = base; c.strokeStyle = INK; c.lineWidth = 1.6; c.beginPath(); c.arc(20, 25, 13, 0, TAU); c.fill(); c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 1.2; c.beginPath(); c.arc(20, 25, 10, 0, TAU); c.stroke();
   c.fillStyle = '#fffaf0'; c.strokeStyle = INK; c.lineWidth = 1; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '800 8px ' + FONT;
-  const txt = { dist500: '500', dist1000: '1K', dist2000: '2K', dist5000: '5K', dist10000: '10K', streak7: '7', zone1: '2', zone2: '3', zone3: '4' }[id];
-  if (txt) { c.fillText(txt, 20, 25.5); }
-  else if (id === 'sweets100' || id === 'sweets1000') { c.save(); c.translate(20, 25); c.scale(0.7, 0.7); drawItem(c, 'candy', 0, 0, 1, true); c.restore(); }
-  else if (id === 'sandal10') { c.save(); c.translate(20, 26); c.rotate(1.1); c.translate(0, -7); c.scale(0.9, 0.9); sandalShape(c); c.restore(); }
-  else if (id === 'smash10' || id === 'powers' || id === 'first' || id === 'shopper' || id === 'close10' || id === 'revived') {
-    c.save(); c.translate(20, 25); c.fillStyle = '#fffaf0';
-    if (id === 'first') { c.fillRect(-5, -7, 2, 14); c.beginPath(); c.moveTo(-3, -7); c.lineTo(7, -4); c.lineTo(-3, -1); c.fill(); }
-    else if (id === 'close10') { c.beginPath(); c.moveTo(2, -8); c.lineTo(-5, 1); c.lineTo(0, 1); c.lineTo(-2, 8); c.lineTo(5, -1); c.lineTo(0, -1); c.closePath(); c.fill(); }
-    else if (id === 'revived') { c.beginPath(); c.moveTo(0, 7); c.bezierCurveTo(-10, 0, -6, -8, 0, -3); c.bezierCurveTo(6, -8, 10, 0, 0, 7); c.fill(); }
-    else if (id === 'shopper') { c.beginPath(); c.arc(0, 0, 6, 0, TAU); c.fill(); c.fillStyle = BCOL.shopper; c.font = '800 7px ' + FONT; c.fillText(getLang() === 'ar' ? 'د' : 'D', 0, 0.5); }
-    else { star(c, 0, 0, 7); }
-    c.restore(); }
+  c.save(); c.translate(20, 25);
+  if (id === 'dist') c.fillText(getLang() === 'ar' ? 'كم' : 'km', 0, 0.5);
+  else if (id === 'dist10000') c.fillText('10K', 0, 0.5);
+  else if (id === 'streak') c.fillText('7', 0, 0.5);
+  else if (id === 'sweets') { c.scale(0.7, 0.7); drawItem(c, 'candy', 0, 0, 1, true); }
+  else if (id === 'dodge') { c.rotate(1.1); c.translate(0, -7); c.scale(0.9, 0.9); sandalShape(c); }
+  else if (id === 'powers') { c.scale(0.55, 0.55); drawItem(c, 'vimto', 0, 2, 0, true); }
+  else if (id === 'first' || id === 'runs') { c.fillRect(-5, -7, 2, 14); c.beginPath(); c.moveTo(-3, -7); c.lineTo(7, -4); c.lineTo(-3, -1); c.fill(); }
+  else if (id === 'close') { c.beginPath(); c.moveTo(2, -8); c.lineTo(-5, 1); c.lineTo(0, 1); c.lineTo(-2, 8); c.lineTo(5, -1); c.lineTo(0, -1); c.closePath(); c.fill(); }
+  else if (id === 'revive') { c.beginPath(); c.moveTo(0, 7); c.bezierCurveTo(-10, 0, -6, -8, 0, -3); c.bezierCurveTo(6, -8, 10, 0, 0, 7); c.fill(); }
+  else if (id === 'areas') { c.beginPath(); c.arc(0, -2, 5, Math.PI * 0.85, Math.PI * 2.15); c.lineTo(0, 8); c.closePath(); c.fill(); c.fillStyle = base; c.beginPath(); c.arc(0, -2, 2, 0, TAU); c.fill(); }
+  else if (id === 'shopper') { c.beginPath(); c.arc(0, 0, 6, 0, TAU); c.fill(); c.fillStyle = SPECIAL_COL.shopper; c.font = '800 7px ' + FONT; c.fillText(getLang() === 'ar' ? 'د' : 'D', 0, 0.5); }
+  else star(c, 0, 0, 7);
+  c.restore();
 }
+const badgeName = b => b.cat ? T('bc_' + b.id) + ' · ' + T('tier_' + b.tier) : T('bg_' + b.id);
 function drawBoosterIcon(c, id, size) {
   c.setTransform(size / 40, 0, 0, size / 40, 0, 0); c.clearRect(0, 0, 40, 40);
   if (id === 'vimto') drawItem(c, 'vimto', 20, 22, 0, true);
@@ -1772,10 +1777,19 @@ function sheetShop(body) {
   body.appendChild(g);
 }
 function sheetBadges(body) {
-  const D = M.data(), n = M.BADGES.filter(b => D.badges[b.id]).length;
-  body.appendChild(el('p', 'sec-title', T('bg_count', n, M.BADGES.length))); const g = el('div', 'cards');
+  const D = M.data(), tiersGot = M.BADGE_CATS.reduce((a, c) => a + M.tierOf(c.id), 0), specialsGot = M.BADGES.filter(b => D.badges[b.id]).length;
+  body.appendChild(el('p', 'sec-title', T('bg_count', tiersGot + specialsGot, M.BADGE_CATS.length * 3 + M.BADGES.length)));
+  body.appendChild(el('p', 'hint', T('bg_tiered')));
+  const g = el('div', 'cards');
+  for (const c of M.BADGE_CATS) {
+    const k = M.tierOf(c.id), done = k >= 3, cur = c.stat(D.stats);
+    const sub = (done ? T('tier_all') : T('bc_' + c.id + '_d', c.goals[k]) + ' · ' + T('bg_reward', M.TIER_REWARD[k])) + ' · ' + T(k ? 'tier_' + (k - 1) : 'tier_none');
+    const cardEl = card(cnv => drawMedal(cnv.getContext('2d'), c.id, k - 1, 192), T('bc_' + c.id), sub, null, false, k === 0);
+    if (!done) { const pr = el('div', 'prog'); pr.style.width = '100%'; const f = el('i'); f.style.width = Math.min(100, cur / c.goals[k] * 100) + '%'; pr.appendChild(f); cardEl.appendChild(pr); cardEl.appendChild(el('small', null, T('bg_prog', Math.min(cur, c.goals[k]), c.goals[k]))); }
+    g.appendChild(cardEl);
+  }
   for (const b of M.BADGES) { const on = !!D.badges[b.id];
-    g.appendChild(card(cnv => drawMedal(cnv.getContext('2d'), b.id, on, 192), T('bg_' + b.id), T('bg_' + b.id + '_d') + ' · ' + (on ? T('bg_reward', b.reward) + ' ✓' : T('bg_reward', b.reward)), null, false, !on)); }
+    g.appendChild(card(cnv => drawMedal(cnv.getContext('2d'), b.id, on ? 2 : -1, 192), T('bg_' + b.id), T('bg_' + b.id + '_d') + ' · ' + T('bg_reward', b.reward) + (on ? ' ✓' : ''), null, false, !on)); }
   body.appendChild(g);
 }
 function loginRow(wrap) {

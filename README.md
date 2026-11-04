@@ -21,10 +21,29 @@ Prices are in realistic dirham amounts (all numbers live in `js/meta.js`).
 - **Wardrobe:** looks, kandura colours and headwear cost **10,000 د.إ** in total. The five football kits (Al Ain, Al Wasl, Shabab Al Ahli, Al Nasr, Sharjah) cost **1,500** each, 17,500 for everything. The kits are drawn in club colours only, with no badges, and each makes Baba catch up 20% slower while worn.
 - **Gold kandura:** unlocked only by the 10,000 m badge. While worn, Baba catches up 40% slower.
 - **Daily missions are the main income:** 23–46 each, plus **30** for finishing all three in a day. With the 7-day login gift (3 → 25) that is about 140 a day, so one kit takes about 11 days and everything about 4 months.
-- **Runs** pay only small change: 1 per 1,000 m and 1 per 200 sweets. Badges pay about 650 in total, once.
+- **Runs** pay only small change: 1 per 1,000 m and 1 per 200 sweets. Badges have bronze, silver and gold tiers (see below).
 - **Boosters:** Vimto 15 · magnet 12 · head start 25 · shield 20 · second chance 120. The first second chance in every run is free.
 - **Difficulty** rises steadily (linearly) with distance so the start is relaxed: Baba closes in at 0.046/s at 1 km, 0.078/s at 3 km, 0.11/s at 5 km and 0.14/s from about 7 km. Speed, obstacle pairs, hole widths and sandal throws grow gently up to 5–8 km. A hit costs 13% of the lead bar.
 - **Focus streak:** every 20 s without a hit raises Focus by one level (max 3); each level makes Baba 10% slower. Close calls add 3 s; a hit resets it. Skilled, focused play gets further.
+
+## Badges
+
+Ten badges have three tiers each. Every tier needs 10x the previous goal and pays 10x the dirhams (bronze 10, silver 100, gold 1,000 د.إ):
+
+| Badge | Bronze | Silver | Gold |
+|---|---|---|---|
+| Distance runner (total) | 10 km | 100 km | 1,000 km |
+| Sweet tooth | 1,000 | 10,000 | 100,000 sweets |
+| Close shave | 50 | 500 | 5,000 |
+| Sandal dodger | 20 | 200 | 2,000 |
+| Scooter smash | 20 | 200 | 2,000 |
+| Regular | 10 | 100 | 1,000 runs |
+| Explorer | 10 | 100 | 1,000 areas entered |
+| Power collector | 50 | 500 | 5,000 |
+| Comeback | 1 | 10 | 100 second chances |
+| Loyal | 7 | 70 | 700 days in a row |
+
+One-off badges: First run (5), Emirates runner, 10 km in one run (250 and the gold kandura), First buy (7).
 
 ## Difficulty director
 

@@ -35,27 +35,27 @@ export const HEADS = [
 export const BOOSTERS = [
   { id: 'vimto', price: 15 }, { id: 'magnet', price: 12 }, { id: 'headstart', price: 25 }, { id: 'shield', price: 20 }, { id: 'revive', price: 120 },
 ];
-// badges: `run` is checked against this run, `life` against lifetime stats
+// one-off badges: `run` is checked against this run, `life` against lifetime stats
 export const BADGES = [
   { id: 'first', reward: 5, life: s => s.runs >= 1 },
-  { id: 'dist500', reward: 12, run: r => r.dist >= 500 },
-  { id: 'dist1000', reward: 25, run: r => r.dist >= 1000 },
-  { id: 'dist2000', reward: 50, run: r => r.dist >= 2000 },
-  { id: 'dist5000', reward: 100, run: r => r.dist >= 5000 },
   { id: 'dist10000', reward: 250, run: r => r.dist >= 10000, unlock: 'robe:gold' },
-  { id: 'zone1', reward: 10, life: s => s.zones.includes(1) },
-  { id: 'zone2', reward: 15, life: s => s.zones.includes(2) },
-  { id: 'zone3', reward: 20, life: s => s.zones.includes(3) },
-  { id: 'sweets100', reward: 12, life: s => s.sweets >= 100 },
-  { id: 'sweets1000', reward: 37, life: s => s.sweets >= 1000 },
-  { id: 'close10', reward: 20, run: r => r.close >= 10 },
-  { id: 'sandal10', reward: 15, life: s => s.dodged >= 10 },
-  { id: 'smash10', reward: 15, life: s => s.smash >= 10 },
-  { id: 'powers', reward: 20, life: s => s.powers.length >= 5 },
-  { id: 'streak7', reward: 37, life: s => s.streak >= 7 },
   { id: 'shopper', reward: 7, life: s => s.bought >= 1 },
-  { id: 'revived', reward: 7, life: s => s.revivesUsed >= 1 },
 ];
+// tiered badges: bronze -> silver -> gold, each tier needs 10x the goal and pays 10x the dirhams
+export const TIER_REWARD = [10, 100, 1000];
+export const BADGE_CATS = [
+  { id: 'dist', goals: [10, 100, 1000], stat: s => Math.floor((s.totalDist || 0) / 1000) },   // km in total
+  { id: 'sweets', goals: [1000, 10000, 100000], stat: s => s.sweets },
+  { id: 'close', goals: [50, 500, 5000], stat: s => s.close },
+  { id: 'dodge', goals: [20, 200, 2000], stat: s => s.dodged },
+  { id: 'smash', goals: [20, 200, 2000], stat: s => s.smash },
+  { id: 'runs', goals: [10, 100, 1000], stat: s => s.runs },
+  { id: 'areas', goals: [10, 100, 1000], stat: s => s.areas || 0 },
+  { id: 'powers', goals: [50, 500, 5000], stat: s => s.powersTotal || 0 },
+  { id: 'revive', goals: [1, 10, 100], stat: s => s.revivesUsed },
+  { id: 'streak', goals: [7, 70, 700], stat: s => s.streak },
+];
+export const tierOf = id => (S.tiers || {})[id] || 0; // tiers earned: 0 none, 1 bronze, 2 silver, 3 gold
 const MISSIONS = [
   { kind: 'runDist', goals: [400, 700, 1000], reward: g => Math.round(g * 0.03 + 15) },
   { kind: 'daySweets', goals: [80, 150, 250], reward: g => Math.round(g * 0.1 + 15) },
@@ -72,8 +72,8 @@ const fresh = () => ({
   econ: 3, coins: 5, avatar: 'classic', robe: 'white', head: 'shemagh',
   owned: { avatar: ['classic'], robe: ['white'], head: ['shemagh'] },
   boosters: { vimto: 0, magnet: 0, headstart: 0, shield: 0, revive: 0 },
-  stats: { recent: [], runs: 0, sweets: 0, close: 0, dodged: 0, smash: 0, zones: [0], powers: [], revivesUsed: 0, bought: 0, best: 0, streak: 0 },
-  badges: {}, daily: null, login: { last: null, streak: 0 },
+  stats: { recent: [], totalDist: 0, areas: 0, powersTotal: 0, runs: 0, sweets: 0, close: 0, dodged: 0, smash: 0, zones: [0], powers: [], revivesUsed: 0, bought: 0, best: 0, streak: 0 },
+  badges: {}, tiers: {}, daily: null, login: { last: null, streak: 0 },
 });
 let S = fresh();
 try {
@@ -83,6 +83,8 @@ try {
   else { const old = +localStorage.getItem('abood-best') || 0; S.stats.best = old; }
 } catch (e) {}
 (function migrate() {
+  for (const k of Object.keys(S.badges || {})) if (!BADGES.some(b => b.id === k)) delete S.badges[k];
+  S.tiers = S.tiers || {};
   const refund = { char: { mozah: 300, saif: 250 }, robe: { pink: 100, purple: 120 }, head: { shayla_purple: 60, shayla_black: 60 } };
   for (const kind of Object.keys(refund)) for (const id of (S.owned[kind] || [])) if (refund[kind][id]) S.coins += refund[kind][id];
   delete S.owned.char; delete S.char;
@@ -147,8 +149,8 @@ export function track(ev, n = 1) {
   else if (ev === 'close') { s.close += 1; D.day.close += 1; }
   else if (ev === 'dodge') { s.dodged += 1; D.day.dodge += 1; }
   else if (ev === 'smash') s.smash += 1;
-  else if (ev === 'power') { D.day.power += 1; if (!s.powers.includes(n)) s.powers.push(n); }
-  else if (ev === 'zone') { if (!s.zones.includes(n)) s.zones.push(n); }
+  else if (ev === 'power') { D.day.power += 1; s.powersTotal = (s.powersTotal || 0) + 1; if (!s.powers.includes(n)) s.powers.push(n); }
+  else if (ev === 'zone') { s.areas = (s.areas || 0) + 1; if (!s.zones.includes(n)) s.zones.push(n); }
   else if (ev === 'run') { s.runs += 1; D.day.runs += 1; }
   else if (ev === 'revive') s.revivesUsed += 1;
   bumpMissions(null);
@@ -160,6 +162,13 @@ export function checkBadges(run) {
     if (S.badges[b.id]) continue;
     if ((b.run && run && b.run(run)) || (b.life && b.life(S.stats))) { S.badges[b.id] = today(); S.coins += b.reward; if (b.unlock) unlock(b.unlock); got.push(b); }
   }
+  S.tiers = S.tiers || {};
+  for (const c of BADGE_CATS) {
+    let k = S.tiers[c.id] || 0;
+    while (k < 3 && c.stat(S.stats) >= c.goals[k]) { S.coins += TIER_REWARD[k]; got.push({ id: c.id, cat: true, tier: k, reward: TIER_REWARD[k] }); k++; }
+    S.tiers[c.id] = k;
+  }
+  if (got.length) save();
   return got;
 }
 // Called when a run ends (and again if the player revives and ends later): pays only what has not been paid yet.
@@ -168,6 +177,7 @@ export function endRun(run) {
   // remember recent run distances so the game can pace itself to this player
   const rec = S.stats.recent || (S.stats.recent = []);
   if (!run.logged) { rec.push(Math.floor(run.dist)); run.logged = true; if (rec.length > 8) rec.shift(); } else rec[rec.length - 1] = Math.max(rec[rec.length - 1], Math.floor(run.dist));
+  S.stats.totalDist = (S.stats.totalDist || 0) + Math.max(0, Math.floor(run.dist - (run.distLogged || 0))); run.distLogged = Math.floor(run.dist);
   const pay = Math.max(0, Math.floor(run.dist / 1000) + Math.floor(run.sweets / 200) - (run.paid || 0)); // small change: missions are the real income
   run.paid = (run.paid || 0) + pay; S.coins += pay;
   const nb = Math.floor(run.dist) > S.stats.best; if (nb) S.stats.best = Math.floor(run.dist);
