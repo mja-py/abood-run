@@ -19,7 +19,7 @@ export const ROBES = [
   { id: 'blue', col: '#cfe3f2', shade: '#a1c0da', price: 110000 },
   { id: 'brown', col: '#9a7353', shade: '#775638', price: 150000 },
   { id: 'gold', col: '#f4e3a8', shade: '#d4b96e', price: 0, badge: 'dist10000', perk: 'perk_gold', slow: 0.6 },
-  // football kits in club-inspired colours (no club names or badges); each slows Baba by 20%
+  // football kits named after five UAE clubs (colours only, no badges are drawn); each slows Baba by 20%
   { id: 'kit_purple', col: '#5b2a86', shade: '#43206a', price: 150000, perk: 'perk_kit', slow: 0.8, kit: { main: '#5b2a86', trim: '#ffffff', shorts: '#ffffff', sock: '#5b2a86', num: '#ffffff' } },
   { id: 'kit_yellow', col: '#f2c230', shade: '#c99a16', price: 150000, perk: 'perk_kit', slow: 0.8, kit: { main: '#f2c230', trim: '#1d1d1d', shorts: '#1d1d1d', sock: '#f2c230', num: '#1d1d1d', stripes: 1 } },
   { id: 'kit_red', col: '#c8202b', shade: '#9a1520', price: 150000, perk: 'perk_kit', slow: 0.8, kit: { main: '#c8202b', trim: '#1d1d1d', shorts: '#1d1d1d', sock: '#c8202b', num: '#ffffff', band: 1 } },
