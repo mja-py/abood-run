@@ -23,7 +23,8 @@ Prices are in realistic dirham amounts (all numbers live in `js/meta.js`).
 - **Daily missions are the main income:** 23–46 each, plus **30** for finishing all three in a day. With the 7-day login gift (3 → 25) that is about 140 a day, so one kit takes about 11 days and everything about 4 months.
 - **Runs** pay only small change: 1 per 1,000 m and 1 per 200 sweets. Badges pay about 650 in total, once.
 - **Boosters:** Vimto 15 · magnet 12 · head start 25 · shield 20 · second chance 120. The first second chance in every run is free.
-- **Difficulty** keeps rising with distance: Baba closes in at 0.08/s at 1 km, 0.16/s at 3 km and 0.19/s from 3.75 km, top speed is reached at 2.75 km, and obstacles, holes and sandal throws get denser. Long runs are meant to need second chances.
+- **Difficulty** rises steadily (linearly) with distance so the start is relaxed: Baba closes in at 0.046/s at 1 km, 0.078/s at 3 km, 0.11/s at 5 km and 0.14/s from about 7 km. Speed, obstacle pairs, hole widths and sandal throws grow gently up to 5–8 km. A hit costs 13% of the lead bar.
+- **Focus streak:** every 20 s without a hit raises Focus by one level (max 3); each level makes Baba 10% slower. Close calls add 3 s; a hit resets it. Skilled, focused play gets further.
 
 ## Ads hook
 

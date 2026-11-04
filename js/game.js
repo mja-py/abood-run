@@ -194,8 +194,12 @@ const dad = { y: GROUND, vy: 0, on: true, ph: 0, slow: 0, freeze: 0, say: '', sa
 let best = 0; try { best = +localStorage.getItem('abood-best') || 0; } catch (e) {}
 try { muted = localStorage.getItem('abood-muted') === '1'; } catch (e) {}
 
+// Focus streak: every 20 s without a hit raises the level (max 3); each level slows Baba by 10%
+const FOCUS_STEP = 20, FOCUS_MAX = 3;
+let focusT = 0, focusLv = 0;
 const runSpeed = d => 310 + Math.min(260, d * 0.05); // grows steadily: 360 at 1 km, 410 at 2 km, 560 from 5 km
 function reset() {
+  focusT = 0; focusLv = 0;
   t = 0; worldX = 0; lead = 0.7; dist = 0; candies = 0; candyCount = 0; boost = 0; shake = 0; camZ = 1; combo = 0; comboT = 0; closeCalls = 0; zoneNow = 0; banner = null;
   gaps = []; plats = []; obs = []; items = []; parts = []; sandals = []; genX = 900;
   Object.assign(kid, { y: GROUND, vy: 0, on: true, jumps: 0, coyote: 0, buf: 0, inv: 0, stumble: 0, sx: 1, sy: 1, spin: 0, scoot: 0, mag: 0, shield: 0, say: '', sayT: 0, next: 6 });
@@ -354,6 +358,7 @@ function revive() {
   else if (!M.useBooster('revive') && !M.spend(M.REVIVE_PRICE)) { note(T('notEnough')); return; }
   M.track('revive'); for (const b of M.checkBadges(null)) runBadges.push(b);
   st = 'play'; stT = 0; $('over').hidden = true; $('hud').hidden = false; $('pauseBtn').hidden = false; hudCache.fill(null);
+  focusT = 0; focusLv = 0;
   lead = 0.6; kid.y = GROUND; kid.vy = 0; kid.on = true; kid.inv = 2.5; kid.stumble = 0; kid.sayT = 0; dad.sayT = 0; dad.windup = 0; dad.cd = 6;
   compact(gaps, g => g.x1 < worldX - 60 || g.x0 > worldX + 500); compact(obs, o => o.x < worldX - 60 || o.x > worldX + 500); sandals.length = 0;
   floatText(T('f_revive'), worldX, kid.y - 80, '#9ff0ff'); wakeOn();
@@ -390,7 +395,9 @@ function update(dt) {
   if (run) run.zoneMax = Math.max(run.zoneMax, Math.min(3, Math.floor(dist / ZLEN)));
   badgeTimer -= dt; if (badgeTimer <= 0 && run) { badgeTimer = 1; for (const b of M.checkBadges({ dist, close: closeCalls })) { runBadges.push(b); floatText(T('f_badge', T('bg_' + b.id)), worldX + 60, 140, '#ffe066'); sfx.zone(); } }
 
-  let dl = -(0.03 + Math.min(0.11, dist * 0.000016)) * (M.robeOf().slow || 1); // Baba closes in steadily: 0.046/s at 1 km, 0.078/s at 3 km, 0.11/s at 5 km, 0.14/s from ~7 km. Gold kandura 0.6, kits 0.8
+  focusT += dt; const fl = Math.min(FOCUS_MAX, Math.floor(focusT / FOCUS_STEP));
+  if (fl > focusLv) { focusLv = fl; floatText(T('f_focus', fl), worldX + 40, kid.y - 90, '#9ff0ff'); sfx.close(); }
+  let dl = -(0.03 + Math.min(0.11, dist * 0.000016)) * (M.robeOf().slow || 1) * (1 - 0.1 * focusLv); // Baba closes in steadily: 0.046/s at 1 km, 0.078/s at 3 km, 0.11/s at 5 km, 0.14/s from ~7 km. Gold kandura 0.6, kits 0.8
   if (dad.freeze > 0) dl = 0.12; else if (dad.slow > 0) dl = 0.065;
   if (boost > 0) dl += 0.09; if (kid.scoot > 0) dl += 0.1;
   lead = clamp(lead + dl * dt, 0, 1);
@@ -483,11 +490,11 @@ function land() { kid.vy = 0; kid.on = true; if (kid.jumps) puff(worldX, kid.y, 
 function knock(o, vx, vy) { o.hit = true; o.hvx = vx; o.hvy = vy; o.spin = rnd(6, 12); puff(o.x + o.w / 2, GROUND - o.h / 2, 10, '#c9a36b', 120); }
 function hitKid(x, y, after) {
   if (kid.shield > 0) { kid.shield = 0; kid.inv = 1.2; after && after(); floatText(T('f_shield'), worldX, kid.y - 70, '#9fd8ff'); sfx.smash(); return; }
-  kid.stumble = 0.6; kid.inv = 1.3; lead -= 0.13; shake = 0.3; sfx.hit(); buzz(50); after && after();
+  kid.stumble = 0.6; kid.inv = 1.3; lead -= 0.13; focusT = 0; focusLv = 0; shake = 0.3; sfx.hit(); buzz(50); after && after();
   puff(x, y, 6, '#ffffff', 100); parts.push({ x: worldX, y: kid.y - 64, vx: 0, vy: 0, life: 0.6, max: 0.6, stars: 1 });
   shout(pick(T('s_hit')));
 }
-function closeCall(x, y) { closeCalls++; M.track('close'); lead = Math.min(1, lead + 0.02); sfx.close(); floatText(T('f_close'), x, y, '#9ff0ff'); }
+function closeCall(x, y) { closeCalls++; M.track('close'); focusT += 3; lead = Math.min(1, lead + 0.02); sfx.close(); floatText(T('f_close'), x, y, '#9ff0ff'); }
 function grab(it) {
   if (it.kind === 'candy' || it.kind === 'jar') {
     combo = comboT > 0 ? combo + 1 : 1; comboT = 0.7; const mult = Math.min(5, 1 + Math.floor(combo / 6));
@@ -534,6 +541,7 @@ function hud() {
   if (hudCache[3] !== dg) { hudCache[3] = dg; $('bar').classList.toggle('danger', dg); }
   const chips = []; const ch = (k, v, m) => chips.push([T(k) + ' ' + v.toFixed(1) + T('sec'), v / m]);
   if (boost > 0) ch('c_vimto', boost, 4); if (kid.scoot > 0) ch('c_scooter', kid.scoot, 5); if (kid.mag > 0) ch('c_magnet', kid.mag, 6);
+  chips.push([T('c_focus', focusLv), focusLv >= FOCUS_MAX ? 1 : (focusT % FOCUS_STEP) / FOCUS_STEP]);
   if (dad.slow > 0) ch('c_slip', dad.slow, 4.5); if (dad.freeze > 0) ch('c_phone', dad.freeze, 2.8);
   const h = chips.map(c => '<span class="chip">' + c[0] + '<i style="width:' + (c[1] * 100).toFixed(0) + '%"></i></span>').join('');
   if (h !== lastHud) { $('powers').innerHTML = h; lastHud = h; }
@@ -1774,6 +1782,7 @@ function sheetMissions(body) {
 }
 function sheetHelp(body) {
   body.appendChild(el('p', null, T('hint')));
+  body.appendChild(el('p', null, T('help_focus')));
   const g = el('div', 'cards');
   for (const k of ['vimto', 'marbles', 'phone', 'scooter', 'magnet', 'sandal']) g.appendChild(card(cnv => { const c = cnv.getContext('2d'); c.setTransform(192 / 40, 0, 0, 192 / 40, 0, 0); drawItem(c, k, 20, 20, 1, true); }, T('it_' + k), T('it_' + k + '_d')));
   body.appendChild(g);
