@@ -16,7 +16,8 @@ Progress is saved on the device: in-game dirhams (no real payments), a shop with
 
 ## Economy
 
-- Buying every look, kandura and headwear costs **1,000,000 د.إ** in total.
+- Buying every look, kandura and headwear costs **1,000,000 د.إ** in total. The five football kits cost 150,000 each on top (1,750,000 for everything).
+- Football kits come in club-inspired colours (purple & white, yellow & black, red & black, blue & white, white & red) with no club names or badges. Each one makes Baba catch up 20% slower while worn.
 - Daily missions are the main income: about 2,300–4,600 each, plus **3,000** for finishing all three in a day. With the 7-day login gift (300 → 2,500) that is roughly 14,000 a day, so the full wardrobe takes about 70 days of daily play.
 - Runs pay only small change (about 1 per 40 m and 1 per 8 sweets). Badges pay 66,000 in total, once.
 - The gold kandura is only unlocked by the 10,000 m badge. While Abood wears it, Baba catches up 40% slower.

@@ -390,7 +390,7 @@ function update(dt) {
   if (run) run.zoneMax = Math.max(run.zoneMax, Math.min(3, Math.floor(dist / ZLEN)));
   badgeTimer -= dt; if (badgeTimer <= 0 && run) { badgeTimer = 1; for (const b of M.checkBadges({ dist, close: closeCalls })) { runBadges.push(b); floatText(T('f_badge', T('bg_' + b.id)), worldX + 60, 140, '#ffe066'); sfx.zone(); } }
 
-  let dl = -(0.04 + Math.min(0.15, dist * 0.00004)) * (M.data().robe === 'gold' ? 0.6 : 1); // gold kandura: Baba catches up 40% slower // Baba keeps closing in faster: 0.08/s at 1 km, 0.12/s at 2 km, 0.16/s at 3 km, 0.19/s from 3.75 km
+  let dl = -(0.04 + Math.min(0.15, dist * 0.00004)) * (M.robeOf().slow || 1); // gold kandura 0.6 (40% slower), football kits 0.8 (20% slower) // Baba keeps closing in faster: 0.08/s at 1 km, 0.12/s at 2 km, 0.16/s at 3 km, 0.19/s from 3.75 km
   if (dad.freeze > 0) dl = 0.12; else if (dad.slow > 0) dl = 0.065;
   if (boost > 0) dl += 0.09; if (kid.scoot > 0) dl += 0.1;
   lead = clamp(lead + dl * dt, 0, 1);
@@ -546,6 +546,26 @@ function limb(c, a, len, w, col, end, cuff) {
   if (cuff) { c.strokeStyle = 'rgba(120,110,90,.55)'; c.lineWidth = 1; c.beginPath(); c.moveTo(-w / 2 + 1, len - 3); c.lineTo(w / 2 - 1, len - 3); c.stroke(); c.strokeStyle = INK; }
   if (end) end(c, len); c.restore();
 }
+const sockFoot = col => (c, len) => { // football socks and boots
+  c.fillStyle = col; c.beginPath(); c.roundRect(-2.4, len - 9, 4.8, 9, 2); c.fill(); c.stroke();
+  c.fillStyle = '#1d1f24'; c.beginPath(); c.ellipse(2.4, len + 0.4, 5.4, 2.3, 0, 0, TAU); c.fill(); c.stroke();
+  c.strokeStyle = '#f4f4f2'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, len - 0.4); c.lineTo(4.6, len - 0.4); c.stroke(); c.strokeStyle = INK; c.lineWidth = 1.4;
+};
+function kitBody(c, k, ph, still) { // football jersey and shorts in club-inspired colours (no names or badges)
+  const sh = () => { c.beginPath(); c.moveTo(-11, -26); c.lineTo(10.5, -26); c.lineTo(11.5, -14); c.lineTo(1.5, -14); c.lineTo(0, -18); c.lineTo(-1.5, -14); c.lineTo(-12, -14); c.closePath(); };
+  sh(); c.fillStyle = k.shorts; c.fill(); c.strokeStyle = INK; c.lineWidth = 1.5; c.stroke();
+  c.strokeStyle = k.trim; c.lineWidth = 1.4; c.beginPath(); c.moveTo(-11.6, -18); c.lineTo(-11.2, -15); c.moveTo(11, -18); c.lineTo(11.3, -15); c.stroke();
+  const jp = () => { c.beginPath(); c.moveTo(-8, -44); c.quadraticCurveTo(0, -47, 8, -44); c.quadraticCurveTo(10.5, -36, 10.5, -25); c.lineTo(-11, -25); c.quadraticCurveTo(-11, -36, -8, -44); c.closePath(); };
+  jp(); c.fillStyle = k.main; c.fill();
+  c.save(); c.clip();
+  if (k.stripes) { c.fillStyle = k.trim; for (let x = -12; x < 12; x += 6) c.fillRect(x, -47, 2.6, 23); }
+  if (k.band) { c.fillStyle = k.trim; c.fillRect(-12, -36, 24, 3.4); }
+  c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(1, -46, 4, 21); c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(-12, -46, 4, 21);
+  c.restore();
+  jp(); c.strokeStyle = INK; c.lineWidth = 1.6; c.stroke();
+  c.strokeStyle = k.trim; c.lineWidth = 1.8; c.beginPath(); c.moveTo(-4, -44.6); c.lineTo(1.5, -40); c.lineTo(6.6, -44.6); c.stroke();
+  c.fillStyle = k.num; c.font = '800 7px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('7', -5, -35.5);
+}
 const sandalFoot = (c, len) => {
   c.fillStyle = '#5a341c'; c.beginPath(); c.ellipse(2.2, len + 0.6, 5.4, 2, 0, 0, TAU); c.fill(); c.stroke();
   c.strokeStyle = '#a0643a'; c.lineWidth = 1.6; c.beginPath(); c.arc(2.5, len, 3, Math.PI * 1.05, Math.PI * 1.95); c.stroke(); c.strokeStyle = INK;
@@ -566,11 +586,14 @@ function person(c, x, y, ph, air, o) {
   if (run) { c.translate(0, -Math.abs(Math.sin(ph)) * 1.8); c.rotate(o.lean ?? 0.07); }
   const skin = o.skin, skinD = o.skinD, skinL = o.skinL || skin, robe = o.robe || '#fbfaf4', robeD = o.robeD || '#dcd8cb';
   const kick = o.kick ? Math.sin(ph * 1.4) : 0;
-  c.save(); c.translate(-1, -20); limb(c, o.kick ? kick * 0.9 : still ? 0.05 : air ? 0.75 : -sw * 0.85, 19, 4.4, skinD, sandalFoot); c.restore();
-  c.save(); c.translate(1, -20); limb(c, o.kick ? -kick * 0.9 : still ? -0.05 : air ? -0.55 : sw * 0.85, 19, 4.4, skin, sandalFoot); c.restore();
+  const foot = o.kit ? sockFoot(o.kit.sock) : sandalFoot;
+  c.save(); c.translate(-1, -20); limb(c, o.kick ? kick * 0.9 : still ? 0.05 : air ? 0.75 : -sw * 0.85, 19, 4.4, skinD, foot); c.restore();
+  c.save(); c.translate(1, -20); limb(c, o.kick ? -kick * 0.9 : still ? -0.05 : air ? -0.55 : sw * 0.85, 19, 4.4, skin, foot); c.restore();
   let ba = still ? 0.1 : air ? -2.3 : sw * 0.9;
   if (o.arm === 'flail') ba = 2.4 + Math.sin(A * 3 + 1) * 1.1; if (o.arm === 'grip') ba = -1.1; if (o.arm === 'hold') ba = 0.35; if (o.arm === 'o') ba = -2.6 + Math.sin(A * 3) * 0.4;
   c.save(); c.translate(-1, -40); limb(c, ba, 15, 6, robeD, hand(skinD), 1); c.restore();
+  if (o.kit) kitBody(c, o.kit, ph, still);
+  else {
   // kandura: soft side shading, hem shadow, folds, collar and tassel (furakha)
   const fl = Math.sin(ph * 2) * 2 * (still ? 0 : 1), b = o.belly || 0;
   const rg = c.createLinearGradient(-14, 0, 13 + b, 0); rg.addColorStop(0, robeD); rg.addColorStop(0.5, robe); rg.addColorStop(1, robe);
@@ -591,6 +614,7 @@ function person(c, x, y, ph, air, o) {
     c.fillStyle = '#d9a640'; for (let k = 0; k < 4; k++) { c.beginPath(); c.arc(-9 + k * 6, -15, 1, 0, TAU); c.fill(); } }
   else { c.beginPath(); c.moveTo(5, -43); c.quadraticCurveTo(6.5, -38, 6, -32 + Math.sin(ph) * 0.8); c.stroke();
     c.fillStyle = '#c4bdac'; c.beginPath(); c.ellipse(6, -31, 1.5, 2.6, 0, 0, TAU); c.fill(); }
+  }
   // head (kids get a bigger head and big eyes)
   const hs = o.hs || 1; c.save(); c.translate(2, -46); c.scale(hs, hs); c.translate(-2, 46);
   const hg = c.createRadialGradient(5, -55.5, 1, 2, -52, 10); hg.addColorStop(0, skinL); hg.addColorStop(0.55, skin); hg.addColorStop(1, skinD);
@@ -700,7 +724,7 @@ const blinkNow = seed => Math.sin(t * 1.7 + seed) > 0.97;
 const SKIN = { skin: '#c98b5a', skinD: '#a8704a', skinL: '#e0a978' };
 function lookOf(robeId, headId, avatarId) {
   const r = M.ROBES.find(x => x.id === robeId) || M.ROBES[0], h = M.HEADS.find(x => x.id === headId) || M.HEADS[0];
-  const o = Object.assign({ s: 1, robe: r.col, robeD: r.shade, flap: 1.2, hs: 1.16, bigEyes: 1, agalTilt: -0.08, glasses: avatarId === 'classic' ? null : avatarId }, SKIN);
+  const o = Object.assign({ s: 1, kit: r.kit || null, robe: r.col, robeD: r.shade, flap: 1.2, hs: 1.16, bigEyes: 1, agalTilt: -0.08, glasses: avatarId === 'classic' ? null : avatarId }, SKIN);
   if (h.id === 'tagiyah') o.head = 'tagiyah';
   else { o.head = 'scarf'; o.scarf = h.id === 'shemagh' ? SHEMAGH : h.id === 'blackshemagh' ? SHEMAGH_B : '#f4f3ee'; o.fringe = h.id === 'ghutra' ? '#e3e0d6' : '#fff1e8'; }
   return o;
@@ -1712,7 +1736,8 @@ function sheetWardrobe(body) {
     body.appendChild(g);
   };
   section('w_avatar', M.AVATARS, 'avatar', id => lookOf(D.robe, D.head, id), 'av_');
-  section('w_robes', M.ROBES, 'robe', id => lookOf(id, D.head, D.avatar), 'r_');
+  section('w_robes', M.ROBES.filter(r => !r.kit), 'robe', id => lookOf(id, D.head, D.avatar), 'r_');
+  section('w_kits', M.ROBES.filter(r => r.kit), 'robe', id => lookOf(id, D.head, D.avatar), 'r_');
   section('w_heads', M.HEADS, 'head', id => lookOf(D.robe, id, D.avatar), 'h_');
 }
 function sheetShop(body) {
