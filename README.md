@@ -26,6 +26,17 @@ Prices are in realistic dirham amounts (all numbers live in `js/meta.js`).
 - **Difficulty** rises steadily (linearly) with distance so the start is relaxed: Baba closes in at 0.046/s at 1 km, 0.078/s at 3 km, 0.11/s at 5 km and 0.14/s from about 7 km. Speed, obstacle pairs, hole widths and sandal throws grow gently up to 5–8 km. A hit costs 13% of the lead bar.
 - **Focus streak:** every 20 s without a hit raises Focus by one level (max 3); each level makes Baba 10% slower. Close calls add 3 s; a hit resets it. Skilled, focused play gets further.
 
+## Difficulty director
+
+The game paces itself to each player (dynamic difficulty, in `director()` in `js/game.js`):
+
+- It remembers the last 8 run distances and sets a target at 115% of their median (500 m for new players).
+- **Enjoy zone** (below 85% of the target): Baba is 25% slower, power-ups are more frequent and sandals rarer.
+- **Fair zone** (85–110%): normal.
+- **Squeeze** (past 110%): Baba gets up to 80% faster by 160% of the target, with fewer power-ups and more sandals.
+- **Focus** cancels most of the squeeze (Focus 3 removes 90% of it), so a sharp player can keep beating their best.
+- **Mercy:** three hits within 30 seconds gives 10 seconds of relief.
+
 ## Ads hook
 
 The game does not include any ad code. To show an ad after each run, define this before or after the game loads:

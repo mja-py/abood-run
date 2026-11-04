@@ -72,7 +72,7 @@ const fresh = () => ({
   econ: 3, coins: 5, avatar: 'classic', robe: 'white', head: 'shemagh',
   owned: { avatar: ['classic'], robe: ['white'], head: ['shemagh'] },
   boosters: { vimto: 0, magnet: 0, headstart: 0, shield: 0, revive: 0 },
-  stats: { runs: 0, sweets: 0, close: 0, dodged: 0, smash: 0, zones: [0], powers: [], revivesUsed: 0, bought: 0, best: 0, streak: 0 },
+  stats: { recent: [], runs: 0, sweets: 0, close: 0, dodged: 0, smash: 0, zones: [0], powers: [], revivesUsed: 0, bought: 0, best: 0, streak: 0 },
   badges: {}, daily: null, login: { last: null, streak: 0 },
 });
 let S = fresh();
@@ -165,6 +165,9 @@ export function checkBadges(run) {
 // Called when a run ends (and again if the player revives and ends later): pays only what has not been paid yet.
 export function endRun(run) {
   bumpMissions(run);
+  // remember recent run distances so the game can pace itself to this player
+  const rec = S.stats.recent || (S.stats.recent = []);
+  if (!run.logged) { rec.push(Math.floor(run.dist)); run.logged = true; if (rec.length > 8) rec.shift(); } else rec[rec.length - 1] = Math.max(rec[rec.length - 1], Math.floor(run.dist));
   const pay = Math.max(0, Math.floor(run.dist / 1000) + Math.floor(run.sweets / 200) - (run.paid || 0)); // small change: missions are the real income
   run.paid = (run.paid || 0) + pay; S.coins += pay;
   const nb = Math.floor(run.dist) > S.stats.best; if (nb) S.stats.best = Math.floor(run.dist);
@@ -193,3 +196,9 @@ export const REVIVE_PRICE = 120;
 export function spend(n) { if (S.coins < n) return false; S.coins -= n; save(); return true; }
 export function useBooster(id) { if ((S.boosters[id] || 0) <= 0) return false; S.boosters[id]--; save(); return true; }
 export const bestDist = () => S.stats.best;
+// distance where this player usually ends a run: a little past the median of recent runs
+export function paceTarget() {
+  const r = (S.stats.recent || []).slice().sort((a, b) => a - b);
+  if (r.length < 2) return 500;
+  return Math.max(500, Math.round(r[r.length >> 1] * 1.15));
+}

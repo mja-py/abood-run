@@ -196,10 +196,24 @@ try { muted = localStorage.getItem('abood-muted') === '1'; } catch (e) {}
 
 // Focus streak: every 20 s without a hit raises the level (max 3); each level slows Baba by 10%
 const FOCUS_STEP = 20, FOCUS_MAX = 3;
+// Director (dynamic difficulty): eases off until the player nears their usual distance, then squeezes
+// harder. Focus cancels most of the squeeze, and a burst of hits triggers a short mercy break.
+let paceT = 500, assist = 1, spawnBoost = 1, sandalMul = 1, mercyT = 0, hitTimes = [];
+function director(dt) {
+  mercyT = Math.max(0, mercyT - dt);
+  const p = dist / paceT;
+  let mult;
+  if (p < 0.85) { mult = 0.75; spawnBoost = 1.4; sandalMul = 1.4; }            // enjoy
+  else if (p < 1.1) { mult = 1; spawnBoost = 1; sandalMul = 1; }               // fair
+  else { const squeeze = Math.min(0.8, (p - 1.1) / 0.5 * 0.8);                 // crush, up to +80% by 1.6x target
+    mult = 1 + squeeze * (1 - 0.3 * focusLv); spawnBoost = 0.85; sandalMul = 0.85 + 0.15 * focusLv / FOCUS_MAX; }
+  if (mercyT > 0) { mult *= 0.6; spawnBoost = 1.5; sandalMul = 1.6; }
+  assist = mult;
+}
 let focusT = 0, focusLv = 0;
 const runSpeed = d => 310 + Math.min(260, d * 0.05); // grows steadily: 360 at 1 km, 410 at 2 km, 560 from 5 km
 function reset() {
-  focusT = 0; focusLv = 0;
+  focusT = 0; focusLv = 0; paceT = M.paceTarget(); assist = 1; spawnBoost = 1; sandalMul = 1; mercyT = 0; hitTimes = [];
   t = 0; worldX = 0; lead = 0.7; dist = 0; candies = 0; candyCount = 0; boost = 0; shake = 0; camZ = 1; combo = 0; comboT = 0; closeCalls = 0; zoneNow = 0; banner = null;
   gaps = []; plats = []; obs = []; items = []; parts = []; sandals = []; genX = 900;
   Object.assign(kid, { y: GROUND, vy: 0, on: true, jumps: 0, coyote: 0, buf: 0, inv: 0, stumble: 0, sx: 1, sy: 1, spin: 0, scoot: 0, mag: 0, shield: 0, say: '', sayT: 0, next: 6 });
@@ -228,10 +242,11 @@ function gen() {
     } else if (r < 0.72) {
       const w = rnd(170, 260), y = GROUND - rnd(85, 120); plats.push({ x: genX, y, w, z: zoneOfM(genX / 40) });
       if (Math.random() < 0.4) { const gw = Math.min(w - 40, rnd(90, 140)); gaps.push({ x0: genX + 20, x1: genX + 20 + gw }); }
-      if (Math.random() < 0.4) items.push({ x: genX + w / 2, y: y - 34, kind: power() });
+      if (Math.random() < 0.4 * spawnBoost) items.push({ x: genX + w / 2, y: y - 34, kind: power() });
       else for (let x = genX + 24; x < genX + w - 10; x += 34) items.push({ x, y: y - 26, kind: 'candy', c: x });
       genX += w + rnd(230, 320);
     } else if (r < 0.88) {
+      if (Math.random() < 0.1 * (spawnBoost - 0.8)) { items.push({ x: genX + 100, y: GROUND - 74, kind: power() }); genX += 260; continue; }
       const jar = Math.random() < 0.18;
       for (let i = 0; i < 6; i++) items.push({ x: genX + i * 34, y: GROUND - 26 - (i === 5 && jar ? 30 : 0), kind: i === 5 && jar ? 'jar' : 'candy', c: i }); genX += rnd(280, 360);
     } else {
@@ -395,9 +410,10 @@ function update(dt) {
   if (run) run.zoneMax = Math.max(run.zoneMax, Math.min(3, Math.floor(dist / ZLEN)));
   badgeTimer -= dt; if (badgeTimer <= 0 && run) { badgeTimer = 1; for (const b of M.checkBadges({ dist, close: closeCalls })) { runBadges.push(b); floatText(T('f_badge', T('bg_' + b.id)), worldX + 60, 140, '#ffe066'); sfx.zone(); } }
 
+  director(dt);
   focusT += dt; const fl = Math.min(FOCUS_MAX, Math.floor(focusT / FOCUS_STEP));
   if (fl > focusLv) { focusLv = fl; floatText(T('f_focus', fl), worldX + 40, kid.y - 90, '#9ff0ff'); sfx.close(); }
-  let dl = -(0.03 + Math.min(0.11, dist * 0.000016)) * (M.robeOf().slow || 1) * (1 - 0.1 * focusLv); // Baba closes in steadily: 0.046/s at 1 km, 0.078/s at 3 km, 0.11/s at 5 km, 0.14/s from ~7 km. Gold kandura 0.6, kits 0.8
+  let dl = -(0.03 + Math.min(0.11, dist * 0.000016)) * (M.robeOf().slow || 1) * (1 - 0.1 * focusLv) * assist; // Baba closes in steadily: 0.046/s at 1 km, 0.078/s at 3 km, 0.11/s at 5 km, 0.14/s from ~7 km. Gold kandura 0.6, kits 0.8
   if (dad.freeze > 0) dl = 0.12; else if (dad.slow > 0) dl = 0.065;
   if (boost > 0) dl += 0.09; if (kid.scoot > 0) dl += 0.1;
   lead = clamp(lead + dl * dt, 0, 1);
@@ -478,7 +494,7 @@ function update(dt) {
   // sandal throwing
   dad.cd -= dt;
   if (dist > 250 && dad.cd <= 0 && dad.has && dad.freeze <= 0 && dad.slow <= 0 && dad.windup <= 0 && dad.on) { dad.windup = 0.85; shout(pick(T('s_throw')), 1.2); }
-  if (dad.windup > 0) { dad.windup -= dt; if (dad.windup <= 0) { sandals.push({ sx: dadScreenX() + 16, y: GROUND - 10, age: 0, rot: 0, hit: false, passed: false }); dad.has = false; dad.regrab = 1.6; dad.cd = rnd(8, 12) - Math.min(4, dist / 1500); sfx.whoosh(); } }
+  if (dad.windup > 0) { dad.windup -= dt; if (dad.windup <= 0) { sandals.push({ sx: dadScreenX() + 16, y: GROUND - 10, age: 0, rot: 0, hit: false, passed: false }); dad.has = false; dad.regrab = 1.6; dad.cd = (rnd(8, 12) - Math.min(4, dist / 1500)) * sandalMul; sfx.whoosh(); } }
   if (!dad.has) { dad.regrab -= dt; if (dad.regrab <= 0) dad.has = true; }
   // kid chatter
   kid.sayT -= dt; kid.next -= dt;
@@ -490,7 +506,7 @@ function land() { kid.vy = 0; kid.on = true; if (kid.jumps) puff(worldX, kid.y, 
 function knock(o, vx, vy) { o.hit = true; o.hvx = vx; o.hvy = vy; o.spin = rnd(6, 12); puff(o.x + o.w / 2, GROUND - o.h / 2, 10, '#c9a36b', 120); }
 function hitKid(x, y, after) {
   if (kid.shield > 0) { kid.shield = 0; kid.inv = 1.2; after && after(); floatText(T('f_shield'), worldX, kid.y - 70, '#9fd8ff'); sfx.smash(); return; }
-  kid.stumble = 0.6; kid.inv = 1.3; lead -= 0.13; focusT = 0; focusLv = 0; shake = 0.3; sfx.hit(); buzz(50); after && after();
+  kid.stumble = 0.6; kid.inv = 1.3; lead -= 0.13; focusT = 0; focusLv = 0; hitTimes.push(t); hitTimes = hitTimes.filter(h => t - h < 30); if (hitTimes.length >= 3 && mercyT <= 0) { mercyT = 10; hitTimes = []; } shake = 0.3; sfx.hit(); buzz(50); after && after();
   puff(x, y, 6, '#ffffff', 100); parts.push({ x: worldX, y: kid.y - 64, vx: 0, vy: 0, life: 0.6, max: 0.6, stars: 1 });
   shout(pick(T('s_hit')));
 }
@@ -1881,7 +1897,7 @@ async function boot() {
 // test / tooling hook
 window.__abood = {
   get say() { return dad.sayT > 0 ? dad.say : ''; },
-  get state() { return { st, dist, lead, zone: zoneNow, qLevel, res: RES, bakeRes, tiles: TILES.size, sprites: SPR.size, build: BUILD }; },
+  get state() { return { paceT, assist: +assist.toFixed(2), mercyT, st, dist, lead, zone: zoneNow, qLevel, res: RES, bakeRes, tiles: TILES.size, sprites: SPR.size, build: BUILD }; },
   goto: d => { worldX = d * 40; dist = d; zoneNow = zoneOfM(d); genX = worldX + 500; gaps = []; obs = []; items = []; plats = []; lead = 0.6; },
   quality: q => { qLevel = clamp(q, 0, QDPR.length - 1); resize(); },
   portrait: (size, pad = 1) => {
