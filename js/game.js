@@ -338,7 +338,13 @@ function gameOver(why) {
   dad.say = T(why === 'fell' ? 's_fell' : 's_got'); dad.sayT = 99; kid.say = T('s_sorry'); kid.sayT = 99;
   lastOver = { why, m, nb: res && res.newBest }; fillOver(); showBest();
   $('hud').hidden = true; $('pauseBtn').hidden = true; $('powers').textContent = ''; lastHud = '';
-  setTimeout(() => { if (st === 'over') { $('over').hidden = false; maybeToast(); } }, 1100);
+  const showOver = () => { if (st === 'over') { $('over').hidden = false; maybeToast(); } };
+  setTimeout(() => {
+    // Ads hook: set window.aboodAfterRun = async ({ distance, sweets }) => { ...show an ad... }.
+    // The results card appears when it finishes (or straight away if it is not set or fails).
+    const hook = window.aboodAfterRun;
+    if (typeof hook === 'function') Promise.resolve().then(() => hook({ distance: m, sweets: candies })).catch(() => {}).finally(showOver); else showOver();
+  }, 1100);
 }
 function revive() {
   if (st !== 'over') return;
@@ -1731,6 +1737,7 @@ function sheetMissions(body) {
   if (st2.canClaim) { const b = el('button', 'btn', T('lg_claim', st2.reward)); b.type = 'button'; b.onclick = () => { const got = M.claimLogin(); note(T('coins', '+' + got)); openSheet('missions'); }; body.appendChild(b); }
   else body.appendChild(el('p', 'hint', T('lg_done')));
   body.appendChild(el('p', 'sec-title', T('ms_title'))); body.appendChild(el('p', 'hint', T('ms_note')));
+  const bon = el('p', 'label', (M.ensureDaily().bonus ? '✓ ' : '') + T('ms_bonus', M.DAILY_BONUS)); body.appendChild(bon);
   M.ensureDaily().missions.forEach((m, i) => {
     const row = el('div', 'mission'); const txt = el('div'); txt.appendChild(el('b', null, T('ms_' + m.kind, m.goal))); txt.appendChild(el('div', 'hint', T('bg_reward', m.reward))); row.appendChild(txt);
     const b = el('button', null, m.claimed ? T('claimed') : T('claim')); b.type = 'button'; b.disabled = m.claimed || m.progress < m.goal;

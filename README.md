@@ -14,6 +14,26 @@ Progress is saved on the device: in-game dirhams (no real payments), a shop with
 - **Items:** Vimto (faster), marbles (Baba slips), Mama's phone call (Baba stops), scooter (smash obstacles), magnet (pulls in sweets), sweets jar (+15).
 - **Watch out:** when “!” appears over Baba, he throws his sandal along the ground. Jump it.
 
+## Economy
+
+- Buying every look, kandura and headwear costs **1,000,000 د.إ** in total.
+- Daily missions are the main income: about 2,300–4,600 each, plus **3,000** for finishing all three in a day. With the 7-day login gift (300 → 2,500) that is roughly 14,000 a day, so the full wardrobe takes about 70 days of daily play.
+- Runs pay only small change (about 1 per 40 m and 1 per 8 sweets). Badges pay 31,000 in total, once.
+- Boosters: Vimto 1,500 · magnet 1,200 · head start 2,500 · shield 2,000 · second chance 12,000. The first second chance in every run is free.
+- All numbers live in `js/meta.js`.
+
+## Ads hook
+
+The game does not include any ad code. To show an ad after each run, define this before or after the game loads:
+
+```js
+window.aboodAfterRun = async ({ distance, sweets }) => {
+  // show your ad here; the results card appears when this promise settles
+};
+```
+
+If the hook is missing or throws, the results card shows straight away.
+
 ## Run it locally
 
 Any static file server works. The service worker needs `http://localhost` or HTTPS, so opening the file directly is not enough.

@@ -9,58 +9,59 @@ const hash = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt
 // One character, Abood. The avatar changes his look; Baba always calls him by his name.
 export const AVATARS = [
   { id: 'classic', price: 0 },
-  { id: 'glasses', price: 120 },
-  { id: 'shades', price: 150 },
+  { id: 'glasses', price: 120000 },
+  { id: 'shades', price: 180000 },
 ];
 export const ROBES = [
   { id: 'white', col: '#fbfaf4', shade: '#dcd8cb', price: 0 },
-  { id: 'cream', col: '#f1e6cf', shade: '#d4c3a0', price: 60 },
-  { id: 'grey', col: '#d9dbe0', shade: '#b0b5c0', price: 80 },
-  { id: 'blue', col: '#cfe3f2', shade: '#a1c0da', price: 100 },
-  { id: 'brown', col: '#9a7353', shade: '#775638', price: 120 },
+  { id: 'cream', col: '#f1e6cf', shade: '#d4c3a0', price: 60000 },
+  { id: 'grey', col: '#d9dbe0', shade: '#b0b5c0', price: 80000 },
+  { id: 'blue', col: '#cfe3f2', shade: '#a1c0da', price: 110000 },
+  { id: 'brown', col: '#9a7353', shade: '#775638', price: 150000 },
   { id: 'gold', col: '#f4e3a8', shade: '#d4b96e', price: 0, badge: 'dist2000' },
 ];
 export const HEADS = [
   { id: 'shemagh', price: 0 },
-  { id: 'ghutra', price: 60 },
-  { id: 'blackshemagh', price: 90 },
-  { id: 'tagiyah', price: 50 },
+  { id: 'ghutra', price: 70000 },
+  { id: 'blackshemagh', price: 130000 },
+  { id: 'tagiyah', price: 100000 },
 ];
 export const BOOSTERS = [
-  { id: 'vimto', price: 50 }, { id: 'magnet', price: 40 }, { id: 'headstart', price: 80 }, { id: 'shield', price: 60 }, { id: 'revive', price: 400 },
+  { id: 'vimto', price: 1500 }, { id: 'magnet', price: 1200 }, { id: 'headstart', price: 2500 }, { id: 'shield', price: 2000 }, { id: 'revive', price: 12000 },
 ];
 // badges: `run` is checked against this run, `life` against lifetime stats
 export const BADGES = [
-  { id: 'first', reward: 20, life: s => s.runs >= 1 },
-  { id: 'dist500', reward: 50, run: r => r.dist >= 500 },
-  { id: 'dist1000', reward: 100, run: r => r.dist >= 1000 },
-  { id: 'dist2000', reward: 200, run: r => r.dist >= 2000, unlock: 'robe:gold' },
-  { id: 'zone1', reward: 40, life: s => s.zones.includes(1) },
-  { id: 'zone2', reward: 60, life: s => s.zones.includes(2) },
-  { id: 'zone3', reward: 80, life: s => s.zones.includes(3) },
-  { id: 'sweets100', reward: 50, life: s => s.sweets >= 100 },
-  { id: 'sweets1000', reward: 150, life: s => s.sweets >= 1000 },
-  { id: 'close10', reward: 80, run: r => r.close >= 10 },
-  { id: 'sandal10', reward: 60, life: s => s.dodged >= 10 },
-  { id: 'smash10', reward: 60, life: s => s.smash >= 10 },
-  { id: 'powers', reward: 80, life: s => s.powers.length >= 5 },
-  { id: 'streak7', reward: 150, life: s => s.streak >= 7 },
-  { id: 'shopper', reward: 30, life: s => s.bought >= 1 },
-  { id: 'revived', reward: 30, life: s => s.revivesUsed >= 1 },
+  { id: 'first', reward: 500, life: s => s.runs >= 1 },
+  { id: 'dist500', reward: 1250, run: r => r.dist >= 500 },
+  { id: 'dist1000', reward: 2500, run: r => r.dist >= 1000 },
+  { id: 'dist2000', reward: 5000, run: r => r.dist >= 2000, unlock: 'robe:gold' },
+  { id: 'zone1', reward: 1000, life: s => s.zones.includes(1) },
+  { id: 'zone2', reward: 1500, life: s => s.zones.includes(2) },
+  { id: 'zone3', reward: 2000, life: s => s.zones.includes(3) },
+  { id: 'sweets100', reward: 1250, life: s => s.sweets >= 100 },
+  { id: 'sweets1000', reward: 3750, life: s => s.sweets >= 1000 },
+  { id: 'close10', reward: 2000, run: r => r.close >= 10 },
+  { id: 'sandal10', reward: 1500, life: s => s.dodged >= 10 },
+  { id: 'smash10', reward: 1500, life: s => s.smash >= 10 },
+  { id: 'powers', reward: 2000, life: s => s.powers.length >= 5 },
+  { id: 'streak7', reward: 3750, life: s => s.streak >= 7 },
+  { id: 'shopper', reward: 750, life: s => s.bought >= 1 },
+  { id: 'revived', reward: 750, life: s => s.revivesUsed >= 1 },
 ];
 const MISSIONS = [
-  { kind: 'runDist', goals: [400, 700, 1000], reward: g => Math.round(g / 10 + 30) },
-  { kind: 'daySweets', goals: [80, 150, 250], reward: g => Math.round(g / 3 + 30) },
-  { kind: 'dayClose', goals: [5, 10], reward: g => g * 8 + 20 },
-  { kind: 'dayDodge', goals: [3, 6], reward: g => g * 12 + 20 },
-  { kind: 'dayPower', goals: [4, 8], reward: g => g * 8 + 20 },
-  { kind: 'dayRuns', goals: [3, 5], reward: g => g * 12 },
-  { kind: 'runZone', goals: [2, 3], reward: g => g * 40 + 20 },
+  { kind: 'runDist', goals: [400, 700, 1000], reward: g => g * 3 + 1500 },
+  { kind: 'daySweets', goals: [80, 150, 250], reward: g => g * 10 + 1500 },
+  { kind: 'dayClose', goals: [5, 10], reward: g => g * 200 + 1500 },
+  { kind: 'dayDodge', goals: [3, 6], reward: g => g * 400 + 1500 },
+  { kind: 'dayPower', goals: [4, 8], reward: g => g * 250 + 1500 },
+  { kind: 'dayRuns', goals: [3, 5], reward: g => g * 500 + 1000 },
+  { kind: 'runZone', goals: [2, 3], reward: g => g * 1200 + 1000 },
 ];
-export const LOGIN = [20, 30, 40, 50, 60, 80, 150];
+export const DAILY_BONUS = 3000; // for finishing all three missions in a day
+export const LOGIN = [300, 400, 500, 600, 800, 1000, 2500];
 
 const fresh = () => ({
-  coins: 100, avatar: 'classic', robe: 'white', head: 'shemagh',
+  econ: 2, coins: 500, avatar: 'classic', robe: 'white', head: 'shemagh',
   owned: { avatar: ['classic'], robe: ['white'], head: ['shemagh'] },
   boosters: { vimto: 0, magnet: 0, headstart: 0, shield: 0, revive: 0 },
   stats: { runs: 0, sweets: 0, close: 0, dodged: 0, smash: 0, zones: [0], powers: [], revivesUsed: 0, bought: 0, best: 0, streak: 0 },
@@ -69,7 +70,7 @@ const fresh = () => ({
 let S = fresh();
 try {
   const raw = localStorage.getItem(KEY);
-  if (raw) { const d = JSON.parse(raw); S = Object.assign(fresh(), d); S.stats = Object.assign(fresh().stats, d.stats || {}); S.owned = Object.assign(fresh().owned, d.owned || {}); S.boosters = Object.assign(fresh().boosters, d.boosters || {}); }
+  if (raw) { const d = JSON.parse(raw); if (d.econ !== 2) { const f = fresh(); if (d.login) f.login = d.login; Object.keys(d).forEach(k => delete d[k]); Object.assign(d, f); } S = Object.assign(fresh(), d); S.stats = Object.assign(fresh().stats, d.stats || {}); S.owned = Object.assign(fresh().owned, d.owned || {}); S.boosters = Object.assign(fresh().boosters, d.boosters || {}); }
   else { const old = +localStorage.getItem('abood-best') || 0; S.stats.best = old; }
 } catch (e) {}
 (function migrate() {
@@ -112,7 +113,9 @@ function bumpMissions(run) {
 }
 export function claimMission(i) {
   const m = ensureDaily().missions[i]; if (!m || m.claimed || m.progress < m.goal) return 0;
-  m.claimed = true; S.coins += m.reward; save(); return m.reward;
+  m.claimed = true; S.coins += m.reward; let got = m.reward;
+  const D = ensureDaily(); if (!D.bonus && D.missions.every(x => x.claimed)) { D.bonus = true; S.coins += DAILY_BONUS; got += DAILY_BONUS; }
+  save(); return got;
 }
 export const missionsReady = () => ensureDaily().missions.filter(m => !m.claimed && m.progress >= m.goal).length;
 
@@ -153,7 +156,7 @@ export function checkBadges(run) {
 // Called when a run ends (and again if the player revives and ends later): pays only what has not been paid yet.
 export function endRun(run) {
   bumpMissions(run);
-  const pay = Math.max(0, Math.floor(run.dist / 25) + Math.floor(run.sweets / 4) - (run.paid || 0));
+  const pay = Math.max(0, Math.floor(run.dist / 40) + Math.floor(run.sweets / 8) - (run.paid || 0)); // small change: missions are the real income
   run.paid = (run.paid || 0) + pay; S.coins += pay;
   const nb = Math.floor(run.dist) > S.stats.best; if (nb) S.stats.best = Math.floor(run.dist);
   const badges = checkBadges(run);
@@ -176,7 +179,7 @@ export function equip(kind, id) {
   S[kind] = id;
   save(); return true;
 }
-export const REVIVE_PRICE = 400;
+export const REVIVE_PRICE = 12000;
 // pay for something on the spot (used for a paid second chance on the game-over screen)
 export function spend(n) { if (S.coins < n) return false; S.coins -= n; save(); return true; }
 export function useBooster(id) { if ((S.boosters[id] || 0) <= 0) return false; S.boosters[id]--; save(); return true; }
