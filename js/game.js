@@ -194,9 +194,9 @@ const dad = { y: GROUND, vy: 0, on: true, ph: 0, slow: 0, freeze: 0, say: '', sa
 let best = 0; try { best = +localStorage.getItem('abood-best') || 0; } catch (e) {}
 try { muted = localStorage.getItem('abood-muted') === '1'; } catch (e) {}
 
-const runSpeed = d => 320 + Math.min(330, d * 0.12); // 440 at 1 km, 650 from 2.75 km
+const runSpeed = d => 310 + Math.min(260, d * 0.05); // grows steadily: 360 at 1 km, 410 at 2 km, 560 from 5 km
 function reset() {
-  t = 0; worldX = 0; lead = 0.6; dist = 0; candies = 0; candyCount = 0; boost = 0; shake = 0; camZ = 1; combo = 0; comboT = 0; closeCalls = 0; zoneNow = 0; banner = null;
+  t = 0; worldX = 0; lead = 0.7; dist = 0; candies = 0; candyCount = 0; boost = 0; shake = 0; camZ = 1; combo = 0; comboT = 0; closeCalls = 0; zoneNow = 0; banner = null;
   gaps = []; plats = []; obs = []; items = []; parts = []; sandals = []; genX = 900;
   Object.assign(kid, { y: GROUND, vy: 0, on: true, jumps: 0, coyote: 0, buf: 0, inv: 0, stumble: 0, sx: 1, sy: 1, spin: 0, scoot: 0, mag: 0, shield: 0, say: '', sayT: 0, next: 6 });
   Object.assign(dad, { y: GROUND, vy: 0, on: true, slow: 0, freeze: 0, say: T('s_come'), sayT: 2, next: 3, anger: 0, windup: 0, cd: 9, has: true, regrab: 0 });
@@ -212,14 +212,14 @@ function candyArc(x0, x1, yBase, h) { const n = Math.max(3, Math.round((x1 - x0)
 function power() { const r = Math.random(); return r < 0.24 ? 'vimto' : r < 0.46 ? 'marbles' : r < 0.62 ? 'phone' : r < 0.82 ? 'magnet' : 'scooter'; }
 function gen() {
   while (genX < worldX + W + 400) {
-    const z = ZONES[zoneOfM(genX / 40)], r = Math.random(), hard = Math.min(1, dist / 6000), k = Math.sqrt(runSpeed(dist) / 320); // spacing grows with speed so it stays jumpable
+    const z = ZONES[zoneOfM(genX / 40)], r = Math.random(), hard = Math.min(1, dist / 8000), k = Math.sqrt(runSpeed(dist) / 320); // spacing grows with speed so it stays jumpable
     if (r < 0.34) {
       const k = pick(z.obs); addObs(genX, k);
       if (Math.random() < 0.5) candyArc(genX - 50, genX + OB[k].w + 50, GROUND - 50, 62);
-      if (Math.random() < 0.2 + hard * 0.45) { const dx = rnd(200, 250) * k; addObs(genX + dx, pick(z.obs)); genX += dx; }
+      if (Math.random() < 0.12 + hard * 0.38) { const dx = rnd(200, 250) * k; addObs(genX + dx, pick(z.obs)); genX += dx; }
       genX += rnd(270, 450) * k;
     } else if (r < 0.52) {
-      const w = rnd(90, 118 + hard * 60); gaps.push({ x0: genX, x1: genX + w });
+      const w = rnd(85, 110 + hard * 50); gaps.push({ x0: genX, x1: genX + w });
       candyArc(genX - 30, genX + w + 30, GROUND - 60, 72); genX += w + rnd(250, 340);
     } else if (r < 0.72) {
       const w = rnd(170, 260), y = GROUND - rnd(85, 120); plats.push({ x: genX, y, w, z: zoneOfM(genX / 40) });
@@ -390,7 +390,7 @@ function update(dt) {
   if (run) run.zoneMax = Math.max(run.zoneMax, Math.min(3, Math.floor(dist / ZLEN)));
   badgeTimer -= dt; if (badgeTimer <= 0 && run) { badgeTimer = 1; for (const b of M.checkBadges({ dist, close: closeCalls })) { runBadges.push(b); floatText(T('f_badge', T('bg_' + b.id)), worldX + 60, 140, '#ffe066'); sfx.zone(); } }
 
-  let dl = -(0.04 + Math.min(0.15, dist * 0.00004)) * (M.robeOf().slow || 1); // gold kandura 0.6 (40% slower), football kits 0.8 (20% slower) // Baba keeps closing in faster: 0.08/s at 1 km, 0.12/s at 2 km, 0.16/s at 3 km, 0.19/s from 3.75 km
+  let dl = -(0.03 + Math.min(0.11, dist * 0.000016)) * (M.robeOf().slow || 1); // Baba closes in steadily: 0.046/s at 1 km, 0.078/s at 3 km, 0.11/s at 5 km, 0.14/s from ~7 km. Gold kandura 0.6, kits 0.8
   if (dad.freeze > 0) dl = 0.12; else if (dad.slow > 0) dl = 0.065;
   if (boost > 0) dl += 0.09; if (kid.scoot > 0) dl += 0.1;
   lead = clamp(lead + dl * dt, 0, 1);
@@ -470,8 +470,8 @@ function update(dt) {
   if (dad.anger > 0.45 && Math.random() < dt * 6 * FX && parts.length < MAXP) { const fx = dadScreenX(); parts.push({ x: worldX - (ABX - fx) - 4, y: dad.y - 92, vx: -speed * 0.9 + rnd(-20, 20), vy: -rnd(40, 80), life: 0.7, max: 0.7, col: '#ffffff', r: rnd(3, 6), steam: 1 }); }
   // sandal throwing
   dad.cd -= dt;
-  if (dist > 100 && dad.cd <= 0 && dad.has && dad.freeze <= 0 && dad.slow <= 0 && dad.windup <= 0 && dad.on) { dad.windup = 0.85; shout(pick(T('s_throw')), 1.2); }
-  if (dad.windup > 0) { dad.windup -= dt; if (dad.windup <= 0) { sandals.push({ sx: dadScreenX() + 16, y: GROUND - 10, age: 0, rot: 0, hit: false, passed: false }); dad.has = false; dad.regrab = 1.6; dad.cd = rnd(6.5, 10.5) - Math.min(4.5, dist / 800); sfx.whoosh(); } }
+  if (dist > 250 && dad.cd <= 0 && dad.has && dad.freeze <= 0 && dad.slow <= 0 && dad.windup <= 0 && dad.on) { dad.windup = 0.85; shout(pick(T('s_throw')), 1.2); }
+  if (dad.windup > 0) { dad.windup -= dt; if (dad.windup <= 0) { sandals.push({ sx: dadScreenX() + 16, y: GROUND - 10, age: 0, rot: 0, hit: false, passed: false }); dad.has = false; dad.regrab = 1.6; dad.cd = rnd(8, 12) - Math.min(4, dist / 1500); sfx.whoosh(); } }
   if (!dad.has) { dad.regrab -= dt; if (dad.regrab <= 0) dad.has = true; }
   // kid chatter
   kid.sayT -= dt; kid.next -= dt;
@@ -483,7 +483,7 @@ function land() { kid.vy = 0; kid.on = true; if (kid.jumps) puff(worldX, kid.y, 
 function knock(o, vx, vy) { o.hit = true; o.hvx = vx; o.hvy = vy; o.spin = rnd(6, 12); puff(o.x + o.w / 2, GROUND - o.h / 2, 10, '#c9a36b', 120); }
 function hitKid(x, y, after) {
   if (kid.shield > 0) { kid.shield = 0; kid.inv = 1.2; after && after(); floatText(T('f_shield'), worldX, kid.y - 70, '#9fd8ff'); sfx.smash(); return; }
-  kid.stumble = 0.6; kid.inv = 1.2; lead -= 0.17; shake = 0.3; sfx.hit(); buzz(50); after && after();
+  kid.stumble = 0.6; kid.inv = 1.3; lead -= 0.13; shake = 0.3; sfx.hit(); buzz(50); after && after();
   puff(x, y, 6, '#ffffff', 100); parts.push({ x: worldX, y: kid.y - 64, vx: 0, vy: 0, life: 0.6, max: 0.6, stars: 1 });
   shout(pick(T('s_hit')));
 }
