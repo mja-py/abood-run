@@ -1,7 +1,7 @@
 // Run, Abood! — اركض يا عبود
 // Canvas endless runner. Characters and scenery are drawn in code, then baked into cached
 // sprite frames and background tiles so phones only blit images each frame.
-import { T, TG, getLang, applyLang, setLang, onLang, hasStoredLang, FLAG } from './i18n.js?v=__BUILD__';
+import { T, getLang, applyLang, setLang, onLang, hasStoredLang, FLAG } from './i18n.js?v=__BUILD__';
 import * as M from './meta.js?v=__BUILD__';
 
 const BUILD = '__BUILD__';
@@ -198,7 +198,7 @@ function reset() {
   t = 0; worldX = 0; lead = 0.6; dist = 0; candies = 0; candyCount = 0; boost = 0; shake = 0; camZ = 1; combo = 0; comboT = 0; closeCalls = 0; zoneNow = 0; banner = null;
   gaps = []; plats = []; obs = []; items = []; parts = []; sandals = []; genX = 900;
   Object.assign(kid, { y: GROUND, vy: 0, on: true, jumps: 0, coyote: 0, buf: 0, inv: 0, stumble: 0, sx: 1, sy: 1, spin: 0, scoot: 0, mag: 0, shield: 0, say: '', sayT: 0, next: 6 });
-  Object.assign(dad, { y: GROUND, vy: 0, on: true, slow: 0, freeze: 0, say: TG('s_come', isGirl()), sayT: 2, next: 3, anger: 0, windup: 0, cd: 9, has: true, regrab: 0 });
+  Object.assign(dad, { y: GROUND, vy: 0, on: true, slow: 0, freeze: 0, say: T('s_come'), sayT: 2, next: 3, anger: 0, windup: 0, cd: 9, has: true, regrab: 0 });
 }
 
 // ---------- level generation ----------
@@ -314,9 +314,9 @@ function start() {
 }
 let lastOver = null;
 function fillOver() {
-  if (!lastOver) return; const { why, m, nb } = lastOver, g = isGirl();
-  $('overQuote').textContent = TG(why === 'fell' ? 's_fell' : 's_got', g);
-  $('overTitle').textContent = TG(why === 'fell' ? 'fellT' : 'caughtT', g);
+  if (!lastOver) return; const { why, m, nb } = lastOver;
+  $('overQuote').textContent = T(why === 'fell' ? 's_fell' : 's_got');
+  $('overTitle').textContent = T(why === 'fell' ? 'fellT' : 'caughtT');
   $('overMsg').textContent = nb ? T('newBest') : T('beat', M.bestDist());
   $('sDist').textContent = m; $('sBest').textContent = M.bestDist(); $('sCandy').textContent = candies; $('sClose').textContent = closeCalls; $('sEarned').textContent = '+' + runEarned;
   $('avNameOver').textContent = kname();
@@ -334,7 +334,7 @@ function settleRun() {
 function gameOver(why) {
   if (st !== 'play') return; st = 'over'; stT = 0; sfx.lose(); buzz([60, 40, 120]); wakeOff();
   const res = settleRun(), m = Math.floor(dist);
-  dad.say = TG(why === 'fell' ? 's_fell' : 's_got', isGirl()); dad.sayT = 99; kid.say = TG('s_sorry', isGirl()); kid.sayT = 99;
+  dad.say = T(why === 'fell' ? 's_fell' : 's_got'); dad.sayT = 99; kid.say = T('s_sorry'); kid.sayT = 99;
   lastOver = { why, m, nb: res && res.newBest }; fillOver(); showBest();
   $('hud').hidden = true; $('pauseBtn').hidden = true; $('powers').textContent = ''; lastHud = '';
   setTimeout(() => { if (st === 'over') { $('over').hidden = false; maybeToast(); } }, 1100);
@@ -349,7 +349,7 @@ function revive() {
 }
 $('reviveBtn').onclick = () => { unlockAudio(); revive(); };
 $('overMenuBtn').onclick = () => { st = 'menu'; $('over').hidden = true; reset(); worldX = 0; showMenu(); };
-onLang(() => { if (st === 'over' && lastOver) { dad.say = TG(lastOver.why === 'fell' ? 's_fell' : 's_got', isGirl()); kid.say = TG('s_sorry', isGirl()); } else { dad.sayT = 0; kid.sayT = 0; } fillOver(); showBest(); renderMenu(); if (!$('sheet').hidden) openSheet(sheetKind); hudCache.fill(null); lastHud = ''; });
+onLang(() => { if (st === 'over' && lastOver) { dad.say = T(lastOver.why === 'fell' ? 's_fell' : 's_got'); kid.say = T('s_sorry'); } else { dad.sayT = 0; kid.sayT = 0; } fillOver(); showBest(); renderMenu(); if (!$('sheet').hidden) openSheet(sheetKind); hudCache.fill(null); lastHud = ''; });
 const fmt = s => s.replace('{n}', kname());
 function shout(s, d = 1.8) { dad.say = fmt(s); dad.sayT = d; }
 function kidSay(s, d = 1.6) { kid.say = fmt(s); kid.sayT = d; }
@@ -366,7 +366,7 @@ function update(dt) {
   if (banner) { banner.t += dt; if (banner.t > 3.4) banner = null; }
   if (st === 'menu') {
     worldX += 240 * dt; dist = worldX / 40; kid.ph += dt * 9; dad.ph += dt * 10; gen(); gaps.length = 0; obs.length = 0; items.length = 0; plats.length = 0;
-    dad.sayT -= dt; kid.sayT -= dt; if (dad.sayT < -1.2) shout(pick(TG('s_shouts', isGirl())), 2); if (kid.sayT < -3 && dad.sayT < 0) kidSay(pick(T('s_taunts')), 1.6);
+    dad.sayT -= dt; kid.sayT -= dt; if (dad.sayT < -1.2) shout(pick(T('s_shouts')), 2); if (kid.sayT < -3 && dad.sayT < 0) kidSay(pick(T('s_taunts')), 1.6);
     zoneNow = zoneOfM(dist); return;
   }
   if (st === 'over') { updParts(dt); kid.ph += dt * 16; return; }
@@ -455,7 +455,7 @@ function update(dt) {
   dad.vy += 2300 * dt; dad.y += dad.vy * dt; if (dad.y >= GROUND) { dad.y = GROUND; dad.vy = 0; dad.on = true; }
   dad.sayT -= dt; dad.next -= dt; dad.anger = Math.max(0, dad.anger - dt * 0.08);
   if (dad.anger < (1 - lead) * 0.7) dad.anger += dt * 0.1;
-  if (dad.next <= 0 && dad.freeze <= 0 && dad.windup <= 0) { shout(pick(TG('s_shouts', isGirl()))); dad.next = rnd(2.8, 4.8); }
+  if (dad.next <= 0 && dad.freeze <= 0 && dad.windup <= 0) { shout(pick(T('s_shouts'))); dad.next = rnd(2.8, 4.8); }
   if (dad.anger > 0.45 && Math.random() < dt * 6 * FX && parts.length < MAXP) { const fx = dadScreenX(); parts.push({ x: worldX - (ABX - fx) - 4, y: dad.y - 92, vx: -speed * 0.9 + rnd(-20, 20), vy: -rnd(40, 80), life: 0.7, max: 0.7, col: '#ffffff', r: rnd(3, 6), steam: 1 }); }
   // sandal throwing
   dad.cd -= dt;
@@ -594,6 +594,12 @@ function person(c, x, y, ph, air, o) {
   else if (o.bigEyes) { c.fillStyle = '#fff'; c.beginPath(); c.ellipse(7.3, -52.6, 2.6, 3.1, 0, 0, TAU); c.fill(); c.lineWidth = 0.9; c.stroke();
     c.fillStyle = INK; c.beginPath(); c.arc(8, -52.3, 1.65, 0, TAU); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(8.6, -53.1, 0.6, 0, TAU); c.fill(); }
   else { c.beginPath(); c.arc(7, -52, 1.5, 0, TAU); c.fill(); c.fillStyle = 'rgba(255,255,255,.85)'; c.beginPath(); c.arc(7.5, -52.6, 0.45, 0, TAU); c.fill(); }
+  if (o.glasses) {
+    c.save(); c.strokeStyle = INK; c.lineWidth = 1.2;
+    if (o.glasses === 'shades') { c.fillStyle = '#1d1f24'; c.beginPath(); c.ellipse(7.8, -52.4, 3.6, 2.9, 0, 0, TAU); c.fill(); c.stroke(); c.fillStyle = 'rgba(255,255,255,.45)'; c.beginPath(); c.ellipse(8.8, -53.4, 1.2, 0.7, -0.4, 0, TAU); c.fill(); }
+    else { c.fillStyle = 'rgba(200,230,255,.25)'; c.beginPath(); c.arc(7.8, -52.4, 3.4, 0, TAU); c.fill(); c.stroke(); }
+    c.beginPath(); c.moveTo(4.4, -52.8); c.lineTo(-1, -53.6); c.moveTo(11.2, -52.6); c.lineTo(12, -52.4); c.stroke(); c.restore();
+  }
   c.fillStyle = INK; c.lineWidth = o.angry ? 2.3 : 1.6; c.beginPath();
   if (o.angry) { c.moveTo(3.6, -57.2); c.lineTo(10.2, -54.6); } else if (o.mouth === 'o') { c.moveTo(4.5, -56); c.quadraticCurveTo(7, -59, 10, -57.2); } else { c.moveTo(4.8, -56.6); c.quadraticCurveTo(7.5, -58.4, 10.2, -56.2); }
   c.stroke(); c.lineWidth = 1.5;
@@ -680,18 +686,17 @@ function blitSprite(c, e, x, y, rot, sx, sy, s, blinkSkin) {
   c.restore();
 }
 const blinkNow = seed => Math.sin(t * 1.7 + seed) > 0.97;
-function lookOf(charId, robeId, headId) {
-  const ch = M.CHARS.find(x => x.id === charId) || M.CHARS[0], r = M.ROBES.find(x => x.id === robeId) || M.ROBES[0], h = M.HEADS.find(x => x.id === headId) || M.HEADS[0];
-  const o = { s: 1, skin: ch.skin, skinD: ch.skinD, skinL: ch.skinL, robe: r.col, robeD: r.shade, flap: 1.2, hs: ch.id === 'saif' ? 1.1 : 1.16, bigEyes: 1, girl: ch.girl, agalTilt: -0.08 };
-  if (h.girl) { o.head = 'shayla'; o.shaylaCol = h.col; }
-  else if (h.id === 'tagiyah') o.head = 'tagiyah';
+const SKIN = { skin: '#c98b5a', skinD: '#a8704a', skinL: '#e0a978' };
+function lookOf(robeId, headId, avatarId) {
+  const r = M.ROBES.find(x => x.id === robeId) || M.ROBES[0], h = M.HEADS.find(x => x.id === headId) || M.HEADS[0];
+  const o = Object.assign({ s: 1, robe: r.col, robeD: r.shade, flap: 1.2, hs: 1.16, bigEyes: 1, agalTilt: -0.08, glasses: avatarId === 'classic' ? null : avatarId }, SKIN);
+  if (h.id === 'tagiyah') o.head = 'tagiyah';
   else { o.head = 'scarf'; o.scarf = h.id === 'shemagh' ? SHEMAGH : h.id === 'blackshemagh' ? SHEMAGH_B : '#f4f3ee'; o.fringe = h.id === 'ghutra' ? '#e3e0d6' : '#fff1e8'; }
   return o;
 }
-const kidBase = () => { const d = M.data(); return lookOf(d.char, d.robe, d.head); };
-const lookKey = () => { const d = M.data(); return d.char + d.robe + d.head; };
-const isGirl = () => M.charOf().girl;
-const kname = () => T('ch_' + M.data().char);
+const kidBase = () => { const d = M.data(); return lookOf(d.robe, d.head, d.avatar); };
+const lookKey = () => { const d = M.data(); return d.avatar + d.robe + d.head; };
+const kname = () => T('ch_abood');
 function scooter(c, x, y) {
   c.save(); c.translate(x, y); c.strokeStyle = INK; c.lineWidth = 1.6;
   c.fillStyle = '#e23b4a'; c.beginPath(); c.roundRect(-18, -6, 34, 5, 2.5); c.fill(); c.stroke();
@@ -714,7 +719,7 @@ function drawKid(c, x, y, ph, air, alpha = 1, extra) {
   const mood = scared ? 'o' : (kid.sayT > 0 && lead > 0.6 ? 'tongue' : 'grin');
   const a = !!air && !sc, idx = (a || sc) ? 0 : qph(ph), rot = kid.stumble > 0 ? 0.25 : 0;
   const e = kidFrame(mood, a, sc, idx);
-  if (e) blitSprite(c, e, x, y, rot, 1, 1, 1, alpha === 1 && blinkNow(0) ? M.charOf().skin : null);
+  if (e) blitSprite(c, e, x, y, rot, 1, 1, 1, alpha === 1 && blinkNow(0) && M.data().avatar !== 'shades' ? SKIN.skin : null);
   else person(c, x, y, ph, a, Object.assign(kidBase(), { mouth: mood, sweat: scared, still: sc, arm: sc ? 'grip' : undefined, rot }));
   if (kid.shield > 0 && st === 'play') { c.strokeStyle = `rgba(120,200,255,${0.5 + 0.2 * Math.sin(t * 8)})`; c.lineWidth = 3; c.beginPath(); c.ellipse(x, y - 34, 26, 40, 0, 0, TAU); c.stroke(); }
   c.restore();
@@ -1685,29 +1690,19 @@ function buyOrEquip(kind, id, price) {
   M.equip(kind, id); openSheet('wardrobe');
 }
 function sheetWardrobe(body) {
-  const D = M.data(), girl = isGirl();
-  body.appendChild(el('p', 'sec-title', T('w_chars'))); let g = el('div', 'cards');
-  for (const ch of M.CHARS) {
-    const owned = D.owned.char.includes(ch.id), on = D.char === ch.id;
-    const look = lookOf(ch.id, ch.girl ? D.robe : (M.robeOf().girl ? 'white' : D.robe), ch.girl ? (M.headOf().girl ? D.head : 'shayla_pink') : (M.headOf().girl ? 'shemagh' : D.head));
-    g.appendChild(card(cnv => drawAvatar(cnv, look, 0.6, 'grin', true), T('ch_' + ch.id), null,
-      { text: on ? T('chosen') : owned ? T('choose') : T('buy', ch.price), cls: owned ? 'sec' : '', disabled: on, onClick: () => buyOrEquip('char', ch.id) }, on));
-  }
-  body.appendChild(g);
-  body.appendChild(el('p', 'sec-title', T(girl ? 'w_dress' : 'w_robes'))); g = el('div', 'cards');
-  for (const r of M.ROBES.filter(r => !r.girl || girl)) {
-    const owned = D.owned.robe.includes(r.id), on = D.robe === r.id;
-    g.appendChild(card(cnv => drawAvatar(cnv, lookOf(D.char, r.id, D.head), 0.6, 'grin', true), T('r_' + r.id), r.badge && !owned ? T('badgeOnly') : null,
-      { text: on ? T('wearing') : owned ? T('wear') : r.badge ? T('bg_locked') : T('buy', r.price), cls: owned ? 'sec' : '', disabled: on || (r.badge && !owned), onClick: () => buyOrEquip('robe', r.id) }, on, r.badge && !owned));
-  }
-  body.appendChild(g);
-  body.appendChild(el('p', 'sec-title', T('w_heads'))); g = el('div', 'cards');
-  for (const h of M.HEADS.filter(h => girl ? h.girl : h.boy)) {
-    const owned = D.owned.head.includes(h.id), on = D.head === h.id;
-    g.appendChild(card(cnv => drawAvatar(cnv, lookOf(D.char, D.robe, h.id), 0.6, 'grin', true), T('h_' + h.id), null,
-      { text: on ? T('wearing') : owned ? T('wear') : T('buy', h.price), cls: owned ? 'sec' : '', disabled: on, onClick: () => buyOrEquip('head', h.id) }, on));
-  }
-  body.appendChild(g);
+  const D = M.data();
+  const section = (title, list, kind, lookFor, label) => {
+    body.appendChild(el('p', 'sec-title', T(title))); const g = el('div', 'cards');
+    for (const it of list) {
+      const owned = D.owned[kind].includes(it.id), on = D[kind] === it.id, locked = it.badge && !owned;
+      g.appendChild(card(cnv => drawAvatar(cnv, lookFor(it.id), 0.6, 'grin', true), T(label + it.id), locked ? T('badgeOnly') : null,
+        { text: on ? T('wearing') : owned ? T('wear') : locked ? T('bg_locked') : T('buy', it.price), cls: owned ? 'sec' : '', disabled: on || locked, onClick: () => buyOrEquip(kind, it.id) }, on, locked));
+    }
+    body.appendChild(g);
+  };
+  section('w_avatar', M.AVATARS, 'avatar', id => lookOf(D.robe, D.head, id), 'av_');
+  section('w_robes', M.ROBES, 'robe', id => lookOf(id, D.head, D.avatar), 'r_');
+  section('w_heads', M.HEADS, 'head', id => lookOf(D.robe, id, D.avatar), 'h_');
 }
 function sheetShop(body) {
   body.appendChild(el('p', 'hint', T('shopNote'))); const g = el('div', 'cards'); const D = M.data();
@@ -1839,6 +1834,7 @@ async function boot() {
 
 // test / tooling hook
 window.__abood = {
+  get say() { return dad.sayT > 0 ? dad.say : ''; },
   get state() { return { st, dist, lead, zone: zoneNow, qLevel, res: RES, bakeRes, tiles: TILES.size, sprites: SPR.size, build: BUILD }; },
   goto: d => { worldX = d * 40; dist = d; zoneNow = zoneOfM(d); genX = worldX + 500; gaps = []; obs = []; items = []; plats = []; lead = 0.6; },
   quality: q => { qLevel = clamp(q, 0, QDPR.length - 1); resize(); },

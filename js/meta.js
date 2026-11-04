@@ -6,10 +6,11 @@ export const today = () => { const d = new Date(); return d.getFullYear() + '-' 
 const dayNo = s => Math.round(new Date(s + 'T12:00:00').getTime() / 864e5);
 const hash = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
 
-export const CHARS = [
-  { id: 'abood', girl: false, skin: '#c98b5a', skinD: '#a8704a', skinL: '#e0a978', price: 0 },
-  { id: 'mozah', girl: true, skin: '#d6a070', skinD: '#b47e50', skinL: '#ecbd90', price: 300 },
-  { id: 'saif', girl: false, skin: '#9c6a43', skinD: '#7d5232', skinL: '#b98558', price: 250 },
+// One character, Abood. The avatar changes his look; Baba always calls him by his name.
+export const AVATARS = [
+  { id: 'classic', price: 0 },
+  { id: 'glasses', price: 120 },
+  { id: 'shades', price: 150 },
 ];
 export const ROBES = [
   { id: 'white', col: '#fbfaf4', shade: '#dcd8cb', price: 0 },
@@ -17,18 +18,13 @@ export const ROBES = [
   { id: 'grey', col: '#d9dbe0', shade: '#b0b5c0', price: 80 },
   { id: 'blue', col: '#cfe3f2', shade: '#a1c0da', price: 100 },
   { id: 'brown', col: '#9a7353', shade: '#775638', price: 120 },
-  { id: 'pink', col: '#f6c9d8', shade: '#d9a0b3', price: 100, girl: true },
-  { id: 'purple', col: '#cdb6e8', shade: '#a68cc8', price: 120, girl: true },
   { id: 'gold', col: '#f4e3a8', shade: '#d4b96e', price: 0, badge: 'dist2000' },
 ];
 export const HEADS = [
-  { id: 'shemagh', price: 0, boy: true },
-  { id: 'ghutra', price: 60, boy: true },
-  { id: 'blackshemagh', price: 90, boy: true },
-  { id: 'tagiyah', price: 50, boy: true },
-  { id: 'shayla_pink', price: 0, girl: true, col: '#e8789f' },
-  { id: 'shayla_purple', price: 60, girl: true, col: '#8a5cc2' },
-  { id: 'shayla_black', price: 60, girl: true, col: '#25222b' },
+  { id: 'shemagh', price: 0 },
+  { id: 'ghutra', price: 60 },
+  { id: 'blackshemagh', price: 90 },
+  { id: 'tagiyah', price: 50 },
 ];
 export const BOOSTERS = [
   { id: 'vimto', price: 50 }, { id: 'magnet', price: 40 }, { id: 'headstart', price: 80 }, { id: 'shield', price: 60 }, { id: 'revive', price: 120 },
@@ -64,8 +60,8 @@ const MISSIONS = [
 export const LOGIN = [20, 30, 40, 50, 60, 80, 150];
 
 const fresh = () => ({
-  coins: 100, char: 'abood', robe: 'white', head: 'shemagh',
-  owned: { char: ['abood'], robe: ['white'], head: ['shemagh', 'shayla_pink'] },
+  coins: 100, avatar: 'classic', robe: 'white', head: 'shemagh',
+  owned: { avatar: ['classic'], robe: ['white'], head: ['shemagh'] },
   boosters: { vimto: 0, magnet: 0, headstart: 0, shield: 0, revive: 1 },
   stats: { runs: 0, sweets: 0, close: 0, dodged: 0, smash: 0, zones: [0], powers: [], revivesUsed: 0, bought: 0, best: 0, streak: 0 },
   badges: {}, daily: null, login: { last: null, streak: 0 },
@@ -76,9 +72,18 @@ try {
   if (raw) { const d = JSON.parse(raw); S = Object.assign(fresh(), d); S.stats = Object.assign(fresh().stats, d.stats || {}); S.owned = Object.assign(fresh().owned, d.owned || {}); S.boosters = Object.assign(fresh().boosters, d.boosters || {}); }
   else { const old = +localStorage.getItem('abood-best') || 0; S.stats.best = old; }
 } catch (e) {}
+(function migrate() {
+  const refund = { char: { mozah: 300, saif: 250 }, robe: { pink: 100, purple: 120 }, head: { shayla_purple: 60, shayla_black: 60 } };
+  for (const kind of Object.keys(refund)) for (const id of (S.owned[kind] || [])) if (refund[kind][id]) S.coins += refund[kind][id];
+  delete S.owned.char; delete S.char;
+  S.owned.avatar = S.owned.avatar || ['classic']; if (!AVATARS.some(a => a.id === S.avatar)) S.avatar = 'classic';
+  S.owned.robe = S.owned.robe.filter(id => ROBES.some(r => r.id === id)); if (!ROBES.some(r => r.id === S.robe)) S.robe = 'white';
+  S.owned.head = S.owned.head.filter(id => HEADS.some(h => h.id === id)); if (!HEADS.some(h => h.id === S.head)) S.head = 'shemagh';
+  if (!S.owned.robe.includes('white')) S.owned.robe.unshift('white'); if (!S.owned.head.includes('shemagh')) S.owned.head.unshift('shemagh');
+})();
 export const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 export const data = () => S;
-export const charOf = () => CHARS.find(c => c.id === S.char) || CHARS[0];
+export const avatarOf = () => AVATARS.find(a => a.id === S.avatar) || AVATARS[0];
 export const robeOf = () => ROBES.find(r => r.id === S.robe) || ROBES[0];
 export const headOf = () => HEADS.find(h => h.id === S.head) || HEADS[0];
 
@@ -158,7 +163,7 @@ export function endRun(run) {
 
 // ---- shop and wardrobe ----
 export function buy(kind, id) {
-  const list = kind === 'char' ? CHARS : kind === 'robe' ? ROBES : kind === 'head' ? HEADS : BOOSTERS;
+  const list = kind === 'avatar' ? AVATARS : kind === 'robe' ? ROBES : kind === 'head' ? HEADS : BOOSTERS;
   const it = list.find(x => x.id === id); if (!it || it.badge) return false;
   if (kind !== 'booster' && S.owned[kind].includes(id)) return false;
   if (S.coins < it.price) return false;
@@ -169,12 +174,6 @@ export function buy(kind, id) {
 export function equip(kind, id) {
   if (!S.owned[kind].includes(id)) return false;
   S[kind] = id;
-  if (kind === 'char') { // keep the outfit valid for the chosen character
-    const girl = charOf().girl, h = headOf();
-    if (girl && !h.girl) S.head = 'shayla_pink';
-    if (!girl && h.girl) S.head = 'shemagh';
-    const r = robeOf(); if (!girl && r.girl) S.robe = 'white';
-  }
   save(); return true;
 }
 export function useBooster(id) { if ((S.boosters[id] || 0) <= 0) return false; S.boosters[id]--; save(); return true; }
