@@ -18,7 +18,7 @@ export const ROBES = [
   { id: 'grey', col: '#d9dbe0', shade: '#b0b5c0', price: 80000 },
   { id: 'blue', col: '#cfe3f2', shade: '#a1c0da', price: 110000 },
   { id: 'brown', col: '#9a7353', shade: '#775638', price: 150000 },
-  { id: 'gold', col: '#f4e3a8', shade: '#d4b96e', price: 0, badge: 'dist10000' },
+  { id: 'gold', col: '#f4e3a8', shade: '#d4b96e', price: 0, badge: 'dist10000', perk: 'perk_gold' },
 ];
 export const HEADS = [
   { id: 'shemagh', price: 0 },

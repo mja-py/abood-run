@@ -390,7 +390,7 @@ function update(dt) {
   if (run) run.zoneMax = Math.max(run.zoneMax, Math.min(3, Math.floor(dist / ZLEN)));
   badgeTimer -= dt; if (badgeTimer <= 0 && run) { badgeTimer = 1; for (const b of M.checkBadges({ dist, close: closeCalls })) { runBadges.push(b); floatText(T('f_badge', T('bg_' + b.id)), worldX + 60, 140, '#ffe066'); sfx.zone(); } }
 
-  let dl = -(0.04 + Math.min(0.15, dist * 0.00004)); // Baba keeps closing in faster: 0.08/s at 1 km, 0.12/s at 2 km, 0.16/s at 3 km, 0.19/s from 3.75 km
+  let dl = -(0.04 + Math.min(0.15, dist * 0.00004)) * (M.data().robe === 'gold' ? 0.6 : 1); // gold kandura: Baba catches up 40% slower // Baba keeps closing in faster: 0.08/s at 1 km, 0.12/s at 2 km, 0.16/s at 3 km, 0.19/s from 3.75 km
   if (dad.freeze > 0) dl = 0.12; else if (dad.slow > 0) dl = 0.065;
   if (boost > 0) dl += 0.09; if (kid.scoot > 0) dl += 0.1;
   lead = clamp(lead + dl * dt, 0, 1);
@@ -1706,7 +1706,7 @@ function sheetWardrobe(body) {
     body.appendChild(el('p', 'sec-title', T(title))); const g = el('div', 'cards');
     for (const it of list) {
       const owned = D.owned[kind].includes(it.id), on = D[kind] === it.id, locked = it.badge && !owned;
-      g.appendChild(card(cnv => drawAvatar(cnv, lookFor(it.id), 0.6, 'grin', true), T(label + it.id), locked ? T('badgeOnly') : null,
+      g.appendChild(card(cnv => drawAvatar(cnv, lookFor(it.id), 0.6, 'grin', true), T(label + it.id), [locked ? T('badgeOnly') : null, it.perk ? T(it.perk) : null].filter(Boolean).join(' · ') || null,
         { text: on ? T('wearing') : owned ? T('wear') : locked ? T('bg_locked') : T('buy', it.price), cls: owned ? 'sec' : '', disabled: on || locked, onClick: () => buyOrEquip(kind, it.id) }, on, locked));
     }
     body.appendChild(g);
