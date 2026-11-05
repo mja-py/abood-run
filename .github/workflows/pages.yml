@@ -27,6 +27,8 @@ jobs:
           sed -i "s/__BUILD__/$V/g" index.html sw.js js/game.js
           mkdir -p _site
           cp -r index.html sw.js manifest.webmanifest .nojekyll css js assets _site/
+          # a file that still says __BUILD__ would keep a stale cache name or asset URL
+          if grep -rl __BUILD__ _site; then echo "Unstamped files above"; exit 1; fi
           echo "Build $V"
 
       - name: Publish to gh-pages

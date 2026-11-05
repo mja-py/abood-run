@@ -158,17 +158,21 @@ const fresh = () => ({
   badges: {}, tiers: {}, daily: null, ladder: null, login: { last: null, streak: 0 }, refund: 0,
 });
 let S = fresh();
+let raw = null;
 try {
-  const raw = localStorage.getItem(KEY);
-  if (raw) { const d = JSON.parse(raw); if (d.econ === 2) { d.coins = Math.round((d.coins || 0) / 100); d.econ = 3; }
+  raw = localStorage.getItem(KEY);
+  if (raw) { const d = JSON.parse(raw); if (!d || typeof d !== 'object') throw new Error('bad save'); if (d.econ === 2) { d.coins = Math.round((d.coins || 0) / 100); d.econ = 3; }
     if (d.econ !== 3 && d.econ !== 4) { const f = fresh(); if (d.login) f.login = d.login; Object.keys(d).forEach(k => delete d[k]); Object.assign(d, f); }
     S = Object.assign(fresh(), d);
     for (const k of ['stats', 'owned', 'boosters', 'route']) S[k] = Object.assign(fresh()[k], d[k] || {}); }
   else { const old = +localStorage.getItem('abood-best') || 0; S.stats.best = old; }
-} catch (e) {}
+} catch (e) { // keep the unreadable save so progress can still be recovered by hand
+  S = fresh(); try { if (raw) localStorage.setItem(KEY + '.bak', raw); } catch (e2) {}
+}
 (function migrate() {
   for (const k of Object.keys(S.badges || {})) if (!BADGES.some(b => b.id === k)) delete S.badges[k];
-  S.tiers = S.tiers || {}; S.up = S.up || {};
+  S.tiers = S.tiers || {}; S.up = S.up || {}; S.badges = S.badges || {};
+  if (!S.login || typeof S.login !== 'object') S.login = fresh().login;
   const refund = { char: { mozah: 300, saif: 250 }, robe: { pink: 100, purple: 120 }, head: { shayla_purple: 60, shayla_black: 60 } };
   for (const kind of Object.keys(refund)) for (const id of (S.owned[kind] || [])) if (refund[kind][id]) S.coins += refund[kind][id];
   delete S.owned.char; delete S.char;
@@ -197,6 +201,10 @@ export const takeDone = () => { const q = doneQ; doneQ = []; return q; };
 export function ensureDaily() {
   const d = today();
   if (S.daily && S.daily.date === d && S.daily.v === 2) return S.daily;
+  if (S.daily && S.daily.v === 2) { // a new day: pay what was finished but not claimed yet, so nothing is lost at midnight
+    for (const m of S.daily.missions) if (!m.claimed && m.progress >= m.goal) { m.claimed = true; S.coins += m.reward; }
+    if (!S.daily.bonus && S.daily.missions.every(x => x.claimed)) S.coins += DAILY_BONUS;
+  }
   const h = hash(d), pool = DAILY.map((m, i) => i), picks = [];
   for (let k = 0; k < 3; k++) { const j = (h >>> (k * 5)) % pool.length; picks.push(pool.splice(j, 1)[0]); }
   S.daily = { v: 2, date: d, bonus: false, missions: picks.map((mi, k) => {
@@ -258,7 +266,7 @@ export function claimLogin() {
 
 // ---- events from the game ----
 export function track(ev, n = 1) {
-  const s = S.stats;
+  ensureDaily(); const s = S.stats;
   if (ev === 'sweets') s.sweets += n;
   else if (ev === 'close') s.close += 1;
   else if (ev === 'dodge') s.dodged += 1;
@@ -268,7 +276,7 @@ export function track(ev, n = 1) {
   else if (ev === 'run') s.runs += 1;
   else if (ev === 'revive') { s.revivesUsed += 1; return; }
   else if (ev === 'stop') s.stopsTotal = (s.stopsTotal || 0) + 1;
-  for (const [list, set] of allMissions()) for (const m of list) if (EVENT[m.kind] === ev) { m.progress += n; checkDone(m, set); }
+  for (const [list, set] of allMissions()) for (const m of list) if (EVENT[m.kind] === ev && s.runs >= (m.from || 0)) { m.progress += n; checkDone(m, set); }
 }
 // passing a landmark: the first time ever it becomes a postcard and pays dirhams
 export function reachStop(id) {
@@ -300,7 +308,7 @@ export function checkBadges(run) {
 // the after-run exchange; the multiplier is fixed the first time a run is settled
 export function exchangeOf(run) {
   const mu = run.mult || mult(), s = Math.floor(run.sweets / SWEETS_PER_AED), d = Math.floor(run.dist / M_PER_AED);
-  return { sweets: run.sweets, dist: Math.floor(run.dist), s, d, mult: mu, total: Math.floor((s + d) * mu) };
+  return { sweets: run.sweets, dist: Math.floor(run.dist), s, d, mult: mu, total: Math.floor(Math.round((s + d) * mu * 100) / 100) };
 }
 // Called when a run ends (and again if the player revives and ends later): pays only what has not been paid yet.
 export function endRun(run) {

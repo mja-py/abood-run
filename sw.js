@@ -53,9 +53,9 @@ self.addEventListener('fetch', event => {
       try {
         const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 3500);
         const res = await fetch(req, { signal: ctrl.signal }); clearTimeout(timer);
-        if (res.ok) { const cache = await caches.open(CACHE); cache.put('./index.html', res.clone()); }
+        if (res.ok) { const copy = res.clone(); event.waitUntil(caches.open(CACHE).then(cache => cache.put('./index.html', copy))); }
         return res;
-      } catch (e) {
+      } catch {
         return (await caches.match('./index.html', { ignoreSearch: true })) || (await caches.match('./', { ignoreSearch: true })) || Response.error();
       }
     })());
@@ -63,13 +63,16 @@ self.addEventListener('fetch', event => {
   }
 
   // Everything else (scripts, styles, fonts, icons): cache first, then network.
+  // Files stamped with another build (?v=...) skip this cache: right after a deploy the new page
+  // must never get this version's old game.js or style.css.
+  const v = url.searchParams.get('v'), ours = !v || v === VERSION;
   event.respondWith((async () => {
-    const hit = await caches.match(req, { ignoreSearch: true });
-    if (hit) return hit;
+    const cache = await caches.open(CACHE);
+    if (ours) { const hit = await cache.match(req, { ignoreSearch: true }); if (hit) return hit; }
     try {
       const res = await fetch(req);
-      if (res.ok && res.type === 'basic') { const cache = await caches.open(CACHE); cache.put(req, res.clone()); }
+      if (ours && res.ok && res.type === 'basic') event.waitUntil(cache.put(req, res.clone()));
       return res;
-    } catch (e) { return Response.error(); }
+    } catch { return (await cache.match(req, { ignoreSearch: true })) || Response.error(); }
   })());
 });

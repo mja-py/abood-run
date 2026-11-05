@@ -4,14 +4,15 @@
 
 An endless runner for the browser. Abood, in his kandura and red shemagh, runs from Baba right across Dubai, in the real order: from Al Mamzar, through the old Deira souq on the Creek, past Burj Khalifa in Downtown, along Jumeirah, through the glass aquarium tunnel on the Palm and on to JBR and Ain Dubai. Then the route turns inland, past Expo City, Al Habtoor golf, Nad Al Sheba and Al Khawaneej to Dubai Creek Harbour, and loops back to Al Mamzar. Arabic is the default language. The flag buttons switch to English.
 
-Progress is saved on the device: in-game dirhams (no real payments), a shop with power-up upgrades and boosters, a wardrobe, 15 badges, the mission ladder plus three daily missions, postcards from 45 landmarks, and a 7-day login gift.
+Progress is saved on the device: in-game dirhams (no real payments), a shop with power-up upgrades and boosters, a wardrobe, 15 badges, the mission ladder plus three daily missions, postcards from 46 landmarks, and a 7-day login gift.
 
 ## How to play
 
 - **Jump:** tap the screen, or press Space / ↑ / W. Hold for a higher jump.
 - **Flip (double jump):** tap again in the air.
 - **Pause:** the II button, or P / Esc.
-- **Items:** Vimto (faster), marbles (Baba slips), Mama's phone call (Baba stops), scooter (smash obstacles), magnet (pulls in sweets), sweets jar (+15).
+- **Items:** Vimto (faster), marbles (Baba slips), Mama's phone call (Baba stops), scooter (smash obstacles), magnet (pulls in sweets), sweets jar (+15, times the combo).
+- **Power-ups and boosters:** picking up a power-up while the same booster is running never shortens it.
 - **Watch out:** when “!” appears over Baba, he throws his sandal along the ground. Jump it.
 
 ## The route
@@ -47,9 +48,9 @@ The route is a **60 km loop** in two legs of about 30 km each. The real distance
 
 All numbers live in `js/meta.js`. The aim is roughly two months of daily play to buy everything.
 
-- **Sweets exchange:** at the end of every run, sweets turn into dirhams with a counting animation: **10 sweets = 1 dirham**, plus **1 dirham per 250 m**, all times the mission multiplier. A 1.3 km run with 190 sweets pays about 23.
+- **Sweets exchange:** at the end of every run, sweets turn into dirhams with a counting animation: **10 sweets = 1 dirham**, plus **1 dirham per 250 m**, all times the mission multiplier. A 1.3 km run with 190 sweets pays 19 + 5 = 24 at ×1.
 - **Mission ladder:** endless sets of three missions that get harder each level. When a set is done, the level goes up at the end of the run: the exchange multiplier rises by ×0.1 (up to ×3) and you get 40 + 20 × level dirhams. A stuck mission can be skipped for 25 + 10 × level dirhams.
-- **Daily missions:** three a day from 11 kinds, 27–50 each, plus 50 for finishing all three.
+- **Daily missions:** three a day from 11 kinds, 27–50 each, plus 50 for finishing all three. Missions finished but not claimed by midnight are paid automatically.
 - **Postcards:** 7–123 for each landmark, once.
 - **Power-up upgrades:** Vimto, magnet, scooter, Mama's call and marbles each have 5 levels (100, 250, 500, 1,000, 2,000). Each level makes that power-up last 15% longer, up to 75%.
 - **Boosters:** Vimto 15 · magnet 12 · head start 25 · shield 20 · second chance 120. The first second chance in every run is free.
@@ -97,7 +98,7 @@ window.aboodAfterRun = async ({ distance, sweets }) => {
 };
 ```
 
-If the hook is missing or throws, the results card shows straight away.
+If the hook is missing or throws, the results card shows straight away. If it has not settled after 15 seconds, the card shows anyway.
 
 ## Run it locally
 
@@ -121,7 +122,7 @@ On each deploy the commit id is stamped into `sw.js`, `index.html` and `js/game.
 
 - **Offline:** after the first visit, the service worker (`sw.js`) caches everything: HTML, CSS, JS, fonts and icons. The game then loads instantly and works offline.
 - **Install:** the game can be installed (Android: *Install app*; iPhone: *Share → Add to Home Screen*). It opens full screen in landscape.
-- **Fast first load:** there are no external requests. The font is stored in the repository, and the whole game is about 400 KB.
+- **Fast first load:** there are no external requests. The font is stored in the repository, and the whole game is about 500 KB to download (775 KB unpacked).
 - **Loading screen:** while it shows, the game loads the fonts, builds the sound effects and pre-renders the most-used character frames.
 - **Phone settings:** touch input works anywhere on the screen. Zooming and long-press menus are turned off, the layout respects the notch and safe areas, the screen stays awake during a run, and the game pauses when you switch apps.
 

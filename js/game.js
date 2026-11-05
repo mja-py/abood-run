@@ -221,7 +221,7 @@ try { muted = localStorage.getItem('abood-muted') === '1'; } catch (e) {}
 const FOCUS_STEP = 20, FOCUS_MAX = 3;
 // Director (dynamic difficulty): eases off until the player nears their usual distance, then squeezes
 // harder. Focus cancels most of the squeeze, and a burst of hits triggers a short mercy break.
-let paceT = 500, assist = 1, spawnBoost = 1, sandalMul = 1, mercyT = 0, hitTimes = [];
+let paceT = 500, assist = 1, spawnBoost = 1, sandalMul = 1, mercyT = 0, hitTimes = [], playT = 0;
 function director(dt) {
   mercyT = Math.max(0, mercyT - dt);
   const p = dist / paceT;
@@ -234,7 +234,7 @@ function director(dt) {
   assist = mult;
 }
 let focusT = 0, focusLv = 0;
-const runSpeed = d => 310 + Math.min(260, d * 0.05); // grows steadily: 360 at 1 km, 410 at 2 km, 560 from 5 km
+const runSpeed = d => 310 + Math.min(260, d * 0.05); // grows steadily: 360 at 1 km, 410 at 2 km, 560 at 5 km, capped at 570 from 5.2 km
 function reset() {
   focusT = 0; focusLv = 0; paceT = M.paceTarget(); assist = 1; spawnBoost = 1; sandalMul = 1; mercyT = 0; hitTimes = [];
   t = 0; worldX = 0; lead = 0.7; dist = 0; routeM = startM; nextStop = stopAfter(startM + 25); prevStopAt = startM; lastStop = null; stopBanner = null; fish = []; runHit = 0; runPow = 0; maxFocus = 0; comboMax = 0; runDone = []; candies = 0; candyCount = 0; boost = 0; shake = 0; camZ = 1; combo = 0; comboT = 0; closeCalls = 0; zoneNow = 0; banner = null;
@@ -443,9 +443,9 @@ function gameOver(why) {
   const showOver = () => { if (st === 'over') { $('over').hidden = false; startSwap(); maybeToast(); } };
   setTimeout(() => {
     // Ads hook: set window.aboodAfterRun = async ({ distance, sweets }) => { ...show an ad... }.
-    // The results card appears when it finishes (or straight away if it is not set or fails).
+    // The results card appears when it finishes (or straight away if it is not set or fails, and after 15 s at most).
     const hook = window.aboodAfterRun;
-    if (typeof hook === 'function') Promise.resolve().then(() => hook({ distance: m, sweets: candies })).catch(() => {}).finally(showOver); else showOver();
+    if (typeof hook === 'function') Promise.race([Promise.resolve().then(() => hook({ distance: m, sweets: candies })), new Promise(r => setTimeout(r, 15000))]).catch(() => {}).finally(showOver); else showOver();
   }, 1100);
 }
 function revive() {
@@ -484,6 +484,7 @@ function update(dt) {
   }
   if (st === 'over') { updParts(dt); kid.ph += dt * 16; return; }
   if (st !== 'play') return;
+  playT += dt; // stops while paused or on the results card, so moving obstacles and the mercy window don't jump
 
   const base = runSpeed(dist);
   speed = base * Math.max(boost > 0 ? 1.3 : 1, kid.scoot > 0 ? 1.42 : 1) * (kid.stumble > 0 ? 0.65 : 1);
@@ -529,8 +530,8 @@ function update(dt) {
     const d = OB[o.kind];
     if (o.hit) { o.hx += o.hvx * dt; o.hy += o.hvy * dt; o.hvy += 1600 * dt; o.rot += dt * o.spin; continue; }
     if (d.vx) { const nx = o.x + d.vx * dt; if (!overGap(nx, 0) && !overGap(nx + o.w, 0)) o.x = nx; o.ph += dt * (o.kind === 'lizard' ? 22 : o.kind === 'dbike' || o.kind === 'buggy' ? 16 : 10); }
-    if (d.side) { o.x = o.x0 + Math.sin(t * 2.4 + o.seed) * 26; o.ph += dt * 8; }
-    o.lift = d.bounce ? Math.abs(Math.sin(t * 4.2 + o.seed)) * 46 : 0;
+    if (d.side) { o.x = o.x0 + Math.sin(playT * 2.4 + o.seed) * 26; o.ph += dt * 8; }
+    o.lift = d.bounce ? Math.abs(Math.sin(playT * 4.2 + o.seed)) * 46 : 0;
     if (d.bounce) o.ph -= dt * 6;
     const top = GROUND - o.lift - o.h, bot = GROUND - o.lift;
     const ox = worldX + 9 > o.x + 4 && worldX - 9 < o.x + o.w - 4;
@@ -592,7 +593,7 @@ function knock(o, vx, vy) { o.hit = true; o.hvx = vx; o.hvy = vy; o.spin = rnd(6
 function hitKid(x, y, after) {
   if (kid.shield > 0) { kid.shield = 0; kid.inv = 1.2; after && after(); floatText(T('f_shield'), worldX, kid.y - 70, '#9fd8ff'); sfx.smash(); return; }
   if (run) run.noHit = Math.max(run.noHit, dist - runHit); runHit = dist;
-  kid.stumble = 0.6; kid.inv = 1.3; lead -= 0.13; focusT = 0; focusLv = 0; hitTimes.push(t); hitTimes = hitTimes.filter(h => t - h < 30); if (hitTimes.length >= 3 && mercyT <= 0) { mercyT = 10; hitTimes = []; } shake = 0.3; sfx.hit(); buzz(50); after && after();
+  kid.stumble = 0.6; kid.inv = 1.3; lead -= 0.13; focusT = 0; focusLv = 0; hitTimes.push(playT); hitTimes = hitTimes.filter(h => playT - h < 30); if (hitTimes.length >= 3 && mercyT <= 0) { mercyT = 10; hitTimes = []; } shake = 0.3; sfx.hit(); buzz(50); after && after();
   puff(x, y, 6, '#ffffff', 100); parts.push({ x: worldX, y: kid.y - 64, vx: 0, vy: 0, life: 0.6, max: 0.6, stars: 1 });
   shout(pick(T('s_hit')));
 }
@@ -624,11 +625,11 @@ function grab(it) {
     bump('candyBox'); return;
   }
   sfx.power(); puff(it.x, it.y, 16, '#fff6c2', 150); camZ = 1.05; buzz(25); M.track('power', it.kind); runPow++;
-  if (it.kind === 'vimto') { boost = M.powerTime('vimto'); floatText(T('f_vimto'), it.x, it.y - 24); kidSay(T('s_yay'), 1.2); }
+  if (it.kind === 'vimto') { boost = Math.max(boost, M.powerTime('vimto')); floatText(T('f_vimto'), it.x, it.y - 24); kidSay(T('s_yay'), 1.2); }
   if (it.kind === 'marbles') { dad.slow = M.powerTime('marbles'); dad.windup = 0; shout(T('s_slip'), 2); for (let i = 0; i < 8; i++) parts.push({ x: it.x, y: GROUND - 4, vx: -rnd(250, 420), vy: -rnd(0, 120), life: 1.3, max: 1.3, col: pick(['#3fa7d6', '#f25f5c', '#7bd389', '#ffe066']), r: 3.5, marble: 1 }); floatText(T('f_slip'), it.x, it.y - 24); }
   if (it.kind === 'phone') { dad.freeze = M.powerTime('phone'); dad.windup = 0; shout(T('s_phone'), dad.freeze); floatText(T('f_phone'), it.x, it.y - 24); }
-  if (it.kind === 'magnet') { kid.mag = M.powerTime('magnet'); floatText(T('f_magnet'), it.x, it.y - 24); }
-  if (it.kind === 'scooter') { kid.scoot = M.powerTime('scooter'); floatText(T('f_scooter'), it.x, it.y - 24); kidSay(T('s_scoot'), 1.4); }
+  if (it.kind === 'magnet') { kid.mag = Math.max(kid.mag, M.powerTime('magnet')); floatText(T('f_magnet'), it.x, it.y - 24); }
+  if (it.kind === 'scooter') { kid.scoot = Math.max(kid.scoot, M.powerTime('scooter')); floatText(T('f_scooter'), it.x, it.y - 24); kidSay(T('s_scoot'), 1.4); }
 }
 function bump(id) { const el = $(id); el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
 function updParts(dt) {
@@ -2560,7 +2561,7 @@ function sheetBadges(body) {
 }
 function loginRow(wrap) {
   const st2 = M.loginStatus(), cur = st2.canClaim ? st2.streak : M.data().login.streak; wrap.innerHTML = '';
-  M.LOGIN.forEach((r, k) => { const d = el('div', (k + 1 < cur || (!st2.canClaim && k + 1 <= cur)) ? 'done' : (st2.canClaim && k + 1 === Math.min(cur, 7)) ? 'today' : ''); d.appendChild(el('span', null, T('lg_day', k + 1))); d.appendChild(el('b', null, String(r))); wrap.appendChild(d); });
+  M.LOGIN.forEach((r, k) => { const today = st2.canClaim && k + 1 === Math.min(cur, M.LOGIN.length); const d = el('div', today ? 'today' : (k + 1 < cur || (!st2.canClaim && k + 1 <= cur)) ? 'done' : ''); d.appendChild(el('span', null, T('lg_day', k + 1))); d.appendChild(el('b', null, String(r))); wrap.appendChild(d); });
 }
 function sheetMissions(body) {
   const st2 = M.loginStatus();
