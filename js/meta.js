@@ -10,7 +10,7 @@ const hash = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt
 // A loop round Dubai in the real order. Leg 1 runs along the coast from Al Mamzar to JBR, leg 2 comes back inland
 // from Expo City to Dubai Creek Harbour, next to where it started. Each leg is squeezed to about 30 km, keeping the
 // parts roughly in proportion. After 60 km the loop starts again at Al Mamzar, and so on.
-export const LEG = 30000, ROUTE_END = 60000;
+export const ROUTE_END = 60000;
 export const AREAS = [
   { id: 'mamzar', at: 0 }, { id: 'creek', at: 3000 }, { id: 'downtown', at: 8000 },
   { id: 'jumeirah', at: 14000 }, { id: 'palm', at: 20000 }, { id: 'jbr', at: 25500 },
@@ -187,9 +187,7 @@ try {
 })();
 export function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 export const data = () => S;
-export const avatarOf = () => AVATARS.find(a => a.id === S.avatar) || AVATARS[0];
 export const robeOf = () => ROBES.find(r => r.id === S.robe) || ROBES[0];
-export const headOf = () => HEADS.find(h => h.id === S.head) || HEADS[0];
 export function takeRefund() { const r = S.refund || 0; if (r) { S.refund = 0; save(); } return r; }
 
 // ---- missions: daily three and the endless ladder ----
