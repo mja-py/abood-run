@@ -1,10 +1,10 @@
 # اركض يا عبود! · Run, Abood!
 
-لعبة جري في المتصفح: عبود بالكندورة والشماغ الأحمر يهرب من أبوه، وأبوه وراه بغترة معوجّة والنعال في يده. الطريق يبدأ من الممزر، ويمر بسوق ديرة على الخور، ووسط المدينة عند برج خليفة، وجميرا، ونفق الأسماك الزجاجي في نخلة جميرا، لين JBR وعين دبي. حوالي ٣٠ كم.
+لعبة جري في المتصفح: عبود بالكندورة والشماغ الأحمر يهرب من أبوه، وأبوه وراه بغترة معوجّة والنعال في يده. الطريق لفة حول دبي: من الممزر على البحر، بسوق ديرة على الخور، ووسط المدينة عند برج خليفة، وجميرا، ونفق الأسماك الزجاجي في نخلة جميرا، لين JBR وعين دبي (٣٠ كم). وبعدها داخل المدينة: إكسبو سيتي، وغولف الحبتور، وحديقة ند الشبا، وحديقة الخوانيج، وخور دبي هاربر (٣٠ كم ثانية)، وترجع للممزر من جديد.
 
-An endless runner for the browser. Abood, in his kandura and red shemagh, runs from Baba right across Dubai, in the real order: from Al Mamzar, through the old Deira souq on the Creek, past Burj Khalifa in Downtown, along Jumeirah, through the glass aquarium tunnel on the Palm and on to JBR and Ain Dubai. Arabic is the default language. The flag buttons switch to English.
+An endless runner for the browser. Abood, in his kandura and red shemagh, runs from Baba right across Dubai, in the real order: from Al Mamzar, through the old Deira souq on the Creek, past Burj Khalifa in Downtown, along Jumeirah, through the glass aquarium tunnel on the Palm and on to JBR and Ain Dubai. Then the route turns inland, past Expo City, Al Habtoor golf, Nad Al Sheba and Al Khawaneej to Dubai Creek Harbour, and loops back to Al Mamzar. Arabic is the default language. The flag buttons switch to English.
 
-Progress is saved on the device: in-game dirhams (no real payments), a shop with power-up upgrades and boosters, a wardrobe, 15 badges, the mission ladder plus three daily missions, postcards from 29 landmarks, and a 7-day login gift.
+Progress is saved on the device: in-game dirhams (no real payments), a shop with power-up upgrades and boosters, a wardrobe, 15 badges, the mission ladder plus three daily missions, postcards from 45 landmarks, and a 7-day login gift.
 
 ## How to play
 
@@ -16,7 +16,7 @@ Progress is saved on the device: in-game dirhams (no real payments), a shop with
 
 ## The route
 
-The real trip is about 50 km. The game squeezes it to **30 km** and keeps each leg roughly in proportion (positions are in `AREAS` and `STOPS` in `js/meta.js`):
+The route is a **60 km loop** in two legs of about 30 km each. The real distances are longer; the game squeezes them and keeps the parts roughly in proportion (positions are in `AREAS` and `STOPS` in `js/meta.js`). There is no finish line: after Dubai Creek Harbour, which is next to Deira, the loop starts again at Al Mamzar, and so on.
 
 | Area | Starts at | Landmarks on the way |
 |---|---|---|
@@ -25,10 +25,15 @@ The real trip is about 50 km. The game squeezes it to **30 km** and keeps each l
 | Downtown Dubai | 8 km | Museum of the Future, Emirates Towers, The Dubai Mall, the Dubai Fountain, Burj Khalifa, Dubai Opera |
 | Jumeirah | 14 km | Jumeirah Mosque, La Mer, Kite Beach, Burj Al Arab, Madinat Jumeirah |
 | Palm Jumeirah | 20 km | Palm Monorail, Atlantis The Palm, the glass aquarium tunnel (600 m underwater, with fish, rays, sharks and turtles), Atlantis The Royal, water park slides |
-| JBR | 25.5 km | The Walk, Ain Dubai, Dubai Marina, the finish line at 30 km (the beach keeps going after it) |
+| JBR | 25.5 km | The Walk, Ain Dubai, Dubai Marina |
+| Expo City Dubai | 30 km | Al Wasl Plaza dome, Terra pavilion, Garden in the Sky, Surreal waterfall |
+| Al Habtoor Golf | 36 km | The clubhouse, the island green, the polo field |
+| Nad Al Sheba Park | 42 km | Nad Al Sheba Park, Meydan grandstand, the horse race |
+| Al Khawaneej Garden | 48 km | Quranic Park, the Glass House, Cave of Miracles, Al Khawaneej farms with camels |
+| Dubai Creek Harbour | 54 km | Ras Al Khor flamingos, Creek Harbour towers, Creek Beach, the view of Burj Khalifa; then back to Al Mamzar at 60 km |
 
 - There is a landmark about every kilometre, so the view keeps changing. Tall landmarks stay on the skyline for a long time: Burj Khalifa is visible from the Creek to Jumeirah.
-- The first time you pass a landmark you collect its **postcard** and dirhams (7 near Al Mamzar, rising to 65 at the finish).
+- The first time you pass a landmark you collect its **postcard** and dirhams (7 near Al Mamzar, rising to 123 at the end of the loop). On later laps the landmarks are just passed, without paying again.
 - Every area you reach in a run becomes a **start point** in the menu, so you can carry on the journey next time. Scenery follows the route; difficulty, distance, sweets and missions count from the start of each run.
 - All landmarks are drawn in code as simple illustrations.
 
@@ -45,7 +50,7 @@ All numbers live in `js/meta.js`. The aim is roughly two months of daily play to
 - **Sweets exchange:** at the end of every run, sweets turn into dirhams with a counting animation: **10 sweets = 1 dirham**, plus **1 dirham per 250 m**, all times the mission multiplier. A 1.3 km run with 190 sweets pays about 23.
 - **Mission ladder:** endless sets of three missions that get harder each level. When a set is done, the level goes up at the end of the run: the exchange multiplier rises by ×0.1 (up to ×3) and you get 40 + 20 × level dirhams. A stuck mission can be skipped for 25 + 10 × level dirhams.
 - **Daily missions:** three a day from 11 kinds, 27–50 each, plus 50 for finishing all three.
-- **Postcards:** 7–65 for each landmark, once.
+- **Postcards:** 7–123 for each landmark, once.
 - **Power-up upgrades:** Vimto, magnet, scooter, Mama's call and marbles each have 5 levels (100, 250, 500, 1,000, 2,000). Each level makes that power-up last 15% longer, up to 75%.
 - **Boosters:** Vimto 15 · magnet 12 · head start 25 · shield 20 · second chance 120. The first second chance in every run is free.
 - **Login gift:** 3 → 25 over 7 days.
@@ -69,7 +74,7 @@ Ten badges have three tiers each. Every tier needs 10x the previous goal and pay
 | Comeback | 1 | 10 | 100 second chances |
 | Loyal | 7 | 70 | 700 days in a row |
 
-One-off badges: First run (5), Emirates runner, 10 km in one run (250 and the gold kandura), First buy (7), Postcard collector, every landmark (300), Crossed Dubai, reach the finish line (500).
+One-off badges: First run (5), Emirates runner, 10 km in one run (250 and the gold kandura), First buy (7), Postcard collector, every landmark (300), Round Dubai, run the whole 60 km loop back to Al Mamzar (500).
 
 ## Difficulty director
 

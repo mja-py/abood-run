@@ -7,12 +7,14 @@ const dayNo = s => Math.round(new Date(s + 'T12:00:00').getTime() / 864e5);
 const hash = s => { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
 
 // ---- the route ----
-// Abood runs right across Dubai, from Al Mamzar to JBR, in the real order. The real trip is about 50 km;
-// it is squeezed to 30 km so every area can be reached, keeping each leg roughly in proportion.
-export const ROUTE_END = 30000;
+// A loop round Dubai in the real order. Leg 1 runs along the coast from Al Mamzar to JBR, leg 2 comes back inland
+// from Expo City to Dubai Creek Harbour, next to where it started. Each leg is squeezed to about 30 km, keeping the
+// parts roughly in proportion. After 60 km the loop starts again at Al Mamzar, and so on.
+export const LEG = 30000, ROUTE_END = 60000;
 export const AREAS = [
   { id: 'mamzar', at: 0 }, { id: 'creek', at: 3000 }, { id: 'downtown', at: 8000 },
   { id: 'jumeirah', at: 14000 }, { id: 'palm', at: 20000 }, { id: 'jbr', at: 25500 },
+  { id: 'expo', at: 30000 }, { id: 'golf', at: 36000 }, { id: 'nadsheba', at: 42000 }, { id: 'khawaneej', at: 48000 }, { id: 'harbour', at: 54000 },
 ];
 // landmarks on the way, about one every kilometre (metres from the start at Al Mamzar)
 export const STOPS = [
@@ -21,10 +23,16 @@ export const STOPS = [
   { id: 'museum', m: 8600 }, { id: 'towers', m: 9500 }, { id: 'mall', m: 10500 }, { id: 'fountain', m: 11400 }, { id: 'burj', m: 12300 }, { id: 'opera', m: 13200 },
   { id: 'mosque', m: 14700 }, { id: 'lamer', m: 15800 }, { id: 'kite', m: 16900 }, { id: 'arab', m: 18000 }, { id: 'madinat', m: 19100 },
   { id: 'monorail', m: 20700 }, { id: 'atlantis', m: 21600 }, { id: 'tunnel', m: 22400, len: 600 }, { id: 'royal', m: 23700 }, { id: 'slides', m: 24600 },
-  { id: 'walk', m: 26200 }, { id: 'eye', m: 27300 }, { id: 'marina', m: 28500 }, { id: 'finish', m: 30000 },
+  { id: 'walk', m: 26200 }, { id: 'eye', m: 27300 }, { id: 'marina', m: 28500 },
+  { id: 'wasl', m: 31000 }, { id: 'terra', m: 32500 }, { id: 'skygarden', m: 34000 }, { id: 'surreal', m: 35100 },
+  { id: 'clubhouse', m: 37000 }, { id: 'island', m: 38500 }, { id: 'polo', m: 40200 },
+  { id: 'nadpark', m: 43000 }, { id: 'meydan', m: 44800 }, { id: 'race', m: 46400 },
+  { id: 'quranic', m: 49000 }, { id: 'glasshouse', m: 50300 }, { id: 'cave', m: 51600 }, { id: 'farms', m: 53000 },
+  { id: 'flamingos', m: 55000 }, { id: 'harbourtowers', m: 56700 }, { id: 'creekbeach', m: 58000 }, { id: 'skyview', m: 59200 },
 ];
-export const areaAt = m => { let z = 0; for (let i = 1; i < AREAS.length; i++) if (m >= AREAS[i].at) z = i; return z; };
-export const stopReward = s => 5 + Math.round(s.m / 1000) * 2; // a postcard pays more the further it is: 7 near Al Mamzar, 65 at the finish
+export const loopM = m => ((m % ROUTE_END) + ROUTE_END) % ROUTE_END; // position within the loop
+export const areaAt = m => { m = loopM(m); let z = 0; for (let i = 1; i < AREAS.length; i++) if (m >= AREAS[i].at) z = i; return z; };
+export const stopReward = s => 5 + Math.round(s.m / 1000) * 2; // a postcard pays more the further it is: 7 near Al Mamzar, 123 at the end of the loop
 
 // ---- wardrobe ----
 // Looks with no effect on the game are free. Only outfits with a perk cost dirhams (or a badge).
@@ -79,7 +87,7 @@ export const BADGES = [
   { id: 'dist10000', reward: 250, run: r => r.dist >= 10000, unlock: 'robe:gold' },
   { id: 'shopper', reward: 7, life: s => s.bought >= 1 },
   { id: 'postcards', reward: 300, life: () => STOPS.every(x => S.route.stops[x.id]) },
-  { id: 'journey', reward: 500, life: () => !!S.route.stops.finish },
+  { id: 'journey', reward: 500, life: () => S.route.best >= ROUTE_END },
 ];
 // tiered badges: bronze -> silver -> gold, each tier needs 10x the goal and pays 10x the dirhams
 export const TIER_REWARD = [10, 100, 1000];
