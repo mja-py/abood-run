@@ -180,3 +180,49 @@ h2{font-size:36px}
 #ldCv{height:auto!important;aspect-ratio:8/5}
 .card .prog{height:9px;border:2px solid var(--ink);border-radius:6px;background:#eadcc2;overflow:hidden}
 .card .prog i{display:block;height:100%;background:linear-gradient(90deg,#f6b73c,#7fc96b)}
+
+/* ---------- route, exchange, ladder ---------- */
+.pills{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.multpill{display:inline-flex;align-items:center;background:#1f7a74;color:var(--cream);border:2px solid var(--ink);border-radius:999px;padding:1px 10px;font-weight:800;font-size:15px;box-shadow:0 2px 0 var(--ink);direction:ltr}
+.start-row .area{padding:2px 12px;min-height:32px}
+.start-row .area.shut{opacity:.55;cursor:default;background:#eadcc2}
+.journey{text-align:start!important;opacity:.8}
+#routeHud{position:fixed;left:max(14px, env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:6px;background:var(--cream);border:2px solid var(--ink);border-radius:999px;
+  padding:3px 12px 3px 6px;font-weight:700;font-size:13px;box-shadow:0 2px 0 var(--ink);pointer-events:none;max-width:min(60vw,360px)}
+#routeHud svg{width:18px;height:18px;flex:none}
+#routeHud span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#routeHud .rbar{display:block;flex:none;width:54px;height:7px;border:1.5px solid var(--ink);border-radius:4px;background:#eadcc2;overflow:hidden}
+#routeHud .rbar i{display:block;height:100%;background:linear-gradient(90deg,#f6b73c,#7fc96b);transform-origin:left center;transform:scaleX(0)}
+.swap{background:#fff3c4;border:2px solid #e0a72a;border-radius:14px;padding:6px 10px;display:flex;flex-direction:column;gap:4px}
+.swap-row{display:flex;align-items:center;justify-content:center;gap:12px}
+.sw-box{display:flex;align-items:center;gap:6px;background:var(--cream);border:2px solid var(--sand-d);border-radius:12px;padding:2px 12px 2px 6px;min-width:96px}
+.sw-box.gold{border-color:#e0a72a}
+.sw-box canvas{width:30px;height:30px}
+.sw-box .coin{width:26px;height:26px}
+.sw-box b{font-size:26px;font-variant-numeric:tabular-nums;line-height:1.15}
+.sw-arrow{font-size:22px;font-weight:800;color:var(--shemagh)}
+[dir="rtl"] .sw-arrow{transform:scaleX(-1)}
+.swap-parts{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;font-size:12.5px;font-weight:700;opacity:.8;min-height:18px}
+.swap-parts .hot{color:var(--teal);opacity:1}
+.pop{animation:pop .3s ease-out}
+.route-line{font-size:14px!important;font-weight:700!important;color:var(--teal)}
+.mission-strip{display:flex;flex-direction:column;gap:4px}
+.mission-strip:empty{display:none}
+.levelup{background:#1f7a74;color:var(--cream);border:2px solid var(--ink);border-radius:12px;padding:4px 10px;font-weight:800!important;text-align:center;animation:pop .5s ease-out .6s both}
+.ms-chip{border-color:#4f8a3a}
+.flycoin{position:fixed;z-index:70;pointer-events:none;transition:transform .6s cubic-bezier(.5,-0.4,.6,1),opacity .6s ease-in}
+.pips{display:flex;gap:4px}
+.pips i{width:14px;height:8px;border-radius:3px;border:1.5px solid var(--ink);background:#eadcc2}
+.pips i.on{background:#7fc96b}
+.card.perk{border-color:#e0a72a}
+.ladder-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mission.done{border-color:#4f8a3a;background:#eef7e8}
+.mission button.skip{background:var(--sand-d);color:var(--ink)}
+.mission.done button.skip{background:#7fc96b;color:var(--ink)}
+@media (max-height:440px){ .sw-box b{font-size:20px} .swap{padding:4px 8px} .journey{display:none} }
+@media (prefers-reduced-motion:reduce){ .levelup{animation:none} }
+/* short landscape phones: keep the results card and its buttons on one screen */
+@media (max-height:440px){ .over .avatar-box{display:none} .over .menu-main{grid-template-columns:1fr} .over #overMsg,.over .hint{display:none}
+  .over .score div{padding:3px 8px} .over .score b{font-size:18px!important} .over h2{font-size:24px} .over .menu-text{gap:6px}
+  .swap-row{gap:8px} .sw-box b{font-size:18px} .swap-parts{font-size:11.5px} .over-actions .btn{min-height:40px;font-size:17px;padding:2px 10px}
+  .start-row .area{min-height:28px;font-size:12px;padding:1px 9px} }

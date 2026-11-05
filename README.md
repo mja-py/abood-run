@@ -1,10 +1,10 @@
 # اركض يا عبود! · Run, Abood!
 
-لعبة جري في المتصفح: عبود بالكندورة والشماغ الأحمر يهرب من أبوه، وأبوه وراه بغترة معوجّة والنعال في يده. اركض على شاطئ جميرا، وفي وسط مدينة دبي، وجنب بحر الممزر، لين توصل سوق الشارقة القديم.
+لعبة جري في المتصفح: عبود بالكندورة والشماغ الأحمر يهرب من أبوه، وأبوه وراه بغترة معوجّة والنعال في يده. الطريق يبدأ من الممزر، ويمر بسوق ديرة على الخور، ووسط المدينة عند برج خليفة، وجميرا، ونفق الأسماك الزجاجي في نخلة جميرا، لين JBR وعين دبي. حوالي ٣٠ كم.
 
-An endless runner for the browser. Abood, in his kandura and red shemagh, runs from Baba along the beach at Jumeirah, through Downtown Dubai, past the boats at Al Mamzar and into Sharjah Old Souq. Arabic is the default language. The flag buttons switch to English.
+An endless runner for the browser. Abood, in his kandura and red shemagh, runs from Baba right across Dubai, in the real order: from Al Mamzar, through the old Deira souq on the Creek, past Burj Khalifa in Downtown, along Jumeirah, through the glass aquarium tunnel on the Palm and on to JBR and Ain Dubai. Arabic is the default language. The flag buttons switch to English.
 
-Progress is saved on the device: in-game dirhams (no real payments), a shop with boosters and a second-chance revive, a wardrobe with three characters and outfits, 16 badges with rewards, three daily missions, and a 7-day login gift.
+Progress is saved on the device: in-game dirhams (no real payments), a shop with power-up upgrades and boosters, a wardrobe, 15 badges, the mission ladder plus three daily missions, postcards from 29 landmarks, and a 7-day login gift.
 
 ## How to play
 
@@ -14,17 +14,43 @@ Progress is saved on the device: in-game dirhams (no real payments), a shop with
 - **Items:** Vimto (faster), marbles (Baba slips), Mama's phone call (Baba stops), scooter (smash obstacles), magnet (pulls in sweets), sweets jar (+15).
 - **Watch out:** when “!” appears over Baba, he throws his sandal along the ground. Jump it.
 
+## The route
+
+The real trip is about 50 km. The game squeezes it to **30 km** and keeps each leg roughly in proportion (positions are in `AREAS` and `STOPS` in `js/meta.js`):
+
+| Area | Starts at | Landmarks on the way |
+|---|---|---|
+| Al Mamzar | 0 km | Al Mamzar Beach Park, Etisalat Tower, Deira Clock Tower |
+| Deira Creek Souq | 3 km | Spice Souk, Gold Souk, abra station, heritage antiques (chests, coffee pots, an old radio, lanterns), Mohammed bin Rashid Library, Dubai Frame |
+| Downtown Dubai | 8 km | Museum of the Future, Emirates Towers, The Dubai Mall, the Dubai Fountain, Burj Khalifa, Dubai Opera |
+| Jumeirah | 14 km | Jumeirah Mosque, La Mer, Kite Beach, Burj Al Arab, Madinat Jumeirah |
+| Palm Jumeirah | 20 km | Palm Monorail, Atlantis The Palm, the glass aquarium tunnel (600 m underwater, with fish, rays, sharks and turtles), Atlantis The Royal, water park slides |
+| JBR | 25.5 km | The Walk, Ain Dubai, Dubai Marina, the finish line at 30 km (the beach keeps going after it) |
+
+- There is a landmark about every kilometre, so the view keeps changing. Tall landmarks stay on the skyline for a long time: Burj Khalifa is visible from the Creek to Jumeirah.
+- The first time you pass a landmark you collect its **postcard** and dirhams (7 near Al Mamzar, rising to 65 at the finish).
+- Every area you reach in a run becomes a **start point** in the menu, so you can carry on the journey next time. Scenery follows the route; difficulty, distance, sweets and missions count from the start of each run.
+- All landmarks are drawn in code as simple illustrations.
+
+## Wardrobe
+
+- **Free:** every look with no effect on the game. That is 4 looks (classic, glasses, sunglasses, swim goggles), 9 kandura colours, 4 swimsuits (rash guard and board shorts), 6 headwear items (red or black shemagh, white ghutra, tagiyah, cap, swim cap) and 4 extras (none, school bag, camera, falcon). Saves that bought looks before they became free get those dirhams back.
+- **Paid, with a perk:** five football kits (Al Ain, Al Wasl, Shabab Al Ahli, Al Nasr, Sharjah), 1,500 each, each making Baba catch up 20% slower. The lifeguard set, 2,500, starts every run with a shield. The kits are drawn in club colours only, with no badges.
+- **Badge only:** the gold kandura (10,000 m in one run) makes Baba catch up 40% slower.
+
 ## Economy
 
-Prices are in realistic dirham amounts (all numbers live in `js/meta.js`).
+All numbers live in `js/meta.js`. The aim is roughly two months of daily play to buy everything.
 
-- **Wardrobe:** looks, kandura colours and headwear cost **10,000 د.إ** in total. The five football kits (Al Ain, Al Wasl, Shabab Al Ahli, Al Nasr, Sharjah) cost **1,500** each, 17,500 for everything. The kits are drawn in club colours only, with no badges, and each makes Baba catch up 20% slower while worn.
-- **Gold kandura:** unlocked only by the 10,000 m badge. While worn, Baba catches up 40% slower.
-- **Daily missions are the main income:** 23–46 each, plus **30** for finishing all three in a day. With the 7-day login gift (3 → 25) that is about 140 a day, so one kit takes about 11 days and everything about 4 months.
-- **Runs** pay only small change: 1 per 1,000 m and 1 per 200 sweets. Badges have bronze, silver and gold tiers (see below).
+- **Sweets exchange:** at the end of every run, sweets turn into dirhams with a counting animation: **10 sweets = 1 dirham**, plus **1 dirham per 250 m**, all times the mission multiplier. A 1.3 km run with 190 sweets pays about 23.
+- **Mission ladder:** endless sets of three missions that get harder each level. When a set is done, the level goes up at the end of the run: the exchange multiplier rises by ×0.1 (up to ×3) and you get 40 + 20 × level dirhams. A stuck mission can be skipped for 25 + 10 × level dirhams.
+- **Daily missions:** three a day from 11 kinds, 27–50 each, plus 50 for finishing all three.
+- **Postcards:** 7–65 for each landmark, once.
+- **Power-up upgrades:** Vimto, magnet, scooter, Mama's call and marbles each have 5 levels (100, 250, 500, 1,000, 2,000). Each level makes that power-up last 15% longer, up to 75%.
 - **Boosters:** Vimto 15 · magnet 12 · head start 25 · shield 20 · second chance 120. The first second chance in every run is free.
-- **Difficulty** rises steadily (linearly) with distance so the start is relaxed: Baba closes in at 0.046/s at 1 km, 0.078/s at 3 km, 0.11/s at 5 km and 0.14/s from about 7 km. Speed, obstacle pairs, hole widths and sandal throws grow gently up to 5–8 km. A hit costs 13% of the lead bar.
-- **Focus streak:** every 20 s without a hit raises Focus by one level (max 3); each level makes Baba 10% slower. Close calls add 3 s; a hit resets it. Skilled, focused play gets further.
+- **Login gift:** 3 → 25 over 7 days.
+- **Difficulty** rises steadily (linearly) with the distance of the run, so the start is relaxed: Baba closes in at 0.046/s at 1 km, 0.078/s at 3 km, 0.11/s at 5 km and 0.14/s from about 7 km. Speed, obstacle pairs, hole widths and sandal throws grow gently up to 5–8 km. A hit costs 13% of the lead bar.
+- **Focus streak:** every 20 s without a hit raises Focus by one level (max 3); each level makes Baba 10% slower. Close calls add 3 s; a hit resets it.
 
 ## Badges
 
@@ -43,7 +69,7 @@ Ten badges have three tiers each. Every tier needs 10x the previous goal and pay
 | Comeback | 1 | 10 | 100 second chances |
 | Loyal | 7 | 70 | 700 days in a row |
 
-One-off badges: First run (5), Emirates runner, 10 km in one run (250 and the gold kandura), First buy (7).
+One-off badges: First run (5), Emirates runner, 10 km in one run (250 and the gold kandura), First buy (7), Postcard collector, every landmark (300), Crossed Dubai, reach the finish line (500).
 
 ## Difficulty director
 
@@ -105,9 +131,9 @@ On each deploy the commit id is stamped into `sw.js`, `index.html` and `js/game.
 ```
 index.html              page, loading screen, menus
 css/style.css           layout, RTL, phone breakpoints, self-hosted font faces
-js/game.js              the game: world, physics, drawing, caching, loader
+js/game.js              the game: world, physics, landmarks, drawing, caching, loader
 js/i18n.js              Arabic and English text, language switch
-js/meta.js              save data, dirhams, shop, wardrobe, badges, missions, login gift
+js/meta.js              save data, the route, dirhams, shop, upgrades, wardrobe, badges, missions, login gift
 js/vendor/zzfx.js       ZzFX sound synth (MIT)
 assets/fonts/           Baloo Bhaijaan 2 (SIL OFL 1.1)
 assets/icons/           app icons, generated from the game's own drawing of Abood
