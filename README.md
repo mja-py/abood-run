@@ -23,7 +23,7 @@ The route is a **60 km loop** in two legs of about 30 km each. The real distance
 |---|---|---|
 | Al Mamzar | 0 km | Al Mamzar Beach Park, Etisalat Tower, Deira Clock Tower |
 | Deira Creek Souq | 3 km | Spice Souk, Gold Souk, abra station, heritage antiques (chests, coffee pots, an old radio, lanterns), Mohammed bin Rashid Library, Dubai Frame |
-| Downtown Dubai | 8 km | Museum of the Future, Emirates Towers, The Dubai Mall, the Dubai Fountain, Burj Khalifa, Dubai Opera |
+| Downtown Dubai | 8 km | Museum of the Future (the steel torus with its Arabic calligraphy windows), Emirates Towers, The Dubai Mall, the Dubai Fountain, Burj Khalifa (three wings stepping up to the spire), Dubai Opera |
 | Jumeirah | 14 km | Jumeirah Mosque, La Mer, Kite Beach, Burj Al Arab, Madinat Jumeirah |
 | Palm Jumeirah | 20 km | Palm Monorail, Atlantis The Palm, the glass aquarium tunnel (600 m underwater, with fish, rays, sharks and turtles), Atlantis The Royal, water park slides |
 | JBR | 25.5 km | The Walk, Ain Dubai, Dubai Marina |
@@ -35,7 +35,7 @@ The route is a **60 km loop** in two legs of about 30 km each. The real distance
 
 - There is a landmark about every kilometre, so the view keeps changing. Tall landmarks stay on the skyline for a long time: Burj Khalifa is visible from the Creek to Jumeirah.
 - The first time you pass a landmark you collect its **postcard** and dirhams (7 near Al Mamzar, rising to 123 at the end of the loop). On later laps the landmarks are just passed, without paying again.
-- Every area you reach in a run becomes a **start point** in the menu, so you can carry on the journey next time. Scenery follows the route; difficulty, distance, sweets and missions count from the start of each run.
+- Every area you reach in a run becomes a **start point** in the menu, so you can carry on the journey next time. The menu shows all 11 areas as a strip of picture cards (drawn with the game's own scenery and each area's landmark) that you swipe, or drag with a mouse; each card shows where the area starts and how many of its postcards you have, and areas not reached yet are greyed with a lock. Scenery follows the route; difficulty, distance, sweets and missions count from the start of each run.
 - All landmarks are drawn in code as simple illustrations.
 
 ## Wardrobe

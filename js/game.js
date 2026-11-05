@@ -1541,14 +1541,51 @@ function lmFrame(c, x, s) {
   c.strokeStyle = 'rgba(120,80,20,.35)'; c.beginPath(); for (let y = -228; y < 0; y += 12) { c.moveTo(-70, y); c.lineTo(-46, y + 6); c.moveTo(46, y); c.lineTo(70, y + 6); } c.stroke();
   c.restore();
 }
-function lmMuseum(c) { // a silver ring covered in Arabic calligraphy, on a green hill
-  c.fillStyle = '#5a9a45'; c.beginPath(); c.moveTo(-150, GROUND); c.quadraticCurveTo(0, GROUND - 74, 150, GROUND); c.closePath(); c.fill();
-  const cy = GROUND - 108, ringP = () => { c.beginPath(); c.ellipse(0, cy, 86, 92, 0, 0, TAU); c.ellipse(8, cy + 2, 38, 58, 0, 0, TAU); };
-  ringP(); c.fillStyle = glassG(c, -86, 86, '#9aa4b2', '#eef2f6', '#7d8796'); c.fill('evenodd');
-  c.save(); ringP(); c.clip('evenodd'); c.strokeStyle = night() ? 'rgba(255,214,120,.9)' : 'rgba(40,50,70,.62)'; c.lineWidth = 2.2;
-  for (let row = 0; row < 16; row++) { const y = cy - 88 + row * 11.5; c.beginPath(); for (let k = 0; k < 9; k++) { const x0 = -90 + k * 21 + sr(row * 9 + k) * 6; c.moveTo(x0, y); c.quadraticCurveTo(x0 + 6, y - 6 - sr(k + row) * 4, x0 + 12, y); c.lineTo(x0 + 16, y - 3); } c.stroke(); }
-  c.restore(); ringP(); c.strokeStyle = 'rgba(50,60,80,.6)'; c.lineWidth = 1.4; c.stroke();
-  if (night()) addLight(0, cy, 90);
+// Museum of the Future: a wide stainless-steel torus (the "eye") on a green hill. Its windows are
+// Arabic calligraphy, quotes by Sheikh Mohammed bin Rashid, flowing round the shell; they glow at night.
+const MOF_TXT = ['لن نعيش مئات السنين', 'ولكن يمكن أن نصنع شيئاً يستمر لمئات السنين', 'المستقبل لمن يستطيع تخيله وتصميمه وتنفيذه',
+  'المستقبل لا ينتظر', 'المستقبل يمكن تصميمه وبناؤه اليوم', 'سر تجدد الحياة وتطور الحضارة وتقدم البشرية', 'هو في كلمة واحدة: الابتكار'];
+function lmMuseum(c) {
+  const n = night(), cy = GROUND - 112, OX = 124, OY = 86, IX = 80, IY = 34, ix0 = 8, iy0 = -12; // outer and inner (void) ellipses
+  const outer = () => { c.beginPath(); c.ellipse(0, cy, OX, OY, 0, 0, TAU); }, voidP = () => { c.beginPath(); c.ellipse(ix0, cy + iy0, IX, IY, 0, 0, TAU); };
+  const ringP = () => { c.beginPath(); c.ellipse(0, cy, OX, OY, 0, 0, TAU); c.ellipse(ix0, cy + iy0, IX, IY, 0, 0, TAU); };
+  // steel: light on top, darker underneath, with a soft sheen across the upper left
+  const sg = c.createLinearGradient(0, cy - OY, 0, cy + OY);
+  sg.addColorStop(0, n ? '#3e4453' : '#f3f5f8'); sg.addColorStop(0.45, n ? '#2c313d' : '#c9cfd8'); sg.addColorStop(1, n ? '#1c2029' : '#8b93a1');
+  ringP(); c.fillStyle = sg; c.fill('evenodd');
+  c.save(); ringP(); c.clip('evenodd');
+  const sh = c.createRadialGradient(-50, cy - 60, 4, -50, cy - 60, 120); sh.addColorStop(0, n ? 'rgba(180,200,255,.18)' : 'rgba(255,255,255,.7)'); sh.addColorStop(1, 'rgba(255,255,255,0)');
+  c.fillStyle = sh; c.fillRect(-OX, cy - OY, OX * 2, OY * 2);
+  // calligraphy: whole words laid along curves between the void and the outer edge, so the Arabic letters stay joined
+  const P = (th, u) => [ix0 + IX * Math.cos(th) + (OX * Math.cos(th) - ix0 - IX * Math.cos(th)) * u, cy + iy0 + IY * Math.sin(th) + (OY * Math.sin(th) - iy0 - IY * Math.sin(th)) * u];
+  const words = MOF_TXT.join(' ').split(' '); let wi = 0;
+  c.fillStyle = n ? '#fff3d0' : 'rgba(34,46,68,.82)'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  if (n) { c.shadowColor = 'rgba(255,200,110,.9)'; c.shadowBlur = 6; }
+  for (const u of [0.2, 0.5, 0.8]) {
+    let th = -Math.PI + 0.02 + u * 0.7;
+    for (let guard = 0; guard < 80 && th < Math.PI - 0.02; guard++) {
+      const [x0, y0] = P(th, u), [x1, y1] = P(th + 0.01, u), thick = Math.hypot(P(th, 1)[0] - P(th, 0)[0], P(th, 1)[1] - P(th, 0)[1]);
+      const size = Math.max(8, Math.min(17, thick * 0.29)), w = words[wi % words.length]; c.font = `700 ${size.toFixed(1)}px ${FONT}`;
+      const tw = c.measureText(w).width, step = Math.hypot(x1 - x0, y1 - y0) / 0.01, dth = (tw + size * 0.55) / Math.max(1, step);
+      const [mx, my] = P(th + dth / 2, u), [ax, ay] = P(th + dth / 2 + 0.01, u); let ang = Math.atan2(ay - my, ax - mx);
+      if (Math.cos(ang) < 0) ang += Math.PI; // keep every word upright
+      c.save(); c.translate(mx, my); c.rotate(ang); c.fillText(w, 0, 0); c.restore();
+      th += dth; wi++;
+    }
+  }
+  c.shadowBlur = 0; c.restore();
+  // depth inside the void: the underside of the top of the ring, and the lit floor of the bottom
+  c.save(); voidP(); c.clip();
+  c.strokeStyle = n ? 'rgba(20,24,34,.85)' : 'rgba(70,78,92,.75)'; c.lineWidth = 16; c.beginPath(); c.ellipse(ix0 + 4, cy + iy0 - 10, IX, IY, 0, Math.PI * 1.02, Math.PI * 1.98); c.stroke();
+  c.strokeStyle = n ? 'rgba(255,210,140,.35)' : 'rgba(255,255,255,.55)'; c.lineWidth = 6; c.beginPath(); c.ellipse(ix0, cy + iy0 + 6, IX, IY, 0, Math.PI * 0.08, Math.PI * 0.92); c.stroke();
+  c.restore();
+  outer(); c.strokeStyle = 'rgba(50,60,80,.65)'; c.lineWidth = 1.5; c.stroke(); voidP(); c.stroke();
+  // the green hill it stands on, with planting and a path to the entrance
+  const hg = c.createLinearGradient(0, GROUND - 60, 0, GROUND); hg.addColorStop(0, n ? '#2f5a34' : '#6fb352'); hg.addColorStop(1, n ? '#1f3d24' : '#3f7d3a');
+  c.fillStyle = hg; c.strokeStyle = 'rgba(30,60,30,.6)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-150, GROUND); c.bezierCurveTo(-110, GROUND - 40, -60, GROUND - 52, 0, GROUND - 52); c.bezierCurveTo(60, GROUND - 52, 110, GROUND - 40, 150, GROUND); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = n ? '#3d6d3f' : '#86c463'; for (let k = 0; k < 14; k++) { const x = -128 + k * 19 + sr(k) * 6, y = GROUND - 8 - Math.max(0, 44 - Math.abs(x) * 0.32) * sr(k + 3); c.beginPath(); c.arc(x, y, 3 + sr(k + 7) * 2.5, 0, TAU); c.fill(); }
+  c.fillStyle = n ? '#9b8f78' : '#e8dcc2'; c.beginPath(); c.moveTo(-14, GROUND); c.lineTo(-6, GROUND - 40); c.lineTo(6, GROUND - 40); c.lineTo(14, GROUND); c.closePath(); c.fill();
+  if (n) { addLight(0, cy, 110); addLight(0, GROUND - 40, 50); }
 }
 function lmTowers(c, x, s) {
   c.save(); c.translate(x, GROUND - 46); c.scale(s, s);
@@ -1582,19 +1619,42 @@ function fountainLive(c, x) { // the lake and its dancing fountain
   c.fillStyle = 'rgba(240,250,255,.45)'; c.beginPath(); c.ellipse(x, GROUND - 22, 200, 5, 0, 0, TAU); c.fill();
   if (n) lights.push([x, GROUND - 60, 160]);
 }
-function lmBurj(c, x, s) { // stepped spire tower, the tallest in the world
+// Burj Khalifa: three wings round a central core. The wings step back in turn, each setback ending in a
+// pointed tip, until the core rises alone into the long spire. Silver-blue glass with vertical steel fins.
+const BURJ_L = [[38, 52], [33, 108], [28, 160], [23.5, 208], [19, 252], [15, 292], [11, 326]], BURJ_R = [[38, 80], [33.5, 134], [28.5, 184], [24, 230], [19.5, 272], [15.5, 310], [11.5, 340]];
+function burjPath(c) {
+  c.beginPath(); c.moveTo(-38, 0);
+  for (let i = 0; i < BURJ_L.length; i++) { const [w, h] = BURJ_L[i], wn = i + 1 < BURJ_L.length ? BURJ_L[i + 1][0] : 6.5;
+    c.lineTo(-w, -h + 6); c.quadraticCurveTo(-w, -h - 4, -w + 2, -h - 11); c.lineTo(-wn, -h); }
+  c.lineTo(-6.5, -356); c.lineTo(-4.2, -368); c.lineTo(-0.7, -440); c.lineTo(0.7, -440); c.lineTo(4.2, -368); c.lineTo(6.5, -356);
+  for (let i = BURJ_R.length - 1; i >= 0; i--) { const [w, h] = BURJ_R[i], wn = i + 1 < BURJ_R.length ? BURJ_R[i + 1][0] : 6.5;
+    c.lineTo(wn, -h); c.lineTo(w - 2, -h - 11); c.quadraticCurveTo(w, -h - 4, w, -h + 6); }
+  c.lineTo(38, 0); c.closePath();
+}
+function lmBurj(c, x, s) {
+  const n = SK.n > 0.3;
   c.save(); c.translate(x, GROUND - 40); c.scale(s, s);
-  const g = glassG(c, -30, 30, '#a9bcd6', '#e4ecf5', '#6f83a6'); c.fillStyle = g; c.strokeStyle = 'rgba(60,70,100,.45)'; c.lineWidth = 1;
-  let y = 0;
-  for (let k = 0; k < 14; k++) { const w = 58 * (1 - k / 15.5), h = 25, side = k % 3;
-    c.fillRect(-w / 2, y - h, w, h); c.strokeRect(-w / 2, y - h, w, h);
-    if (side === 1) { c.fillRect(-w / 2 - 8, y - h * 0.6, 8, h * 0.6); c.strokeRect(-w / 2 - 8, y - h * 0.6, 8, h * 0.6); }
-    if (side === 2) { c.fillRect(w / 2, y - h * 0.6, 7, h * 0.6); c.strokeRect(w / 2, y - h * 0.6, 7, h * 0.6); }
-    y -= h; }
-  c.beginPath(); c.moveTo(-4, y); c.lineTo(0, y - 90); c.lineTo(4, y); c.closePath(); c.fill(); c.stroke();
-  c.fillStyle = 'rgba(255,255,255,.3)'; c.fillRect(-2, y, 4, -y);
-  if (SK.n > 0.3) { c.fillStyle = `rgba(255,230,160,${SK.n})`; for (let yy = -8; yy > y; yy -= 8) c.fillRect(-1.2, yy, 2.4, 3); c.fillStyle = '#ff4d4d'; c.beginPath(); c.arc(0, y - 90, 2.4, 0, TAU); c.fill(); }
-  c.restore(); if (SK.n > 0.3) lights.push([x, GROUND - 40 + y * s * 0.5, 120]);
+  // glass: darker on the shaded wing, bright down the core, cooler on the far wing
+  const g = c.createLinearGradient(-38, 0, 38, 0);
+  g.addColorStop(0, n ? '#3b4766' : '#7f93b4'); g.addColorStop(0.42, n ? '#56658a' : '#c9d6e6'); g.addColorStop(0.55, n ? '#6d7da3' : '#eef3f9'); g.addColorStop(1, n ? '#46557a' : '#9aaccb');
+  burjPath(c); c.fillStyle = g; c.fill();
+  c.save(); burjPath(c); c.clip();
+  // the three wings: soft shadow lines where each wing meets the core
+  c.fillStyle = n ? 'rgba(10,16,34,.3)' : 'rgba(40,55,90,.16)'; c.fillRect(-8, -360, 2.6, 360); c.fillRect(5.4, -360, 2.6, 360);
+  // vertical steel fins, and a faint line at every floor band
+  c.strokeStyle = n ? 'rgba(160,180,220,.18)' : 'rgba(255,255,255,.4)'; c.lineWidth = 0.6; c.beginPath();
+  for (let fx = -37; fx <= 37; fx += 3) { c.moveTo(fx, 0); c.lineTo(fx, -360); } c.stroke();
+  c.strokeStyle = n ? 'rgba(0,0,0,.18)' : 'rgba(60,75,110,.14)'; c.beginPath(); for (let fy = -10; fy > -360; fy -= 10) { c.moveTo(-39, fy); c.lineTo(39, fy); } c.stroke();
+  // the spire: bare steel with service rings
+  c.fillStyle = n ? '#8d97ad' : '#dfe5ee'; c.fillRect(-5, -440, 10, 84); c.fillStyle = n ? 'rgba(0,0,0,.25)' : 'rgba(90,100,120,.35)'; for (let ry = -372; ry > -430; ry -= 14) c.fillRect(-5, ry, 10, 1.4);
+  if (n) { // lit windows and the LED facade glow
+    c.fillStyle = `rgba(255,230,170,${0.55 * SK.n})`; for (let k = 0; k < 140; k++) { const fy = -6 - sr(k * 1.7) * 330, half = 36 * (1 + fy / 380); c.fillRect((sr(k * 3.1) * 2 - 1) * half, fy, 1.6, 2.2); }
+    c.fillStyle = `rgba(140,190,255,${0.12 * SK.n})`; c.fillRect(-39, -360, 78, 360);
+  }
+  c.restore();
+  burjPath(c); c.strokeStyle = n ? 'rgba(20,26,46,.8)' : 'rgba(44,56,88,.75)'; c.lineWidth = 1.2; c.stroke();
+  if (n) { c.fillStyle = '#ff4d4d'; c.beginPath(); c.arc(0, -440, 2.4, 0, TAU); c.fill(); c.fillStyle = 'rgba(255,240,200,.9)'; for (const by of [-300, -230]) c.fillRect(-0.8, by, 1.6, 4); }
+  c.restore(); if (n) lights.push([x, GROUND - 40 - 220 * s, 120]);
 }
 function lmOpera(c) { // glass building shaped like a dhow
   c.fillStyle = '#d9d4c8'; c.fillRect(-170, GROUND - 14, 340, 14);
@@ -2476,18 +2536,59 @@ function drawBoosterIcon(c, id, size) {
   else if (id === 'shield') { c.fillStyle = '#8fd3ff'; c.strokeStyle = INK; c.lineWidth = 1.8; c.beginPath(); c.moveTo(20, 6); c.lineTo(32, 11); c.quadraticCurveTo(32, 28, 20, 35); c.quadraticCurveTo(8, 28, 8, 11); c.closePath(); c.fill(); c.stroke(); c.fillStyle = '#fff'; c.fillRect(18, 13, 4, 14); c.fillRect(13, 18, 14, 4); }
   else if (id === 'revive') { c.fillStyle = '#e23b4a'; c.strokeStyle = INK; c.lineWidth = 1.8; c.beginPath(); c.moveTo(20, 33); c.bezierCurveTo(2, 20, 8, 5, 20, 13); c.bezierCurveTo(32, 5, 38, 20, 20, 33); c.fill(); c.stroke(); c.fillStyle = 'rgba(255,255,255,.6)'; c.beginPath(); c.arc(14, 15, 3, 0, TAU); c.fill(); }
 }
+// ---- start-point strip: a card with a little picture for every area on the route ----
+// The picture is drawn with the game's own scenery: that area's sky, layers, ground and its best-known landmark.
+const AREA_SIG = { mamzar: 'mamzarpark', creek: 'abra', downtown: 'burj', jumeirah: 'arab', palm: 'atlantis', jbr: 'eye', expo: 'wasl', golf: 'clubhouse', nadsheba: 'meydan', khawaneej: 'quranic', harbour: 'harbourtowers' };
+const THUMBS = new Map(), TH_W = 232, TH_H = 128, TH_Y0 = 120; // canvas pixels, and the top of the world strip shown
+function areaThumb(z) {
+  const key = z + ':' + getLang(); if (THUMBS.has(key)) return THUMBS.get(key);
+  const cnv = mk(TH_W, TH_H), c = cnv.getContext('2d'), sc = TH_H / (H - TH_Y0);
+  const keep = { W, worldX, SK, lights };
+  W = TH_W / sc; worldX = 9000 + z * 3700; SK = skyAt(0.08); lights = [];
+  try {
+    c.scale(sc, sc); c.translate(0, -TH_Y0);
+    const sky = c.createLinearGradient(0, TH_Y0, 0, GROUND); SK.c.forEach((col, i) => sky.addColorStop(i / 3, rgb(col))); c.fillStyle = sky; c.fillRect(0, TH_Y0, W, GROUND - TH_Y0);
+    const La = LAYERS[z], L = LMK[AREA_SIG[M.AREAS[z].id]];
+    if (La.far) La.far(c);
+    if (L && L.r && L.lay === 'far') L.draw(c, W * 0.64, L.s * 0.92);
+    if (La.midfar) La.midfar(c);
+    if (L && L.r && L.lay === 'midfar') L.draw(c, W * 0.62, L.s * 0.95);
+    if (La.mid) La.mid(c);
+    if (L && !L.r) { c.save(); c.translate(W * 0.56, 0); if (L.draw) L.draw(c); c.restore(); if (L.live) L.live(c, W * 0.56); }
+    for (let x = 0; x < W; x += GP[z]) { c.save(); c.translate(x, 0); groundTile(c, z); c.restore(); }
+    if (La.near) La.near(c);
+  } finally { W = keep.W; worldX = keep.worldX; SK = keep.SK; lights = keep.lights; }
+  THUMBS.set(key, cnv); return cnv;
+}
+// mouse users can drag the strip and scroll it with the wheel; on touch screens it swipes natively
+function dragScroll(row) {
+  if (row.dataset.drag) return; row.dataset.drag = 1; let x0 = 0, s0 = 0, down = false;
+  row.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') return; down = true; row.moved = false; x0 = e.clientX; s0 = row.scrollLeft; });
+  addEventListener('pointermove', e => { if (!down) return; const dx = e.clientX - x0; if (Math.abs(dx) > 5) row.moved = true; if (row.moved) row.scrollLeft = s0 - dx; });
+  addEventListener('pointerup', () => { down = false; setTimeout(() => { row.moved = false; }, 0); });
+  row.addEventListener('wheel', e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { row.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+}
 function renderMenu() {
   syncCoins(); $('avName').textContent = kname();
   document.querySelectorAll('.multVal').forEach(e => { e.textContent = T('multPill', M.mult()); });
-  const sr2 = $('startRow'); sr2.innerHTML = ''; const cur = M.startArea();
-  let shownLocked = false;
-  M.AREAS.forEach((a, i) => {
-    const open = M.areaOpen(i); if (!open) { if (shownLocked) return; shownLocked = true; } // the opened areas, plus the next one to reach
-    const b = el('button', 'boost area' + (open ? '' : ' shut'), open ? T('zn_' + a.id) : T('zn_' + a.id) + ' ' + T('areaLocked', a.at / 1000));
-    b.type = 'button'; b.disabled = !open; b.setAttribute('aria-pressed', i === cur ? 'true' : 'false');
-    b.onclick = () => { if (M.setStart(i) && st === 'menu') { startM = a.at; reset(); worldX = 0; zoneNow = zoneAt(startM); showBanner(zoneNow); } renderMenu(); };
+  const sr2 = $('startRow'), cur = M.startArea(), keepX = sr2.scrollLeft, first = !sr2.childElementCount; sr2.innerHTML = ''; dragScroll(sr2);
+  const got = M.data().route.stops;
+  M.AREAS.forEach((a, i) => { // every area, so the whole route is in view; the ones not reached yet are greyed with a lock
+    const open = M.areaOpen(i), on = i === cur, end = i + 1 < M.AREAS.length ? M.AREAS[i + 1].at : M.ROUTE_END;
+    const stops = M.STOPS.filter(s2 => s2.m >= a.at && s2.m < end), have = stops.filter(s2 => got[s2.id]).length;
+    const b = el('button', 'area-card' + (open ? '' : ' shut') + (on ? ' on' : '')); b.type = 'button'; b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.setAttribute('aria-label', T('zn_' + a.id) + (open ? '' : ' ' + T('areaLocked', a.at / 1000)));
+    const pic = mk(TH_W, TH_H); pic.setAttribute('aria-hidden', 'true'); b.appendChild(pic);
+    const fill = () => pic.getContext('2d').drawImage(areaThumb(i), 0, 0);
+    if (THUMBS.has(i + ':' + getLang())) fill(); else setTimeout(fill, 30 + i * 40); // draw the pictures a few at a time, after the menu is up
+    if (!open) b.appendChild(el('span', 'lock', '🔒'));
+    b.appendChild(el('b', null, T('zn_' + a.id)));
+    b.appendChild(el('small', null, open ? T('km', a.at / 1000) + ' · ' + T('pcShort', have, stops.length) : T('areaLocked', a.at / 1000)));
+    b.onclick = () => { if (!open || sr2.moved) return; if (M.setStart(i) && st === 'menu') { startM = a.at; reset(); worldX = 0; zoneNow = zoneAt(startM); showBanner(zoneNow); } renderMenu(); };
     sr2.appendChild(b);
   });
+  if (first) requestAnimationFrame(() => { const c2 = sr2.children[cur]; if (c2) sr2.scrollLeft += c2.getBoundingClientRect().left - sr2.getBoundingClientRect().left - 8; });
+  else sr2.scrollLeft = keepX;
   $('journeyLine').textContent = T('journey', kmTxt(Math.min(RL, M.data().route.best)), M.postcards(), M.STOPS.length);
   const hk = document.querySelector('.chase span:last-child'); if (hk) hk.textContent = kname();
   const D = M.data(), row = $('boostRow'); row.innerHTML = '';

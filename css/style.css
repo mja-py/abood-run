@@ -172,8 +172,22 @@ h2{font-size:36px}
 /* ---------- route, exchange, ladder ---------- */
 .pills{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .multpill{display:inline-flex;align-items:center;background:#1f7a74;color:var(--cream);border:2px solid var(--ink);border-radius:999px;padding:1px 10px;font-weight:800;font-size:15px;box-shadow:0 2px 0 var(--ink);direction:ltr}
-.start-row .area{padding:2px 12px;min-height:32px}
-.start-row .area.shut{opacity:.55;cursor:default;background:#eadcc2}
+/* start point: a strip of area cards that swipes sideways */
+.area-strip{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;scroll-padding-inline:8px;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;touch-action:pan-x;
+  scrollbar-width:none;padding:2px 8px 6px;margin:0 -8px;cursor:grab;
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 12px,#000 calc(100% - 12px),transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 12px,#000 calc(100% - 12px),transparent 100%)}
+.area-strip::-webkit-scrollbar{display:none}
+.area-card{position:relative;flex:0 0 118px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:stretch;padding:0 0 5px;overflow:hidden;
+  border:2px solid var(--ink);border-radius:12px;background:var(--cream);color:var(--ink);text-align:start;cursor:pointer;box-shadow:0 3px 0 rgba(43,26,18,.25)}
+.area-card canvas{display:block;width:100%;height:auto;aspect-ratio:232/128;border-bottom:2px solid var(--ink);pointer-events:none}
+.area-card b{font:700 12.5px/1.25 var(--display);padding:4px 8px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.area-card small{font-size:10.5px;line-height:1.2;opacity:.72;padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.area-card.on{border-color:var(--shemagh);box-shadow:0 0 0 2px var(--shemagh),0 3px 0 rgba(43,26,18,.25);background:#ffe7a0}
+.area-card.on::after{content:"✓";position:absolute;top:5px;inset-inline-end:5px;width:20px;height:20px;border-radius:50%;background:var(--shemagh);color:#fff;font:800 12px/20px var(--display);text-align:center}
+.area-card.shut{cursor:default;background:#eadcc2}
+.area-card.shut canvas{filter:grayscale(.9) brightness(.8)}
+.area-card .lock{position:absolute;top:22px;left:50%;transform:translateX(-50%);font-size:20px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+.area-card:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 .journey{text-align:start!important;opacity:.8}
 #routeHud{position:fixed;left:max(14px, env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:6px;background:var(--cream);border:2px solid var(--ink);border-radius:999px;
   padding:3px 12px 3px 6px;font-weight:700;font-size:13px;box-shadow:0 2px 0 var(--ink);pointer-events:none;max-width:min(60vw,360px)}
@@ -213,4 +227,4 @@ h2{font-size:36px}
 @media (max-height:440px){ .over .avatar-box{display:none} .over .menu-main{grid-template-columns:1fr} .over #overMsg,.over .hint{display:none}
   .over .score div{padding:3px 8px} .over .score b{font-size:18px!important} .over h2{font-size:24px} .over .menu-text{gap:6px}
   .swap-row{gap:8px} .sw-box b{font-size:18px} .swap-parts{font-size:11.5px} .over-actions .btn{min-height:40px;font-size:17px;padding:2px 10px}
-  .start-row .area{min-height:28px;font-size:12px;padding:1px 9px} }
+  .area-card{flex-basis:100px} .area-card b{font-size:11.5px} .area-card small{font-size:10px} }
