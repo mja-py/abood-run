@@ -4,7 +4,7 @@
 
 An endless runner for the browser. Abood, in his kandura and red shemagh, runs from Baba right across Dubai, in the real order: from Al Mamzar, through the old Deira souq on the Creek, past Burj Khalifa in Downtown, along Jumeirah, through the glass aquarium tunnel on the Palm and on to JBR and Ain Dubai. Then the route turns inland, past Expo City, Al Habtoor golf, Nad Al Sheba and Al Khawaneej to Dubai Creek Harbour, and loops back to Al Mamzar. Arabic is the default language. The flag buttons switch to English.
 
-Progress is saved on the device: in-game dirhams (no real payments), a shop with power-up upgrades and boosters, a wardrobe, 15 badges, the mission ladder plus three daily missions, postcards from 46 landmarks, and a 7-day login gift.
+Progress is saved on the device: in-game dirhams (no real payments), a shop with power-up upgrades and boosters, a wardrobe for Abood and his sister Mozah (unlocked by missions), 15 badges, the mission ladder plus three daily missions, postcards from 46 landmarks, and a 7-day login gift.
 
 ## How to play
 
@@ -40,9 +40,13 @@ The route is a **60 km loop** in two legs of about 30 km each. The real distance
 
 ## Wardrobe
 
-- **Free:** every look with no effect on the game. That is 4 looks (classic, glasses, sunglasses, swim goggles), 9 kandura colours, 4 swimsuits (rash guard and board shorts), 6 headwear items (red or black shemagh, white ghutra, tagiyah, cap, swim cap) and 4 extras (none, school bag, camera, falcon). Saves that bought looks before they became free get those dirhams back.
-- **Paid, with a perk:** five football kits (Al Ain, Al Wasl, Shabab Al Ahli, Al Nasr, Sharjah), 1,500 each, each making Baba catch up 20% slower. The lifeguard set, 2,500, starts every run with a shield. The kits are drawn in club colours only, with no badges.
-- **Badge only:** the gold kandura (10,000 m in one run) makes Baba catch up 40% slower.
+The wardrobe opens with **who you play as**: Abood, or his sister **Mozah**. Mozah unlocks after finishing **10 missions** (daily or mission ladder; the wardrobe shows the progress) and a message says so at the end of that run. The sections below show only the chosen character's outfits, and each character keeps their own outfit when you switch. While Mozah plays, Baba's lines, titles and buttons switch to the feminine in Arabic, and to her name in English.
+
+- **Free, Abood:** 4 kandura colours (white, cream, grey, winter brown), 2 swimsuits (rash guard and board shorts), red shemagh, white ghutra, swim cap.
+- **Free, Mozah:** 3 jalabiya colours with gold embroidery (pink, purple, teal), 2 full-length swimsuits (pink, teal), bukhnag (black with gold), white shayla, swim cap.
+- **Paid, with a perk (bought once, fits both):** five football kits (Al Ain, Al Wasl, Shabab Al Ahli, Al Nasr, Sharjah), 1,500 each, each making Baba catch up 20% slower; Mozah wears them over leggings. The lifeguard set, 2,500, starts every run with a shield. The kits are drawn in club colours only, with no badges.
+- **Badge only:** the gold kandura or gold jalabiya (10,000 m in one run) makes Baba catch up 40% slower.
+- Older saves: looks that were removed (glasses, extras, some colours and headwear) were all free, so nothing is refunded; anyone wearing one goes back to the default look.
 
 ## Economy
 

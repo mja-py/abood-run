@@ -35,26 +35,28 @@ export const areaAt = m => { m = loopM(m); let z = 0; for (let i = 1; i < AREAS.
 export const stopReward = s => 5 + Math.round(s.m / 1000) * 2; // a postcard pays more the further it is: 7 near Al Mamzar, 123 at the end of the loop
 
 // ---- wardrobe ----
+// Two characters: Abood, and his sister Mozah, who unlocks after GIRL_MISSIONS missions.
+// `who`: 'b' Abood only, 'g' Mozah only, missing = both (a paid outfit is bought once and fits both).
 // Looks with no effect on the game are free. Only outfits with a perk cost dirhams (or a badge).
-export const AVATARS = [
-  { id: 'classic', price: 0 }, { id: 'glasses', price: 0 }, { id: 'shades', price: 0 }, { id: 'goggles', price: 0 },
-];
+export const CHARS = ['abood', 'mozah'];
+export const GIRL_MISSIONS = 10;
 export const ROBES = [
-  { id: 'white', col: '#fbfaf4', shade: '#dcd8cb', price: 0 },
-  { id: 'cream', col: '#f1e6cf', shade: '#d4c3a0', price: 0 },
-  { id: 'grey', col: '#d9dbe0', shade: '#b0b5c0', price: 0 },
-  { id: 'blue', col: '#cfe3f2', shade: '#a1c0da', price: 0 },
-  { id: 'brown', col: '#9a7353', shade: '#775638', price: 0 },
-  { id: 'navy', col: '#3d4b6e', shade: '#2c3753', price: 0 },
-  { id: 'olive', col: '#8d8f5e', shade: '#6d7046', price: 0 },
-  { id: 'maroon', col: '#7d2e36', shade: '#5f2128', price: 0 },
-  { id: 'charcoal', col: '#55565c', shade: '#3e3f44', price: 0 },
+  // Abood's kandura
+  { id: 'white', who: 'b', col: '#fbfaf4', shade: '#dcd8cb', price: 0 },
+  { id: 'cream', who: 'b', col: '#f1e6cf', shade: '#d4c3a0', price: 0 },
+  { id: 'grey', who: 'b', col: '#d9dbe0', shade: '#b0b5c0', price: 0 },
+  { id: 'brown', who: 'b', col: '#9a7353', shade: '#775638', price: 0 },
+  // Mozah's jalabiya, with gold embroidery
+  { id: 'jal_pink', who: 'g', col: '#f4a7c0', shade: '#d77f9e', price: 0 },
+  { id: 'jal_purple', who: 'g', col: '#b18ad8', shade: '#8d66b8', price: 0 },
+  { id: 'jal_teal', who: 'g', col: '#5cc4b8', shade: '#3a9d92', price: 0 },
+  // gold kandura or gold jalabiya, from the 10 km badge
   { id: 'gold', col: '#f4e3a8', shade: '#d4b96e', price: 0, badge: 'dist10000', perk: 'perk_gold', slow: 0.6 },
-  // swimwear: rash guard and board shorts, with flip-flops
-  { id: 'swim_blue', col: '#2b9bd6', shade: '#1f7cb0', price: 0, swim: { top: '#2b9bd6', trim: '#ffffff', shorts: '#1f4fa0', stripe: '#ffe066' } },
-  { id: 'swim_orange', col: '#f28c28', shade: '#c96d14', price: 0, swim: { top: '#f28c28', trim: '#fffaf0', shorts: '#2c5d9e', stripe: '#fffaf0' } },
-  { id: 'swim_green', col: '#33b679', shade: '#238d5b', price: 0, swim: { top: '#33b679', trim: '#fffaf0', shorts: '#1f7a74', stripe: '#f2c230' } },
-  { id: 'swim_navy', col: '#26355c', shade: '#1b2645', price: 0, swim: { top: '#26355c', trim: '#7ee0b0', shorts: '#26355c', stripe: '#7ee0b0' } },
+  // swimwear: Abood's rash guard and board shorts; Mozah's full-length swimsuit
+  { id: 'swim_blue', who: 'b', col: '#2b9bd6', shade: '#1f7cb0', price: 0, swim: { top: '#2b9bd6', trim: '#ffffff', shorts: '#1f4fa0', stripe: '#ffe066' } },
+  { id: 'swim_orange', who: 'b', col: '#f28c28', shade: '#c96d14', price: 0, swim: { top: '#f28c28', trim: '#fffaf0', shorts: '#2c5d9e', stripe: '#fffaf0' } },
+  { id: 'gswim_pink', who: 'g', col: '#ef6f9a', shade: '#c9507a', price: 0, swim: { top: '#ef6f9a', trim: '#fffaf0', shorts: '#7a2e6b', legD: '#62235a', stripe: '#ffe066', full: 1 } },
+  { id: 'gswim_teal', who: 'g', col: '#1f9e8f', shade: '#167a6f', price: 0, swim: { top: '#1f9e8f', trim: '#fffaf0', shorts: '#26355c', legD: '#1c2848', stripe: '#f2c230', full: 1 } },
   { id: 'swim_life', col: '#e23b2a', shade: '#b52a1c', price: 2500, perk: 'perk_life', shield: 1, swim: { top: '#e23b2a', trim: '#f2c230', shorts: '#e23b2a', stripe: '#f2c230', cross: 1 } },
   // football kits named after five UAE clubs (colours only, no badges are drawn); each slows Baba by 20%
   { id: 'kit_purple', col: '#5b2a86', shade: '#43206a', price: 1500, perk: 'perk_kit', slow: 0.8, kit: { main: '#5b2a86', trim: '#ffffff', shorts: '#ffffff', sock: '#5b2a86', num: '#ffffff' } },
@@ -64,12 +66,13 @@ export const ROBES = [
   { id: 'kit_white', col: '#fbfaf4', shade: '#dcd8cb', price: 1500, perk: 'perk_kit', slow: 0.8, kit: { main: '#fbfaf4', trim: '#c8202b', shorts: '#fbfaf4', sock: '#fbfaf4', num: '#c8202b', band: 1 } },
 ];
 export const HEADS = [
-  { id: 'shemagh', price: 0 }, { id: 'ghutra', price: 0 }, { id: 'blackshemagh', price: 0 }, { id: 'tagiyah', price: 0 }, { id: 'cap', price: 0 }, { id: 'swimcap', price: 0 },
+  { id: 'shemagh', who: 'b', price: 0 }, { id: 'ghutra', who: 'b', price: 0 },
+  { id: 'bukhnag', who: 'g', price: 0 }, { id: 'shayla', who: 'g', price: 0 },
+  { id: 'swimcap', price: 0 },
 ];
-export const EXTRAS = [
-  { id: 'none', price: 0 }, { id: 'bag', price: 0 }, { id: 'camera', price: 0 }, { id: 'falcon', price: 0 },
-];
-const LISTS = { avatar: AVATARS, robe: ROBES, head: HEADS, extra: EXTRAS };
+export const fits = (it, ch) => !it.who || it.who === (ch === 'mozah' ? 'g' : 'b');
+const START_LOOK = { abood: { robe: 'white', head: 'shemagh' }, mozah: { robe: 'jal_pink', head: 'bukhnag' } };
+const LISTS = { robe: ROBES, head: HEADS };
 // what the looks used to cost, so earlier purchases can be paid back now that they are free
 const OLD_PRICE = { avatar: { glasses: 1200, shades: 1800 }, robe: { cream: 600, grey: 800, blue: 1100, brown: 1500 }, head: { ghutra: 700, blackshemagh: 1300, tagiyah: 1000 } };
 
@@ -150,8 +153,8 @@ export const SWEETS_PER_AED = 10, M_PER_AED = 250;
 export const LOGIN = [3, 4, 5, 6, 8, 10, 25];
 
 const fresh = () => ({
-  econ: 4, coins: 5, avatar: 'classic', robe: 'white', head: 'shemagh', extra: 'none',
-  owned: { avatar: [], robe: [], head: [], extra: [] },
+  econ: 4, coins: 5, char: 'abood', robe: 'white', head: 'shemagh', wear: {},
+  owned: { robe: [], head: [] },
   boosters: { vimto: 0, magnet: 0, headstart: 0, shield: 0, revive: 0 }, up: {},
   stats: { recent: [], totalDist: 0, areas: 0, powersTotal: 0, stopsTotal: 0, runs: 0, sweets: 0, close: 0, dodged: 0, smash: 0, zones: [0], powers: [], revivesUsed: 0, bought: 0, best: 0, streak: 0 },
   route: { best: 0, stops: {}, start: 0 },
@@ -174,17 +177,28 @@ try {
   S.tiers = S.tiers || {}; S.up = S.up || {}; S.badges = S.badges || {};
   if (!S.login || typeof S.login !== 'object') S.login = fresh().login;
   const refund = { char: { mozah: 300, saif: 250 }, robe: { pink: 100, purple: 120 }, head: { shayla_purple: 60, shayla_black: 60 } };
-  for (const kind of Object.keys(refund)) for (const id of (S.owned[kind] || [])) if (refund[kind][id]) S.coins += refund[kind][id];
-  delete S.owned.char; delete S.char;
+  if (S.owned.char) { // saves from the first version, which had three characters to buy
+    for (const kind of Object.keys(refund)) for (const id of (S.owned[kind] || [])) if (refund[kind][id]) S.coins += refund[kind][id];
+    delete S.owned.char; delete S.char;
+  }
   if (S.econ === 3) { // looks became free: pay back what they cost, and retire the old mission kinds
     let back = 0; for (const kind of Object.keys(OLD_PRICE)) for (const id of (S.owned[kind] || [])) back += OLD_PRICE[kind][id] || 0;
     S.coins += back; S.refund = back; S.daily = null; S.stats.zones = [0]; S.econ = 4;
   }
+  // the looks and extras sections are gone (they were free), and each character keeps its own outfit
+  delete S.owned.avatar; delete S.owned.extra; delete S.avatar; delete S.extra;
+  if (S.stats.missions == null) { // missions finished before the counter existed: the ladder levels passed, plus what is done now
+    const L = S.ladder, done = list => (list || []).filter(m => m.done).length;
+    S.stats.missions = (L ? (L.lv - 1) * 3 + done(L.missions) : 0) + (S.daily && S.daily.v === 2 ? done(S.daily.missions) : 0);
+  }
+  if (!CHARS.includes(S.char) || (S.char === 'mozah' && !girlOpen())) S.char = 'abood';
+  S.wear = S.wear || {};
   for (const kind of Object.keys(LISTS)) {
     const list = LISTS[kind];
     S.owned[kind] = (S.owned[kind] || []).filter(id => list.some(x => x.id === id));
     for (const it of list) if (!it.price && !it.badge && !S.owned[kind].includes(it.id)) S.owned[kind].push(it.id);
-    if (!S.owned[kind].includes(S[kind])) S[kind] = list[0].id;
+    const ok = id => S.owned[kind].includes(id) && fits(list.find(x => x.id === id), S.char);
+    if (!ok(S[kind])) S[kind] = START_LOOK[S.char][kind];
   }
   S.route.start = Math.min(S.route.start || 0, AREAS.length - 1);
   save();
@@ -192,11 +206,22 @@ try {
 export function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 export const data = () => S;
 export const robeOf = () => ROBES.find(r => r.id === S.robe) || ROBES[0];
+// Mozah opens after GIRL_MISSIONS missions (daily or ladder); switching keeps each character's own outfit
+export function missionsDone() { return S.stats.missions || 0; }
+export function girlOpen() { return missionsDone() >= GIRL_MISSIONS; } // a function declaration: migrate() above needs it
+export const outfitOf = ch => ch === S.char ? { robe: S.robe, head: S.head } : (S.wear[ch] || START_LOOK[ch]);
+export function setChar(ch) {
+  if (!CHARS.includes(ch) || ch === S.char || (ch === 'mozah' && !girlOpen())) return false;
+  S.wear[S.char] = { robe: S.robe, head: S.head }; S.char = ch;
+  const w = S.wear[ch] || START_LOOK[ch];
+  for (const kind of Object.keys(LISTS)) { const it = LISTS[kind].find(x => x.id === w[kind]); S[kind] = it && fits(it, ch) && S.owned[kind].includes(it.id) ? it.id : START_LOOK[ch][kind]; }
+  save(); return true;
+}
 export function takeRefund() { const r = S.refund || 0; if (r) { S.refund = 0; save(); } return r; }
 
 // ---- missions: daily three and the endless ladder ----
 let doneQ = []; // missions finished since the game last asked, so it can cheer
-function checkDone(m, set) { if (!m.done && m.progress >= m.goal) { m.done = true; doneQ.push({ kind: m.kind, goal: m.goal, set }); } }
+function checkDone(m, set) { if (!m.done && m.progress >= m.goal) { m.done = true; S.stats.missions = (S.stats.missions || 0) + 1; doneQ.push({ kind: m.kind, goal: m.goal, set }); } }
 export const takeDone = () => { const q = doneQ; doneQ = []; return q; };
 export function ensureDaily() {
   const d = today();
@@ -323,8 +348,9 @@ export function endRun(run) {
   const nb = Math.floor(run.dist) > S.stats.best; if (nb) S.stats.best = Math.floor(run.dist);
   const levelUp = ladderUp();
   const badges = checkBadges(run);
+  const girl = girlOpen() && !S.girlSeen; if (girl) S.girlSeen = true;
   save();
-  return { earned: pay, ex, newBest: nb, badges, levelUp };
+  return { earned: pay, ex, newBest: nb, badges, levelUp, girl };
 }
 
 // ---- shop and wardrobe ----
@@ -338,7 +364,8 @@ export function buy(kind, id) {
   checkBadges(null); save(); return true;
 }
 export function equip(kind, id) {
-  if (!S.owned[kind].includes(id)) return false;
+  const it = (LISTS[kind] || []).find(x => x.id === id);
+  if (!it || !S.owned[kind].includes(id) || !fits(it, S.char)) return false;
   S[kind] = id;
   save(); return true;
 }

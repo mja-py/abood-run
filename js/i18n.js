@@ -8,11 +8,12 @@ const STR = {
     b_wardrobe: 'الخزانة', b_shop: 'المحل', b_badges: 'الأوسمة', b_missions: 'المهمات', b_help: 'طريقة اللعب', b_close: 'إغلاق', b_menu: 'القائمة',
     boostersTitle: 'معززات هالجولة', noBoosters: 'اشتر معززات من المحل عشان تبدأ أقوى.',
     ch_abood: 'عبود',
-    r_white: 'أبيض', r_cream: 'كريمي', r_grey: 'رمادي', r_blue: 'سماوي', r_brown: 'بني شتوي', r_gold: 'ذهبي', r_navy: 'كحلي', r_olive: 'زيتي', r_maroon: 'عنابي', r_charcoal: 'فحمي',
-    r_swim_blue: 'سباحة أزرق', r_swim_orange: 'سباحة برتقالي', r_swim_green: 'سباحة أخضر', r_swim_navy: 'سباحة كحلي', r_swim_life: 'طقم المنقذ', perk_life: 'تبدأ كل جولة بدرع', w_swim: 'ملابس السباحة',
-    h_shemagh: 'شماغ أحمر', h_ghutra: 'غترة بيضاء', h_blackshemagh: 'شماغ أسود', h_tagiyah: 'طاقية', h_cap: 'كاب', h_swimcap: 'طاقية سباحة',
-    w_extras: 'إكسسوارات', x_none: 'بدون', x_bag: 'شنطة المدرسة', x_camera: 'كاميرا', x_falcon: 'صقر', free: 'مجاني', w_note: 'كل الأشكال والألوان مجانية. تدفع بس في الأطقم اللي لها ميزة في اللعب.', refund: n => `صارت الأشكال مجانية، ورجّعنا لك ${nf(n)} د.إ!`,
-    w_title: 'الخزانة', w_avatar: 'شكل عبود', av_classic: 'الأصلي', av_glasses: 'بنظارة', av_shades: 'بنظارة شمسية', av_goggles: 'نظارة سباحة', w_robes: 'لون الكندورة', w_heads: 'غطاء الراس',
+    r_white: 'أبيض', r_cream: 'كريمي', r_grey: 'رمادي', r_brown: 'بني شتوي', r_gold: 'ذهبي', r_jal_pink: 'وردي', r_jal_purple: 'بنفسجي', r_jal_teal: 'فيروزي',
+    r_swim_blue: 'سباحة أزرق', r_swim_orange: 'سباحة برتقالي', r_gswim_pink: 'سباحة وردي', r_gswim_teal: 'سباحة فيروزي', r_swim_life: 'طقم المنقذ', perk_life: 'تبدأ كل جولة بدرع', w_swim: 'ملابس السباحة',
+    h_shemagh: 'شماغ أحمر', h_ghutra: 'غترة بيضاء', h_bukhnag: 'بخنق', h_shayla: 'شيلة بيضاء', h_swimcap: 'طاقية سباحة',
+    free: 'مجاني', w_note: 'كل الأشكال والألوان مجانية. تدفع بس في الأطقم اللي لها ميزة في اللعب، والطقم اللي تشتريه يصلح لعبود وموزة.', refund: n => `صارت الأشكال مجانية، ورجّعنا لك ${nf(n)} د.إ!`,
+    w_title: 'الخزانة', w_robes: 'لون الكندورة', w_dresses: 'لون الجلابية', w_heads: 'غطاء الراس', w_char: 'مع منو تلعب؟', ch_mozah: 'موزة', w_pick: 'العب فيها', w_pickB: 'العب فيه', w_playing: 'تلعب فيها', w_playingB: 'تلعب فيه',
+    w_lock: (n, g) => `خلّص ${g} مهمات وتنفتح · ${n} من ${g}`, girlNew: 'موزة انفتحت! اخترها من الخزانة', menuTitle: 'اركض يا عبود!',
     buy: n => `اشتر · ${nf(n)} د.إ`, wear: 'البس', wearing: 'لابسه', badgeOnly: 'ينفتح بوسام', notEnough: 'ما عندك دراهم كفاية', bought: 'تم الشراء!', have: n => `عندك ${n}`,
     shopTitle: 'المحل', shopNote: 'دراهم داخل اللعبة فقط، للتجربة. ما في دفع حقيقي.',
     bo_vimto: 'فيمتو البداية', bo_vimto_d: 'تبدأ الجولة أسرع ٦ ثواني', bo_magnet: 'مغناطيس البداية', bo_magnet_d: 'يجذب الحلاوة أول ١٠ ثواني',
@@ -28,7 +29,7 @@ const STR = {
     bg_tiered: 'كل وسام له ٣ مستويات: برونزي ثم فضي ثم ذهبي. كل مستوى يحتاج ١٠ أضعاف ويعطيك ١٠ أضعاف الدراهم.',
     bg_title: 'الأوسمة', bg_count: (a, b) => `${a} من ${b}`, bg_locked: 'مقفل', bg_reward: n => `+${nf(n)} د.إ`,
     bg_first: 'أول جولة', bg_first_d: 'العب جولة وحدة',
-    bg_dist10000: 'عدّاء الإمارات', bg_dist10000_d: 'اركض ١٠٠٠٠ م في جولة، ويفتح لك الكندورة الذهبية اللي تبطّئ بابا ٤٠٪', perk_gold: 'بابا يلحقك أبطأ بـ ٤٠٪', perk_kit: 'بابا يلحقك أبطأ بـ ٢٠٪', r_kit_purple: 'طقم العين', r_kit_yellow: 'طقم الوصل', r_kit_red: 'طقم شباب الأهلي', r_kit_blue: 'طقم النصر', r_kit_white: 'طقم الشارقة', w_kits: 'الأطقم الرياضية',
+    bg_dist10000: 'عدّاء الإمارات', bg_dist10000_d: 'اركض ١٠٠٠٠ م في جولة، ويفتح لك الطقم الذهبي اللي يبطّئ بابا ٤٠٪', perk_gold: 'بابا يلحقك أبطأ بـ ٤٠٪', perk_kit: 'بابا يلحقك أبطأ بـ ٢٠٪', r_kit_purple: 'طقم العين', r_kit_yellow: 'طقم الوصل', r_kit_red: 'طقم شباب الأهلي', r_kit_blue: 'طقم النصر', r_kit_white: 'طقم الشارقة', w_kits: 'الأطقم الرياضية',
     bg_shopper: 'أول شروة', bg_shopper_d: 'اشتر أي شي من المحل', bg_postcards: 'جامع البطاقات', bg_postcards_d: 'مرّ على كل معالم الطريق', bg_journey: 'لفّيت دبي', bg_journey_d: 'خلّص اللفة كاملة (٦٠ كم) لين ترجع الممزر',
     ms_title: 'المهمات', ms_daily: 'مهمات اليوم', ms_note: 'تتجدد كل يوم. استلم جوايزها من هني.', ms_bonus: n => `خلّص الثلاث اليوم: +${nf(n)} د.إ زيادة`, claim: 'استلم', claimed: 'تم ✓',
     ms_ladder: n => `مستوى المهمات ${n}`, ms_ladderNote: (m, nx, r) => `خلّص الثلاث عشان يرتفع المستوى: الحلاوة تتبدل ×${nx} بدال ×${m} في كل جولة، و +${nf(r)} د.إ.`, skip: n => `تخطّ · ${nf(n)}`, ms_done: 'خلصت ✓', ms_wait: 'يرتفع المستوى آخر الجولة',
@@ -84,6 +85,15 @@ const STR = {
     sMetres: 'متر', sBest: 'الأفضل', sClose: 'نجاة بأعجوبة',
     again: 'اركض مرة ثانية', againHint: 'المس الشاشة أو اضغط مسافة للعب مرة ثانية',
     sec: ' ث', m: 'م', sweets: 'حلاوة', baba: 'بابا', abood: 'عبود',
+    // Mozah's versions (Emirati dialect, speaking to a girl)
+    menuTitleG: 'اركضي يا موزة!', kickerG: 'بابا وراج على طول!', aboodG: 'موزة', ld_artG: 'نرسم موزة وبابا…',
+    storyG: 'موزة سوّت حركة جديدة! وبابا وراها على طول، غترته معوجّة والنعال في يده. اركضي من الممزر، في سوق ديرة على الخور، ووسط المدينة عند برج خليفة، وجميرا، ونفق الأسماك في النخلة، لين JBR وعين دبي، وترجعين من إكسبو والخوانيج لين خور دبي هاربر.',
+    startG: 'يلا اركضي!', againG: 'اركضي مرة ثانية', beatG: m => `حاولي تتعدين ${m} م.`, it_vimto_dG: 'موزة تركض أسرع',
+    perk_goldG: 'بابا يلحقج أبطأ بـ ٤٠٪', perk_kitG: 'بابا يلحقج أبطأ بـ ٢٠٪', caughtTG: 'بابا مسكج!', fellTG: 'طحتي في الحفرة!',
+    s_shoutsG: ['تعالي هنيه!', 'يا بنت!', 'وقّفي يا {n}!', 'وين رايحة؟!', 'والله لأعلّمج!', 'يا {n}!', 'ارجعي البيت!'],
+    s_throwG: ['خذي هذي!', 'النعال!', 'شوفي هذا!'], s_hitG: ['قرّبت منج!', 'هههه!', 'شوي شوي!'], s_scaredG: ['آسفة بابا!', 'لا لا لا!', 'ماما!'],
+    s_comeG: 'تعالي هنيه!', s_gotG: 'مسكتج!', s_fellG: 'طحتي يا بنت!', s_sorryG: 'آسفة بابا!',
+    wearG: 'البسي', wearingG: 'لابسته', buyG: n => `اشتري · ${nf(n)} د.إ`, notEnoughG: 'ما عندج دراهم كفاية',
     c_focus: n => `تركيز ${n}/3`, help_focus: 'التركيز: كل ٢٠ ثانية بدون ما تنصدم يرتفع تركيزك درجة (لين ٣)، وكل درجة تخلي بابا أبطأ ١٠٪. النجاة بأعجوبة تقرّبك للدرجة الجاية، والصدمة ترجّعه صفر.', f_focus: n => `تركيز ${n}! بابا أبطأ`, c_vimto: 'فيمتو', c_scooter: 'سكوتر', c_magnet: 'مغناطيس', c_slip: 'بابا يتزحلق', c_phone: 'على التلفون',
     f_smash: 'تكسير!', f_close: 'نجوت!', f_jar: n => `+${n} حلاوة!`, f_combo: n => `كومبو ×${n}`,
     f_vimto: 'قوة الفيمتو!', f_slip: 'بابا تزحلق!', f_phone: 'ماما تتصل!', f_magnet: 'مغناطيس الحلاوة!', f_scooter: 'سكوتر!',
@@ -101,11 +111,12 @@ const STR = {
     b_wardrobe: 'Wardrobe', b_shop: 'Shop', b_badges: 'Badges', b_missions: 'Missions', b_help: 'How to play', b_close: 'Close', b_menu: 'Menu',
     boostersTitle: 'Boosters for this run', noBoosters: 'Buy boosters in the shop to start stronger.',
     ch_abood: 'Abood',
-    r_white: 'White', r_cream: 'Cream', r_grey: 'Grey', r_blue: 'Sky blue', r_brown: 'Winter brown', r_gold: 'Gold', r_navy: 'Navy', r_olive: 'Olive', r_maroon: 'Maroon', r_charcoal: 'Charcoal',
-    r_swim_blue: 'Blue swimsuit', r_swim_orange: 'Orange swimsuit', r_swim_green: 'Green swimsuit', r_swim_navy: 'Navy swimsuit', r_swim_life: 'Lifeguard set', perk_life: 'Starts every run with a shield', w_swim: 'Swimwear',
-    h_shemagh: 'Red shemagh', h_ghutra: 'White ghutra', h_blackshemagh: 'Black shemagh', h_tagiyah: 'Tagiyah cap', h_cap: 'Cap', h_swimcap: 'Swim cap',
-    w_extras: 'Extras', x_none: 'None', x_bag: 'School bag', x_camera: 'Camera', x_falcon: 'Falcon', free: 'Free', w_note: 'All looks and colours are free. You only pay for outfits that change the game.', refund: n => `Looks are free now, so you got AED ${nf(n)} back!`,
-    w_title: 'Wardrobe', w_avatar: "Abood's look", av_classic: 'Classic', av_glasses: 'Glasses', av_shades: 'Sunglasses', av_goggles: 'Swim goggles', w_robes: 'Kandura colour', w_heads: 'Headwear',
+    r_white: 'White', r_cream: 'Cream', r_grey: 'Grey', r_brown: 'Winter brown', r_gold: 'Gold', r_jal_pink: 'Pink', r_jal_purple: 'Purple', r_jal_teal: 'Teal',
+    r_swim_blue: 'Blue swimsuit', r_swim_orange: 'Orange swimsuit', r_gswim_pink: 'Pink swimsuit', r_gswim_teal: 'Teal swimsuit', r_swim_life: 'Lifeguard set', perk_life: 'Starts every run with a shield', w_swim: 'Swimwear',
+    h_shemagh: 'Red shemagh', h_ghutra: 'White ghutra', h_bukhnag: 'Bukhnag', h_shayla: 'White shayla', h_swimcap: 'Swim cap',
+    free: 'Free', w_note: 'All looks and colours are free. You only pay for outfits that change the game, and an outfit you buy fits both Abood and Mozah.', refund: n => `Looks are free now, so you got AED ${nf(n)} back!`,
+    w_title: 'Wardrobe', w_robes: 'Kandura colour', w_dresses: 'Jalabiya colour', w_heads: 'Headwear', w_char: 'Who are you playing?', ch_mozah: 'Mozah', w_pick: 'Play as her', w_pickB: 'Play as him', w_playing: 'Playing', w_playingB: 'Playing',
+    w_lock: (n, g) => `Finish ${g} missions to unlock · ${n} of ${g}`, girlNew: 'Mozah is unlocked! Pick her in the wardrobe', menuTitle: 'Run, Abood!',
     buy: n => `Buy · AED ${nf(n)}`, wear: 'Wear', wearing: 'Wearing', badgeOnly: 'Unlocked by a badge', notEnough: 'Not enough dirhams', bought: 'Bought!', have: n => `You have ${n}`,
     shopTitle: 'Shop', shopNote: 'In-game dirhams only, for testing. No real payments.',
     bo_vimto: 'Starting Vimto', bo_vimto_d: 'Start the run 6 seconds faster', bo_magnet: 'Starting magnet', bo_magnet_d: 'Pulls in sweets for the first 10 seconds',
@@ -121,7 +132,7 @@ const STR = {
     bg_tiered: 'Each badge has 3 tiers: bronze, then silver, then gold. Each tier needs 10 times more and pays 10 times the dirhams.',
     bg_title: 'Badges', bg_count: (a, b) => `${a} of ${b}`, bg_locked: 'Locked', bg_reward: n => `+AED ${nf(n)}`,
     bg_first: 'First run', bg_first_d: 'Play one run',
-    bg_dist10000: 'Emirates runner', bg_dist10000_d: 'Run 10,000 m in one run. Unlocks the gold kandura, which slows Baba by 40%', perk_gold: 'Baba catches up 40% slower', perk_kit: 'Baba catches up 20% slower', r_kit_purple: 'Al Ain kit', r_kit_yellow: 'Al Wasl kit', r_kit_red: 'Shabab Al Ahli kit', r_kit_blue: 'Al Nasr kit', r_kit_white: 'Sharjah kit', w_kits: 'Football kits',
+    bg_dist10000: 'Emirates runner', bg_dist10000_d: 'Run 10,000 m in one run. Unlocks the gold outfit, which slows Baba by 40%', perk_gold: 'Baba catches up 40% slower', perk_kit: 'Baba catches up 20% slower', r_kit_purple: 'Al Ain kit', r_kit_yellow: 'Al Wasl kit', r_kit_red: 'Shabab Al Ahli kit', r_kit_blue: 'Al Nasr kit', r_kit_white: 'Sharjah kit', w_kits: 'Football kits',
     bg_shopper: 'First buy', bg_shopper_d: 'Buy anything in the shop', bg_postcards: 'Postcard collector', bg_postcards_d: 'Pass every landmark on the route', bg_journey: 'Round Dubai', bg_journey_d: 'Run the whole 60 km loop back to Al Mamzar',
     ms_title: 'Missions', ms_daily: "Today's missions", ms_note: 'New ones every day. Claim the rewards here.', ms_bonus: n => `Finish all three today: +AED ${nf(n)} extra`, claim: 'Claim', claimed: 'Done ✓',
     ms_ladder: n => `Mission level ${n}`, ms_ladderNote: (m, nx, r) => `Finish all three to level up: every run's sweets then exchange at ×${nx} instead of ×${m}, plus AED ${nf(r)}.`, skip: n => `Skip · ${nf(n)}`, ms_done: 'Done ✓', ms_wait: 'Levels up when the run ends',
@@ -177,6 +188,9 @@ const STR = {
     sMetres: 'metres', sBest: 'best', sClose: 'close calls',
     again: 'Run again', againHint: 'Tap or press Space to run again',
     sec: 's', m: 'm', sweets: 'sweets', baba: 'Baba', abood: 'Abood',
+    // Mozah's versions
+    menuTitleG: 'Run, Mozah!', aboodG: 'Mozah', ld_artG: 'Drawing Mozah and Baba…', it_vimto_dG: 'Mozah runs faster', s_fellG: 'You fell, girl!',
+    storyG: 'Mozah got up to mischief again. Baba is right behind her, ghutra knocked crooked and a sandal in his hand. Run from Al Mamzar through the old Deira souq on the Creek, past Burj Khalifa, along Jumeirah and through the aquarium tunnel on the Palm, to JBR and Ain Dubai, then back inland past Expo City and Al Khawaneej to Dubai Creek Harbour.',
     c_focus: n => `Focus ${n}/3`, help_focus: 'Focus: every 20 seconds without getting hit raises your focus by one level (up to 3), and each level makes Baba 10% slower. Close calls bring the next level closer; getting hit resets it to 0.', f_focus: n => `Focus ${n}! Baba slows down`, c_vimto: 'Vimto', c_scooter: 'Scooter', c_magnet: 'Magnet', c_slip: 'Baba slipping', c_phone: 'On the phone',
     f_smash: 'Smash!', f_close: 'Close one!', f_jar: n => `+${n} sweets!`, f_combo: n => `Combo x${n}`,
     f_vimto: 'Vimto power!', f_slip: 'Baba slips!', f_phone: 'Mama is calling!', f_magnet: 'Sweet magnet!', f_scooter: 'Scooter!',
@@ -200,8 +214,11 @@ try { const s = localStorage.getItem('abood-lang'); if (s === 'en' || s === 'ar'
 const listeners = [];
 
 export const getLang = () => lang;
+// While Mozah is playing, T() prefers a key's girl version (key + 'G') when there is one.
+let girl = false;
+export function setGirl(g) { girl = !!g; }
 export function T(key, ...args) {
-  const v = STR[lang][key] ?? STR.en[key] ?? key;
+  const v = (girl ? STR[lang][key + 'G'] : undefined) ?? STR[lang][key] ?? STR.en[key] ?? key;
   return typeof v === 'function' ? v(...args) : v;
 }
 export function onLang(fn) { listeners.push(fn); }

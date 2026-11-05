@@ -1,7 +1,7 @@
 // Run, Abood! — اركض يا عبود
 // Canvas endless runner. Characters and scenery are drawn in code, then baked into cached
 // sprite frames and background tiles so phones only blit images each frame.
-import { T, getLang, applyLang, setLang, onLang, hasStoredLang, FLAG } from './i18n.js?v=__BUILD__';
+import { T, getLang, applyLang, setLang, onLang, hasStoredLang, FLAG, setGirl } from './i18n.js?v=__BUILD__';
 import * as M from './meta.js?v=__BUILD__';
 
 const BUILD = '__BUILD__';
@@ -83,9 +83,6 @@ const pc = mk(6, 6);
 { const p = pc.getContext('2d'); p.fillStyle = '#c8202b'; p.fillRect(0, 0, 6, 6); p.fillStyle = '#fff1e8';
   p.fillRect(0, 0, 2, 2); p.fillRect(3, 3, 2, 2); p.fillStyle = '#8e121b'; p.fillRect(3, 0, 1, 1); p.fillRect(0, 3, 1, 1); }
 const SHEMAGH = ctx.createPattern(pc, 'repeat');
-const pcb = mk(6, 6);
-{ const p = pcb.getContext('2d'); p.fillStyle = '#26232a'; p.fillRect(0, 0, 6, 6); p.fillStyle = '#f4f1ea'; p.fillRect(0, 0, 2, 2); p.fillRect(3, 3, 2, 2); }
-const SHEMAGH_B = ctx.createPattern(pcb, 'repeat');
 let PITG = null;
 
 // ---------- the route: areas in real order, a 60 km loop from Al Mamzar and back (positions live in meta.js) ----------
@@ -432,6 +429,7 @@ function settleRun() {
   if (!run) return null;
   syncRun();
   const res = M.endRun(run); missionPops(); for (const b of res.badges) runBadges.push(b);
+  if (res.girl) setTimeout(() => note(T('girlNew'), 4500), 1800); // after the results card is up
   lastRes = Object.assign({}, res, { levelUp: res.levelUp || (lastRes && lastRes.levelUp) }); return res;
 }
 function gameOver(why) {
@@ -704,11 +702,18 @@ function kitBody(c, k) { // football jersey and shorts in club-inspired colours 
   c.strokeStyle = k.trim; c.lineWidth = 1.8; c.beginPath(); c.moveTo(-4, -44.6); c.lineTo(1.5, -40); c.lineTo(6.6, -44.6); c.stroke();
   c.fillStyle = k.num; c.font = '800 7px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('7', -5, -35.5);
 }
-function swimBody(c, k) { // rash guard and board shorts
+function swimBody(c, k) { // rash guard and board shorts, or Mozah's full-length swimsuit (tunic over leggings)
+  if (k.full) {
+    const tu = () => { c.beginPath(); c.moveTo(-11.5, -28); c.lineTo(11, -28); c.quadraticCurveTo(13, -18, 13.6, -8.5); c.lineTo(-14.4, -8.5); c.quadraticCurveTo(-13, -18, -11.5, -28); c.closePath(); };
+    tu(); c.fillStyle = k.top; c.fill(); c.save(); c.clip(); c.fillStyle = k.trim; c.fillRect(-16, -12, 32, 2.4); c.fillStyle = k.stripe; c.fillRect(-16, -15.2, 32, 1.6); c.restore();
+    tu(); c.strokeStyle = INK; c.lineWidth = 1.5; c.stroke();
+  }
   const sh = () => { c.beginPath(); c.moveTo(-11.5, -27); c.lineTo(11, -27); c.lineTo(12.2, -10.5); c.lineTo(2, -10.5); c.lineTo(0, -16); c.lineTo(-2, -10.5); c.lineTo(-12.8, -10.5); c.closePath(); };
+  if (!k.full) {
   sh(); c.fillStyle = k.shorts; c.fill(); c.save(); c.clip(); c.fillStyle = k.stripe; c.fillRect(-13, -27, 3.2, 17); c.fillRect(9.4, -27, 3.2, 17);
   c.fillStyle = 'rgba(255,255,255,.22)'; for (let i = 0; i < 4; i++) { c.beginPath(); c.arc(-6 + i * 4.4, -21 + (i % 2) * 5, 1.5, 0, TAU); c.fill(); } c.restore();
   sh(); c.strokeStyle = INK; c.lineWidth = 1.5; c.stroke();
+  }
   const jp = () => { c.beginPath(); c.moveTo(-8, -44); c.quadraticCurveTo(0, -46.5, 8, -44); c.quadraticCurveTo(10.5, -36, 10.5, -25.5); c.lineTo(-11, -25.5); c.quadraticCurveTo(-11, -36, -8, -44); c.closePath(); };
   jp(); c.fillStyle = k.top; c.fill(); c.save(); c.clip();
   c.fillStyle = k.trim; c.fillRect(-12, -34, 24, 2.6); c.fillStyle = 'rgba(255,255,255,.2)'; c.fillRect(1, -46, 4, 21); c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(-12, -46, 4, 21);
@@ -737,9 +742,9 @@ function person(c, x, y, ph, air, o) {
   const skin = o.skin, skinD = o.skinD, skinL = o.skinL || skin, robe = o.robe || '#fbfaf4', robeD = o.robeD || '#dcd8cb';
   const kick = o.kick ? Math.sin(ph * 1.4) : 0;
   const foot = o.kit ? sockFoot(o.kit.sock) : sandalFoot;
-  if (o.extra === 'bag') { c.fillStyle = '#2b6cb0'; c.strokeStyle = INK; c.lineWidth = 1.4; c.beginPath(); c.roundRect(-19, -46, 11, 20, 3.5); c.fill(); c.stroke(); c.fillStyle = '#f2c230'; c.beginPath(); c.roundRect(-18, -36, 9, 7, 2); c.fill(); c.stroke(); }
-  c.save(); c.translate(-1, -20); limb(c, o.kick ? kick * 0.9 : still ? 0.05 : air ? 0.75 : -sw * 0.85, 19, 4.4, skinD, foot); c.restore();
-  c.save(); c.translate(1, -20); limb(c, o.kick ? -kick * 0.9 : still ? -0.05 : air ? -0.55 : sw * 0.85, 19, 4.4, skin, foot); c.restore();
+  const legs = o.swim && o.swim.full ? [o.swim.legD, o.swim.shorts] : o.girl && o.kit ? ['#1f2026', '#2e3038'] : [skinD, skin];
+  c.save(); c.translate(-1, -20); limb(c, o.kick ? kick * 0.9 : still ? 0.05 : air ? 0.75 : -sw * 0.85, 19, 4.4, legs[0], foot); c.restore();
+  c.save(); c.translate(1, -20); limb(c, o.kick ? -kick * 0.9 : still ? -0.05 : air ? -0.55 : sw * 0.85, 19, 4.4, legs[1], foot); c.restore();
   let ba = still ? 0.1 : air ? -2.3 : sw * 0.9;
   if (o.arm === 'flail') ba = 2.4 + Math.sin(A * 3 + 1) * 1.1; if (o.arm === 'grip') ba = -1.1; if (o.arm === 'hold') ba = 0.35; if (o.arm === 'o') ba = -2.6 + Math.sin(A * 3) * 0.4;
   c.save(); c.translate(-1, -40); limb(c, ba, 15, 6, robeD, hand(skinD), 1); c.restore();
@@ -747,11 +752,11 @@ function person(c, x, y, ph, air, o) {
   else if (o.swim) swimBody(c, o.swim);
   else {
   // kandura: soft side shading, hem shadow, folds, collar and tassel (furakha)
-  const fl = Math.sin(ph * 2) * 2 * (still ? 0 : 1), b = o.belly || 0;
+  const fl = Math.sin(ph * 2) * 2 * (still ? 0 : 1), b = o.belly || 0, fw = o.girl ? 2.2 : 0; // fw: the jalabiya flares a little
   const rg = c.createLinearGradient(-14, 0, 13 + b, 0); rg.addColorStop(0, robeD); rg.addColorStop(0.5, robe); rg.addColorStop(1, robe);
   const robePath = () => { c.beginPath(); c.moveTo(-8, -44); c.quadraticCurveTo(0, -47, 8, -44);
-    c.quadraticCurveTo(10 + b * 0.6, -36, 10 + b, -28); c.quadraticCurveTo(13 + b, -18, 12, -10);
-    c.lineTo(-13 - fl, -9); c.quadraticCurveTo(-12, -24, -9, -34); c.closePath(); };
+    c.quadraticCurveTo(10 + b * 0.6, -36, 10 + b, -28); c.quadraticCurveTo(13 + b + fw, -18, 12 + fw, -10 + fw * 0.6);
+    c.lineTo(-13 - fl - fw, -9 + fw * 0.6); c.quadraticCurveTo(-12, -24, -9, -34); c.closePath(); };
   robePath(); c.fillStyle = rg; c.fill();
   c.save(); c.clip();
   c.fillStyle = 'rgba(120,108,85,.16)'; c.fillRect(-20, -15, 40, 7);
@@ -767,9 +772,6 @@ function person(c, x, y, ph, air, o) {
   else { c.beginPath(); c.moveTo(5, -43); c.quadraticCurveTo(6.5, -38, 6, -32 + Math.sin(ph) * 0.8); c.stroke();
     c.fillStyle = '#c4bdac'; c.beginPath(); c.ellipse(6, -31, 1.5, 2.6, 0, 0, TAU); c.fill(); }
   }
-  if (o.extra === 'bag') { c.strokeStyle = '#1d3f73'; c.lineWidth = 2.2; c.beginPath(); c.moveTo(-4, -44.5); c.quadraticCurveTo(1, -38, -2, -29); c.stroke(); }
-  if (o.extra === 'camera') { c.strokeStyle = '#2b2b30'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(-5, -44); c.lineTo(6, -32); c.moveTo(7, -44); c.lineTo(8, -33); c.stroke();
-    c.fillStyle = '#2b2b30'; c.strokeStyle = INK; c.lineWidth = 1.2; c.beginPath(); c.roundRect(2, -34, 10, 7, 1.6); c.fill(); c.stroke(); c.fillStyle = '#8fb8d8'; c.beginPath(); c.arc(8.6, -30.5, 2.3, 0, TAU); c.fill(); c.stroke(); c.fillStyle = '#e8573b'; c.fillRect(3.2, -33.2, 2, 1.4); }
   // head (kids get a bigger head and big eyes)
   const hs = o.hs || 1; c.save(); c.translate(2, -46); c.scale(hs, hs); c.translate(-2, 46);
   const hg = c.createRadialGradient(5, -55.5, 1, 2, -52, 10); hg.addColorStop(0, skinL); hg.addColorStop(0.55, skin); hg.addColorStop(1, skinD);
@@ -782,16 +784,9 @@ function person(c, x, y, ph, air, o) {
   c.fillStyle = INK; c.strokeStyle = INK;
   if (o.blink && !o.baked && Math.sin(t * 1.7 + o.s * 3) > 0.97) { c.lineWidth = 1.3; c.beginPath(); c.moveTo(5.5, -52); c.lineTo(8.8, -52); c.stroke(); }
   else if (o.bigEyes) { c.fillStyle = '#fff'; c.beginPath(); c.ellipse(7.3, -52.6, 2.6, 3.1, 0, 0, TAU); c.fill(); c.lineWidth = 0.9; c.stroke();
-    c.fillStyle = INK; c.beginPath(); c.arc(8, -52.3, 1.65, 0, TAU); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(8.6, -53.1, 0.6, 0, TAU); c.fill(); }
+    c.fillStyle = INK; c.beginPath(); c.arc(8, -52.3, 1.65, 0, TAU); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(8.6, -53.1, 0.6, 0, TAU); c.fill();
+    if (o.girl) { c.lineWidth = 1; c.beginPath(); c.moveTo(9.4, -55.2); c.lineTo(10.8, -56.6); c.moveTo(7.6, -55.7); c.lineTo(8.2, -57.3); c.stroke(); } }
   else { c.beginPath(); c.arc(7, -52, 1.5, 0, TAU); c.fill(); c.fillStyle = 'rgba(255,255,255,.85)'; c.beginPath(); c.arc(7.5, -52.6, 0.45, 0, TAU); c.fill(); }
-  if (o.glasses) {
-    c.save(); c.strokeStyle = INK; c.lineWidth = 1.2;
-    if (o.glasses === 'goggles') { c.strokeStyle = '#1f7a74'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(4.6, -53.4); c.lineTo(-7.5, -55); c.stroke(); c.strokeStyle = INK; c.lineWidth = 1.2;
-      c.fillStyle = 'rgba(110,205,255,.8)'; c.beginPath(); c.ellipse(8, -52.6, 3.6, 2.9, 0, 0, TAU); c.fill(); c.stroke(); c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse(9, -53.6, 1.2, 0.7, -0.4, 0, TAU); c.fill(); }
-    else if (o.glasses === 'shades') { c.fillStyle = '#1d1f24'; c.beginPath(); c.ellipse(7.8, -52.4, 3.6, 2.9, 0, 0, TAU); c.fill(); c.stroke(); c.fillStyle = 'rgba(255,255,255,.45)'; c.beginPath(); c.ellipse(8.8, -53.4, 1.2, 0.7, -0.4, 0, TAU); c.fill(); }
-    else { c.fillStyle = 'rgba(200,230,255,.25)'; c.beginPath(); c.arc(7.8, -52.4, 3.4, 0, TAU); c.fill(); c.stroke(); }
-    if (o.glasses !== 'goggles') { c.beginPath(); c.moveTo(4.4, -52.8); c.lineTo(-1, -53.6); c.moveTo(11.2, -52.6); c.lineTo(12, -52.4); c.stroke(); } c.restore();
-  }
   c.fillStyle = INK; c.lineWidth = o.angry ? 2.3 : 1.6; c.beginPath();
   if (o.angry) { c.moveTo(3.6, -57.2); c.lineTo(10.2, -54.6); } else if (o.mouth === 'o') { c.moveTo(4.5, -56); c.quadraticCurveTo(7, -59, 10, -57.2); } else { c.moveTo(4.8, -56.6); c.quadraticCurveTo(7.5, -58.4, 10.2, -56.2); }
   c.stroke(); c.lineWidth = 1.5;
@@ -802,9 +797,9 @@ function person(c, x, y, ph, air, o) {
   else { c.beginPath(); c.arc(7.6, -49.2, 2.7, 0.15, Math.PI - 0.55); c.stroke(); }
   if (o.beard) { c.fillStyle = '#1d120d'; c.beginPath(); c.moveTo(4.6, -49.4); c.quadraticCurveTo(8.4, -51.6, 11.8, -49.2); c.quadraticCurveTo(8.4, -48.3, 4.6, -49.4); c.fill(); }
   if (o.sweat) { const sy = -58 + (((A * 3 / TAU) * 10) % 10 + 10) % 10; c.fillStyle = '#8fd3ff'; c.lineWidth = 1; c.beginPath(); c.moveTo(-3, sy - 4); c.quadraticCurveTo(0, sy, -3, sy + 2); c.quadraticCurveTo(-6, sy, -3, sy - 4); c.fill(); c.stroke(); }
-  // headwear: shayla, tagiyah cap, or shemagh/ghutra with agal
+  // headwear: shayla or bukhnag, swim cap, or shemagh/ghutra with agal
   const wv = Math.sin(ph * 1.3) * 3 * (o.flap || 1), w2 = Math.cos(ph * 1.1) * 3 * (o.flap || 1), tipY = -45 + wv * 1.6 + (o.droop || 0);
-  if (o.head === 'shayla') { // headscarf wrapped around the face and falling over the shoulders
+  if (o.head === 'shayla' || o.head === 'bukhnag') { // headscarf wrapped around the face and falling over the shoulders
     const shp = () => { c.beginPath(); c.moveTo(9.6, -57); c.quadraticCurveTo(9, -65.5, 0, -65.5); c.quadraticCurveTo(-11.5, -64.5, -12.5, -52);
       c.quadraticCurveTo(-15 - wv * 0.5, -42, -17 - wv * 0.8, -35); c.quadraticCurveTo(-4, -33.5, 9, -38.5); c.quadraticCurveTo(7.5, -43, 5.8, -45.2);
       c.quadraticCurveTo(2, -46.5, 0.6, -50); c.quadraticCurveTo(1.6, -55.5, 9.6, -57); c.closePath(); };
@@ -812,20 +807,16 @@ function person(c, x, y, ph, air, o) {
     c.save(); c.clip(); c.fillStyle = 'rgba(0,0,0,.16)'; c.fillRect(-20, -52, 14, 22); c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-6, -63); c.quadraticCurveTo(2, -65, 8, -60); c.stroke();
     c.strokeStyle = 'rgba(0,0,0,.18)'; c.lineWidth = 1; c.beginPath(); c.moveTo(-9, -50); c.quadraticCurveTo(-8, -42, -12, -36); c.moveTo(-3, -48); c.quadraticCurveTo(-2, -41, -5, -35); c.stroke(); c.restore();
     shp(); c.strokeStyle = INK; c.lineWidth = 1.6; c.stroke();
-  } else if (o.head === 'cap' || o.head === 'swimcap') {
-    const sc = o.head === 'swimcap';
-    if (!sc) { c.fillStyle = '#2a1a14'; c.beginPath(); c.arc(2, -52, 9.3, Math.PI * 0.62, Math.PI * 1.15); c.lineTo(2, -52); c.closePath(); c.fill(); }
-    c.beginPath(); c.moveTo(-7.9, sc ? -50 : -55.4); c.quadraticCurveTo(-8.4, -65.8, 2.4, -65.8); c.quadraticCurveTo(11.6, -65.4, 11.2, sc ? -55.5 : -56.4); c.quadraticCurveTo(2, sc ? -57.5 : -58.6, -7.9, sc ? -50 : -55.4); c.closePath();
-    c.fillStyle = sc ? '#2b9bd6' : '#d7263d'; c.fill(); c.strokeStyle = INK; c.lineWidth = 1.5; c.stroke();
+    if (o.head === 'bukhnag') { // gold embroidery round the face, along the hem, and a few gold dots
+      c.strokeStyle = '#e8b64a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(9.2, -56.6); c.quadraticCurveTo(1.8, -55.2, 1.2, -50); c.quadraticCurveTo(2.4, -46.6, 5.4, -45.4);
+      c.moveTo(-16, -36.2); c.quadraticCurveTo(-4, -35, 8.2, -39.4); c.stroke();
+      c.fillStyle = '#e8b64a'; for (const [dx, dy] of [[-8, -40], [-3, -39.5], [2, -40.6], [-11, -45], [-6, -46]]) { c.beginPath(); c.arc(dx, dy, 0.9, 0, TAU); c.fill(); }
+    }
+  } else if (o.head === 'swimcap') {
+    c.beginPath(); c.moveTo(-7.9, -50); c.quadraticCurveTo(-8.4, -65.8, 2.4, -65.8); c.quadraticCurveTo(11.6, -65.4, 11.2, -55.5); c.quadraticCurveTo(2, -57.5, -7.9, -50); c.closePath();
+    c.fillStyle = o.girl ? '#ef6f9a' : '#2b9bd6'; c.fill(); c.strokeStyle = INK; c.lineWidth = 1.5; c.stroke();
     c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(1, -63, 5, 1.6, -0.15, 0, TAU); c.fill();
-    if (sc) { c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-5, -60); c.quadraticCurveTo(2, -62, 9, -59); c.stroke(); }
-    else { c.fillStyle = '#a81a2b'; c.strokeStyle = INK; c.lineWidth = 1.4; c.beginPath(); c.moveTo(8.5, -57.2); c.quadraticCurveTo(15.5, -58.6, 19, -55.8); c.quadraticCurveTo(14.4, -54.4, 8.6, -55.2); c.closePath(); c.fill(); c.stroke();
-      c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(2.4, -65.6, 1.4, 0, TAU); c.fill(); }
-  } else if (o.head === 'tagiyah') { // white crochet cap, short dark hair at the back
-    c.fillStyle = '#2a1a14'; c.beginPath(); c.arc(2, -52, 9.3, Math.PI * 0.62, Math.PI * 1.15); c.lineTo(2, -52); c.closePath(); c.fill();
-    c.beginPath(); c.moveTo(-7.6, -55.6); c.quadraticCurveTo(-7, -64.5, 2.4, -64.6); c.quadraticCurveTo(11, -64.2, 10.8, -56); c.quadraticCurveTo(2, -58, -7.6, -55.6); c.closePath();
-    c.fillStyle = '#fbfaf4'; c.fill(); c.strokeStyle = INK; c.lineWidth = 1.5; c.stroke();
-    c.fillStyle = 'rgba(150,140,120,.6)'; for (let k = 0; k < 7; k++) for (let m = 0; m < 2; m++) { c.beginPath(); c.arc(-5 + k * 2.4, -61.2 + m * 2.6, 0.55, 0, TAU); c.fill(); }
+    c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-5, -60); c.quadraticCurveTo(2, -62, 9, -59); c.stroke();
   } else {
   const scarfPath = () => { c.beginPath(); c.moveTo(10.5, -55); c.quadraticCurveTo(11, -63, 1, -63.5); c.quadraticCurveTo(-9, -63, -11, -54);
     c.quadraticCurveTo(-14, -46, -15, -38); c.quadraticCurveTo(-24, -40 + wv, -33, tipY);
@@ -855,7 +846,6 @@ function person(c, x, y, ph, air, o) {
   }
   }
   c.restore();
-  if (o.extra === 'falcon') { c.save(); c.translate(-15, -40); c.scale(0.95, 0.95); c.strokeStyle = '#3a2618'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-6, 0); c.lineTo(7, 0); c.stroke(); falcon(c, 0, 0, false); c.restore(); }
   // front arm
   c.save(); c.translate(2, -41);
   const fa = o.arm;
@@ -889,16 +879,19 @@ function blitSprite(c, e, x, y, rot, sx, sy, s, blinkSkin) {
 }
 const blinkNow = seed => Math.sin(t * 1.7 + seed) > 0.97;
 const SKIN = { skin: '#c98b5a', skinD: '#a8704a', skinL: '#e0a978' };
-function lookOf(robeId, headId, avatarId, extraId) {
+function lookOf(robeId, headId, girl) {
   const r = M.ROBES.find(x => x.id === robeId) || M.ROBES[0], h = M.HEADS.find(x => x.id === headId) || M.HEADS[0];
-  const o = Object.assign({ s: 1, kit: r.kit || null, swim: r.swim || null, robe: r.col, robeD: r.shade, flap: 1.2, hs: 1.16, bigEyes: 1, agalTilt: -0.08, glasses: avatarId === 'classic' ? null : avatarId, extra: extraId && extraId !== 'none' ? extraId : null }, SKIN);
-  if (h.id === 'tagiyah' || h.id === 'cap' || h.id === 'swimcap') o.head = h.id;
-  else { o.head = 'scarf'; o.scarf = h.id === 'shemagh' ? SHEMAGH : h.id === 'blackshemagh' ? SHEMAGH_B : '#f4f3ee'; o.fringe = h.id === 'ghutra' ? '#e3e0d6' : '#fff1e8'; }
+  const o = Object.assign({ s: 1, kit: r.kit || null, swim: r.swim || null, robe: r.col, robeD: r.shade, flap: 1.2, hs: 1.16, bigEyes: 1, agalTilt: -0.08, girl: !!girl }, SKIN);
+  if (h.id === 'swimcap' || h.id === 'bukhnag') o.head = h.id;
+  else if (h.id === 'shayla') { o.head = 'shayla'; o.shaylaCol = '#f7f5ef'; }
+  else { o.head = 'scarf'; o.scarf = h.id === 'shemagh' ? SHEMAGH : '#f4f3ee'; o.fringe = h.id === 'ghutra' ? '#e3e0d6' : '#fff1e8'; }
+  if (o.head === 'bukhnag') o.shaylaCol = '#1d1b22';
   return o;
 }
-const kidBase = () => { const d = M.data(); return lookOf(d.robe, d.head, d.avatar, d.extra); };
-const lookKey = () => { const d = M.data(); return d.avatar + d.robe + d.head + d.extra; };
-const kname = () => T('ch_abood');
+const isGirl = () => M.data().char === 'mozah';
+const kidBase = () => { const d = M.data(); return lookOf(d.robe, d.head, isGirl()); };
+const lookKey = () => { const d = M.data(); return d.char + d.robe + d.head; };
+const kname = () => T(isGirl() ? 'ch_mozah' : 'ch_abood');
 function scooter(c, x, y) {
   c.save(); c.translate(x, y); c.strokeStyle = INK; c.lineWidth = 1.6;
   c.fillStyle = '#e23b4a'; c.beginPath(); c.roundRect(-18, -6, 34, 5, 2.5); c.fill(); c.stroke();
@@ -921,7 +914,7 @@ function drawKid(c, x, y, ph, air, alpha = 1, extra) {
   const mood = scared ? 'o' : (kid.sayT > 0 && lead > 0.6 ? 'tongue' : 'grin');
   const a = !!air && !sc, idx = (a || sc) ? 0 : qph(ph), rot = kid.stumble > 0 ? 0.25 : 0;
   const e = kidFrame(mood, a, sc, idx);
-  if (e) blitSprite(c, e, x, y, rot, 1, 1, 1, alpha === 1 && blinkNow(0) && M.data().avatar !== 'shades' && M.data().avatar !== 'goggles' ? SKIN.skin : null);
+  if (e) blitSprite(c, e, x, y, rot, 1, 1, 1, alpha === 1 && blinkNow(0) ? SKIN.skin : null);
   else person(c, x, y, ph, a, Object.assign(kidBase(), { mouth: mood, sweat: scared, still: sc, arm: sc ? 'grip' : undefined, rot }));
   if (kid.shield > 0 && st === 'play') { c.strokeStyle = `rgba(120,200,255,${0.5 + 0.2 * Math.sin(t * 8)})`; c.lineWidth = 3; c.beginPath(); c.ellipse(x, y - 34, 26, 40, 0, 0, TAU); c.stroke(); }
   c.restore();
@@ -2415,7 +2408,7 @@ function render() {
 // ---------- menus: avatar, dirhams, boosters, sheets ----------
 function syncCoins() { const v = T('coins', M.data().coins); document.querySelectorAll('.coinVal').forEach(e => { e.textContent = v; }); }
 let noteT = 0;
-function note(msg) { const n = $('note'); n.textContent = msg; n.hidden = false; clearTimeout(noteT); noteT = setTimeout(() => { n.hidden = true; }, 1800); }
+function note(msg, ms = 1800) { const n = $('note'); n.textContent = msg; n.hidden = false; clearTimeout(noteT); noteT = setTimeout(() => { n.hidden = true; }, ms); }
 const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
 // avatar: the same drawing as in the game, at one uniform scale
 function drawAvatar(cnv, look, ph, mood, still) {
@@ -2505,26 +2498,38 @@ function buyOrEquip(kind, id) {
   M.equip(kind, id); openSheet('wardrobe');
 }
 function sheetWardrobe(body) {
-  const D = M.data();
+  const D = M.data(), girl = isGirl();
+  // who you play as: Abood, or Mozah once she is unlocked. The sections below show only that character's outfits.
+  body.appendChild(el('p', 'sec-title', T('w_char'))); const cg = el('div', 'cards chars');
+  for (const ch of M.CHARS) {
+    const on = D.char === ch, locked = ch === 'mozah' && !M.girlOpen(), her = ch === 'mozah', fit = M.outfitOf(ch);
+    const sub = locked ? T('w_lock', Math.min(M.missionsDone(), M.GIRL_MISSIONS), M.GIRL_MISSIONS) : null;
+    cg.appendChild(card(cnv => drawAvatar(cnv, lookOf(fit.robe, fit.head, her), 0.6, 'grin', true), T('ch_' + ch), sub,
+      { text: on ? T(her ? 'w_playing' : 'w_playingB') : locked ? T('bg_locked') : T(her ? 'w_pick' : 'w_pickB'), cls: on ? 'sec' : '', disabled: on || locked,
+        onClick: () => { if (M.setChar(ch)) { syncChar(); sfx.power(); openSheet('wardrobe'); } } }, on, locked));
+  }
+  body.appendChild(cg);
   body.appendChild(el('p', 'hint', T('w_note')));
-  const section = (title, list, kind, lookFor, label) => {
+  const section = (title, list, kind, lookFor) => {
+    list = list.filter(it => M.fits(it, D.char)); if (!list.length) return;
     body.appendChild(el('p', 'sec-title', T(title))); const g = el('div', 'cards');
     for (const it of list) {
       const owned = D.owned[kind].includes(it.id), on = D[kind] === it.id, locked = it.badge && !owned;
       const sub = [locked ? T('badgeOnly') : null, it.perk ? T(it.perk) : !it.price && !it.badge ? T('free') : null].filter(Boolean).join(' · ') || null;
-      const c2 = card(cnv => drawAvatar(cnv, lookFor(it.id), 0.6, 'grin', true), T(label + it.id), sub,
+      const c2 = card(cnv => drawAvatar(cnv, lookFor(it.id), 0.6, 'grin', true), T((kind === 'head' ? 'h_' : 'r_') + it.id), sub,
         { text: on ? T('wearing') : owned ? T('wear') : locked ? T('bg_locked') : T('buy', it.price), cls: owned ? 'sec' : '', disabled: on || locked, onClick: () => buyOrEquip(kind, it.id) }, on, locked);
       if (it.perk) c2.classList.add('perk'); g.appendChild(c2);
     }
     body.appendChild(g);
   };
-  section('w_avatar', M.AVATARS, 'avatar', id => lookOf(D.robe, D.head, id, D.extra), 'av_');
-  section('w_robes', M.ROBES.filter(r => !r.kit && !r.swim), 'robe', id => lookOf(id, D.head, D.avatar, D.extra), 'r_');
-  section('w_swim', M.ROBES.filter(r => r.swim), 'robe', id => lookOf(id, D.head, D.avatar, D.extra), 'r_');
-  section('w_kits', M.ROBES.filter(r => r.kit), 'robe', id => lookOf(id, D.head, D.avatar, D.extra), 'r_');
-  section('w_heads', M.HEADS, 'head', id => lookOf(D.robe, id, D.avatar, D.extra), 'h_');
-  section('w_extras', M.EXTRAS, 'extra', id => lookOf(D.robe, D.head, D.avatar, id), 'x_');
+  const robe = id => lookOf(id, D.head, girl), head = id => lookOf(D.robe, id, girl);
+  section(girl ? 'w_dresses' : 'w_robes', M.ROBES.filter(r => !r.kit && !r.swim), 'robe', robe);
+  section('w_swim', M.ROBES.filter(r => r.swim), 'robe', robe);
+  section('w_kits', M.ROBES.filter(r => r.kit), 'robe', robe);
+  section('w_heads', M.HEADS, 'head', head);
 }
+// the playing character changed: Baba's lines, titles and names switch to match
+function syncChar() { setGirl(isGirl()); applyLang(); renderMenu(); }
 function sheetShop(body) {
   body.appendChild(el('p', 'hint', T('shopNote'))); const D = M.data();
   body.appendChild(el('p', 'sec-title', T('up_title'))); body.appendChild(el('p', 'hint', T('up_note')));
@@ -2668,7 +2673,7 @@ async function prebake() {
   sprBudget = 0;
 }
 async function boot() {
-  applyLang(); setMuteBtn(); syncRotate(); showBest();
+  setGirl(isGirl()); applyLang(); setMuteBtn(); syncRotate(); showBest();
   const tips = T('tips'); let tipI = Math.floor(Math.random() * tips.length); $('ldTip').textContent = tips[tipI];
   const tipTimer = setInterval(() => { tipI = (tipI + 1) % tips.length; $('ldTip').textContent = T('tips')[tipI]; }, 2200);
   M.ensureDaily();
