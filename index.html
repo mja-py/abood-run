@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>اركض يا عبود!</title>
-<meta name="description" content="لعبة جري: عبود بالكندورة والشماغ الأحمر يهرب من أبوه في الفريج والسوق والكورنيش والبر. Run, Abood! An endless runner set in a Gulf neighbourhood.">
+<meta name="description" content="لعبة جري: عبود بالكندورة والشماغ الأحمر يهرب من أبوه من الممزر لين JBR. Run, Abood! An endless runner right across Dubai.">
 <meta name="theme-color" content="#232a52">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="عبود">
 <meta property="og:title" content="اركض يا عبود! Run, Abood!">
-<meta property="og:description" content="Abood runs from Baba through the fareej, the souq, the corniche and the desert.">
+<meta property="og:description" content="Abood runs from Baba right across Dubai: Al Mamzar, the Deira souq, Burj Khalifa, Jumeirah, the Palm and JBR.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
@@ -29,18 +29,20 @@
   <div class="stat" id="candyBox"><span id="mCandy">0</span><small data-i18n="sweets">حلاوة</small></div>
 </div>
 <div id="powers"></div>
+<div id="routeHud" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z" fill="#c8202b" stroke="#2b1a12" stroke-width="2"/><circle cx="12" cy="10" r="2.2" fill="#fffaf0"/></svg><span id="routeTxt"></span><i class="rbar"><i id="routeFill"></i></i></div>
 <button class="corner" id="pauseBtn" data-i18n-aria="pause" aria-label="إيقاف مؤقت" hidden>II</button>
 <button class="corner" id="mute" data-i18n-aria="sound" aria-label="الصوت والموسيقى" hidden>♪</button>
 
 <div class="overlay" id="menu" hidden>
   <div class="panel menu">
-    <div class="panel-top"><div class="coinpill"><i class="coin" aria-hidden="true"></i><span class="coinVal">0</span></div><div class="lang" role="group" aria-label="Language / اللغة"></div></div>
+    <div class="panel-top"><div class="pills"><div class="coinpill"><i class="coin" aria-hidden="true"></i><span class="coinVal">0</span></div><div class="multpill" data-i18n-aria="multAria"><span class="multVal">×1</span></div></div><div class="lang" role="group" aria-label="Language / اللغة"></div></div>
     <div class="menu-main">
       <div class="avatar-box"><canvas id="avMenu" width="300" height="300" aria-hidden="true"></canvas><p class="av-name" id="avName"></p></div>
       <div class="menu-text">
         <p class="kicker" data-i18n="kicker"></p>
         <h1 data-i18n="title">اركض يا عبود!</h1>
         <p class="story" data-i18n="story"></p>
+        <div class="boost-wrap"><p class="label" data-i18n="startFrom"></p><div class="boost-row start-row" id="startRow"></div><p class="hint journey" id="journeyLine"></p></div>
         <div class="boost-wrap"><p class="label" data-i18n="boostersTitle"></p><div class="boost-row" id="boostRow"></div></div>
         <button class="btn" id="startBtn" type="button" data-i18n="start">يلا اركض!</button>
         <div class="menu-grid">
@@ -57,7 +59,7 @@
 
 <div class="overlay" id="over" hidden>
   <div class="panel over">
-    <div class="panel-top"><p class="kicker" id="overQuote"></p><div class="lang" role="group" aria-label="Language / اللغة"></div></div>
+    <div class="panel-top"><p class="kicker" id="overQuote"></p><div class="pills"><div class="coinpill"><i class="coin" aria-hidden="true"></i><span class="coinVal">0</span></div><div class="multpill" data-i18n-aria="multAria"><span class="multVal">×1</span></div><div class="lang" role="group" aria-label="Language / اللغة"></div></div></div>
     <div class="menu-main">
       <div class="avatar-box"><canvas id="avOver" width="300" height="300" aria-hidden="true"></canvas><p class="av-name" id="avNameOver"></p></div>
       <div class="menu-text">
@@ -66,10 +68,19 @@
         <div class="score">
           <div><b id="sDist">0</b><span data-i18n="sMetres"></span></div>
           <div><b id="sBest">0</b><span data-i18n="sBest"></span></div>
-          <div><b id="sCandy">0</b><span data-i18n="sSweets"></span></div>
           <div><b id="sClose">0</b><span data-i18n="sClose"></span></div>
-          <div class="earn"><b id="sEarned">0</b><span data-i18n="o_earned"></span></div>
         </div>
+        <div class="swap" id="swap">
+          <p class="label" data-i18n="o_swap"></p>
+          <div class="swap-row">
+            <div class="sw-box"><canvas id="swCandyIc" width="64" height="64" aria-hidden="true"></canvas><b id="swSweets" dir="ltr">0</b></div>
+            <span class="sw-arrow" aria-hidden="true">➜</span>
+            <div class="sw-box gold"><i class="coin" id="swCoinIc" aria-hidden="true"></i><b id="swCoins" dir="ltr">0</b></div>
+          </div>
+          <div class="swap-parts"><span id="swPartS"></span><span id="swPartD"></span><span id="swPartM"></span></div>
+        </div>
+        <p class="route-line" id="overRoute"></p>
+        <div class="mission-strip" id="overMissions"></div>
         <p class="label" data-i18n="o_badges"></p>
         <div class="badge-strip" id="overBadges"></div>
         <div class="over-actions">
