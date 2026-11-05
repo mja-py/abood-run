@@ -702,6 +702,18 @@ function kitBody(c, k) { // football jersey and shorts in club-inspired colours 
   c.strokeStyle = k.trim; c.lineWidth = 1.8; c.beginPath(); c.moveTo(-4, -44.6); c.lineTo(1.5, -40); c.lineTo(6.6, -44.6); c.stroke();
   c.fillStyle = k.num; c.font = '800 7px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('7', -5, -35.5);
 }
+const sneaker = col => (c, len) => { // trainers under long trousers
+  c.fillStyle = col; c.beginPath(); c.ellipse(2.4, len + 0.2, 5.6, 2.6, 0, 0, TAU); c.fill(); c.stroke();
+  c.strokeStyle = '#c8202b'; c.lineWidth = 1; c.beginPath(); c.moveTo(-1.4, len - 0.2); c.lineTo(5.6, len - 0.2); c.stroke(); c.strokeStyle = INK; c.lineWidth = 1.4;
+};
+function sportBody(c, k) { // Mozah's modest sports set: a loose long-sleeve top to mid-thigh over long trousers
+  const tp = () => { c.beginPath(); c.moveTo(-8, -44); c.quadraticCurveTo(0, -47, 8, -44); c.quadraticCurveTo(11, -32, 12.6, -13); c.lineTo(-13.4, -13); c.quadraticCurveTo(-12, -32, -8, -44); c.closePath(); };
+  tp(); c.fillStyle = k.main; c.fill(); c.save(); c.clip();
+  c.fillStyle = k.trim; c.fillRect(-15, -16.6, 30, 2.2); c.fillRect(8.2, -46, 2, 34); // hem band and a side stripe
+  c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(1, -46, 4, 33); c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(-14, -46, 4, 33);
+  c.restore(); tp(); c.strokeStyle = INK; c.lineWidth = 1.6; c.stroke();
+  c.strokeStyle = k.trim; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-4, -44.6); c.quadraticCurveTo(1.5, -42, 6.6, -44.6); c.stroke();
+}
 function swimBody(c, k) { // rash guard and board shorts, or Mozah's full-length swimsuit (tunic over leggings)
   if (k.full) {
     const tu = () => { c.beginPath(); c.moveTo(-11.5, -28); c.lineTo(11, -28); c.quadraticCurveTo(13, -18, 13.6, -8.5); c.lineTo(-14.4, -8.5); c.quadraticCurveTo(-13, -18, -11.5, -28); c.closePath(); };
@@ -741,14 +753,15 @@ function person(c, x, y, ph, air, o) {
   if (run) { c.translate(0, -Math.abs(Math.sin(ph)) * 1.8); c.rotate(o.lean ?? 0.07); }
   const skin = o.skin, skinD = o.skinD, skinL = o.skinL || skin, robe = o.robe || '#fbfaf4', robeD = o.robeD || '#dcd8cb';
   const kick = o.kick ? Math.sin(ph * 1.4) : 0;
-  const foot = o.kit ? sockFoot(o.kit.sock) : sandalFoot;
-  const legs = o.swim && o.swim.full ? [o.swim.legD, o.swim.shorts] : o.girl && o.kit ? ['#1f2026', '#2e3038'] : [skinD, skin];
+  const foot = o.kit ? sockFoot(o.kit.sock) : o.sport ? sneaker(o.sport.shoe) : sandalFoot;
+  const legs = o.sport ? [o.sport.legD, o.sport.pants] : o.swim && o.swim.full ? [o.swim.legD, o.swim.shorts] : [skinD, skin];
   c.save(); c.translate(-1, -20); limb(c, o.kick ? kick * 0.9 : still ? 0.05 : air ? 0.75 : -sw * 0.85, 19, 4.4, legs[0], foot); c.restore();
   c.save(); c.translate(1, -20); limb(c, o.kick ? -kick * 0.9 : still ? -0.05 : air ? -0.55 : sw * 0.85, 19, 4.4, legs[1], foot); c.restore();
   let ba = still ? 0.1 : air ? -2.3 : sw * 0.9;
   if (o.arm === 'flail') ba = 2.4 + Math.sin(A * 3 + 1) * 1.1; if (o.arm === 'grip') ba = -1.1; if (o.arm === 'hold') ba = 0.35; if (o.arm === 'o') ba = -2.6 + Math.sin(A * 3) * 0.4;
   c.save(); c.translate(-1, -40); limb(c, ba, 15, 6, robeD, hand(skinD), 1); c.restore();
   if (o.kit) kitBody(c, o.kit);
+  else if (o.sport) sportBody(c, o.sport);
   else if (o.swim) swimBody(c, o.swim);
   else {
   // kandura: soft side shading, hem shadow, folds, collar and tassel (furakha)
@@ -812,6 +825,13 @@ function person(c, x, y, ph, air, o) {
       c.moveTo(-16, -36.2); c.quadraticCurveTo(-4, -35, 8.2, -39.4); c.stroke();
       c.fillStyle = '#e8b64a'; for (const [dx, dy] of [[-8, -40], [-3, -39.5], [2, -40.6], [-11, -45], [-6, -46]]) { c.beginPath(); c.arc(dx, dy, 0.9, 0, TAU); c.fill(); }
     }
+  } else if (o.head === 'sporthijab') {
+    const hp = () => { c.beginPath(); c.moveTo(9.8, -57); c.quadraticCurveTo(9.4, -65.6, 0.5, -65.6); c.quadraticCurveTo(-11.4, -64.8, -11.6, -52.5);
+      c.quadraticCurveTo(-12, -44, -9.5, -40.5); c.quadraticCurveTo(0, -38.6, 7.6, -41.6); c.quadraticCurveTo(6.8, -44.4, 5.6, -45.4);
+      c.quadraticCurveTo(1.8, -46.6, 0.6, -50); c.quadraticCurveTo(1.6, -55.6, 9.8, -57); c.closePath(); };
+    hp(); c.fillStyle = o.hijabCol; c.fill(); c.save(); c.clip(); c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(-14, -54, 8, 16);
+    c.strokeStyle = 'rgba(255,255,255,.3)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-6, -63); c.quadraticCurveTo(2, -65, 8, -60.4); c.stroke(); c.restore();
+    hp(); c.strokeStyle = INK; c.lineWidth = 1.6; c.stroke();
   } else if (o.head === 'swimcap') {
     c.beginPath(); c.moveTo(-7.9, -50); c.quadraticCurveTo(-8.4, -65.8, 2.4, -65.8); c.quadraticCurveTo(11.6, -65.4, 11.2, -55.5); c.quadraticCurveTo(2, -57.5, -7.9, -50); c.closePath();
     c.fillStyle = o.girl ? '#ef6f9a' : '#2b9bd6'; c.fill(); c.strokeStyle = INK; c.lineWidth = 1.5; c.stroke();
@@ -886,6 +906,8 @@ function lookOf(robeId, headId, girl) {
   else if (h.id === 'shayla') { o.head = 'shayla'; o.shaylaCol = '#f7f5ef'; }
   else { o.head = 'scarf'; o.scarf = h.id === 'shemagh' ? SHEMAGH : '#f4f3ee'; o.fringe = h.id === 'ghutra' ? '#e3e0d6' : '#fff1e8'; }
   if (o.head === 'bukhnag') o.shaylaCol = '#1d1b22';
+  if (r.sport) { o.sport = r.sport; o.head = 'sporthijab'; o.hijabCol = r.sport.hijab; }
+  if (girl && o.swim && !o.swim.full) o.swim = Object.assign({}, o.swim, { full: 1, legD: r.shade }); // Mozah's swimwear always covers the legs
   return o;
 }
 const isGirl = () => M.data().char === 'mozah';
@@ -2523,9 +2545,9 @@ function sheetWardrobe(body) {
     body.appendChild(g);
   };
   const robe = id => lookOf(id, D.head, girl), head = id => lookOf(D.robe, id, girl);
-  section(girl ? 'w_dresses' : 'w_robes', M.ROBES.filter(r => !r.kit && !r.swim), 'robe', robe);
+  section(girl ? 'w_dresses' : 'w_robes', M.ROBES.filter(r => !r.kit && !r.swim && !r.sport), 'robe', robe);
   section('w_swim', M.ROBES.filter(r => r.swim), 'robe', robe);
-  section('w_kits', M.ROBES.filter(r => r.kit), 'robe', robe);
+  section('w_kits', M.ROBES.filter(r => r.kit || r.sport), 'robe', robe);
   section('w_heads', M.HEADS, 'head', head);
 }
 // the playing character changed: Baba's lines, titles and names switch to match

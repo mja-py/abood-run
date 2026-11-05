@@ -44,8 +44,11 @@ The wardrobe opens with **who you play as**: Abood, or his sister **Mozah**. Moz
 
 - **Free, Abood:** 4 kandura colours (white, cream, grey, winter brown), 2 swimsuits (rash guard and board shorts), red shemagh, white ghutra, swim cap.
 - **Free, Mozah:** 3 jalabiya colours with gold embroidery (pink, purple, teal), 2 full-length swimsuits (pink, teal), bukhnag (black with gold), white shayla, swim cap.
-- **Paid, with a perk (bought once, fits both):** five football kits (Al Ain, Al Wasl, Shabab Al Ahli, Al Nasr, Sharjah), 1,500 each, each making Baba catch up 20% slower; Mozah wears them over leggings. The lifeguard set, 2,500, starts every run with a shield. The kits are drawn in club colours only, with no badges.
+- **Paid, Abood:** five football kits (Al Ain, Al Wasl, Shabab Al Ahli, Al Nasr, Sharjah), 1,500 each, each making Baba catch up 20% slower. They are drawn in club colours only, with no badges.
+- **Paid, Mozah:** one modest sports set instead of the club kits (long top, long trousers, sports hijab and trainers), 1,500, with the same 20% perk.
+- **Paid, both:** the lifeguard set, 2,500, starts every run with a shield (Mozah's is full length).
 - **Badge only:** the gold kandura or gold jalabiya (10,000 m in one run) makes Baba catch up 40% slower.
+- All of Mozah's outfits cover the arms and legs, and her swimwear is full length.
 - Older saves: looks that were removed (glasses, extras, some colours and headwear) were all free, so nothing is refunded; anyone wearing one goes back to the default look.
 
 ## Economy

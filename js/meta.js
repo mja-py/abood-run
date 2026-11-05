@@ -36,7 +36,7 @@ export const stopReward = s => 5 + Math.round(s.m / 1000) * 2; // a postcard pay
 
 // ---- wardrobe ----
 // Two characters: Abood, and his sister Mozah, who unlocks after GIRL_MISSIONS missions.
-// `who`: 'b' Abood only, 'g' Mozah only, missing = both (a paid outfit is bought once and fits both).
+// `who`: 'b' Abood only, 'g' Mozah only, missing = both (the lifeguard set and the gold outfit fit both).
 // Looks with no effect on the game are free. Only outfits with a perk cost dirhams (or a badge).
 export const CHARS = ['abood', 'mozah'];
 export const GIRL_MISSIONS = 10;
@@ -58,12 +58,14 @@ export const ROBES = [
   { id: 'gswim_pink', who: 'g', col: '#ef6f9a', shade: '#c9507a', price: 0, swim: { top: '#ef6f9a', trim: '#fffaf0', shorts: '#7a2e6b', legD: '#62235a', stripe: '#ffe066', full: 1 } },
   { id: 'gswim_teal', who: 'g', col: '#1f9e8f', shade: '#167a6f', price: 0, swim: { top: '#1f9e8f', trim: '#fffaf0', shorts: '#26355c', legD: '#1c2848', stripe: '#f2c230', full: 1 } },
   { id: 'swim_life', col: '#e23b2a', shade: '#b52a1c', price: 2500, perk: 'perk_life', shield: 1, swim: { top: '#e23b2a', trim: '#f2c230', shorts: '#e23b2a', stripe: '#f2c230', cross: 1 } },
-  // football kits named after five UAE clubs (colours only, no badges are drawn); each slows Baba by 20%
-  { id: 'kit_purple', col: '#5b2a86', shade: '#43206a', price: 1500, perk: 'perk_kit', slow: 0.8, kit: { main: '#5b2a86', trim: '#ffffff', shorts: '#ffffff', sock: '#5b2a86', num: '#ffffff' } },
-  { id: 'kit_yellow', col: '#f2c230', shade: '#c99a16', price: 1500, perk: 'perk_kit', slow: 0.8, kit: { main: '#f2c230', trim: '#1d1d1d', shorts: '#1d1d1d', sock: '#f2c230', num: '#1d1d1d', stripes: 1 } },
-  { id: 'kit_red', col: '#c8202b', shade: '#9a1520', price: 1500, perk: 'perk_kit', slow: 0.8, kit: { main: '#c8202b', trim: '#1d1d1d', shorts: '#1d1d1d', sock: '#c8202b', num: '#ffffff', band: 1 } },
-  { id: 'kit_blue', col: '#1f4fa0', shade: '#173b78', price: 1500, perk: 'perk_kit', slow: 0.8, kit: { main: '#1f4fa0', trim: '#ffffff', shorts: '#ffffff', sock: '#1f4fa0', num: '#ffffff' } },
-  { id: 'kit_white', col: '#fbfaf4', shade: '#dcd8cb', price: 1500, perk: 'perk_kit', slow: 0.8, kit: { main: '#fbfaf4', trim: '#c8202b', shorts: '#fbfaf4', sock: '#fbfaf4', num: '#c8202b', band: 1 } },
+  // Abood: football kits named after five UAE clubs (colours only, no badges are drawn); each slows Baba by 20%
+  { id: 'kit_purple', who: 'b', col: '#5b2a86', shade: '#43206a', price: 1500, perk: 'perk_kit', slow: 0.8, kit: { main: '#5b2a86', trim: '#ffffff', shorts: '#ffffff', sock: '#5b2a86', num: '#ffffff' } },
+  { id: 'kit_yellow', who: 'b', col: '#f2c230', shade: '#c99a16', price: 1500, perk: 'perk_kit', slow: 0.8, kit: { main: '#f2c230', trim: '#1d1d1d', shorts: '#1d1d1d', sock: '#f2c230', num: '#1d1d1d', stripes: 1 } },
+  { id: 'kit_red', who: 'b', col: '#c8202b', shade: '#9a1520', price: 1500, perk: 'perk_kit', slow: 0.8, kit: { main: '#c8202b', trim: '#1d1d1d', shorts: '#1d1d1d', sock: '#c8202b', num: '#ffffff', band: 1 } },
+  { id: 'kit_blue', who: 'b', col: '#1f4fa0', shade: '#173b78', price: 1500, perk: 'perk_kit', slow: 0.8, kit: { main: '#1f4fa0', trim: '#ffffff', shorts: '#ffffff', sock: '#1f4fa0', num: '#ffffff' } },
+  { id: 'kit_white', who: 'b', col: '#fbfaf4', shade: '#dcd8cb', price: 1500, perk: 'perk_kit', slow: 0.8, kit: { main: '#fbfaf4', trim: '#c8202b', shorts: '#fbfaf4', sock: '#fbfaf4', num: '#c8202b', band: 1 } },
+  // Mozah: one modest sports set instead of the club kits (long top, long trousers, sports hijab), same 20% perk
+  { id: 'sport_g', who: 'g', col: '#1f7a74', shade: '#165c57', price: 1500, perk: 'perk_kit', slow: 0.8, sport: { main: '#1f7a74', trim: '#f2c230', pants: '#26355c', legD: '#1c2848', hijab: '#26355c', shoe: '#fbfaf4' } },
 ];
 export const HEADS = [
   { id: 'shemagh', who: 'b', price: 0 }, { id: 'ghutra', who: 'b', price: 0 },
