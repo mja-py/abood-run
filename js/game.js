@@ -1127,8 +1127,13 @@ function drawObstacle(c, o, sx) {
   else if (k === 'castle') { c.fillStyle = '#e3c48a'; c.fillRect(-w / 2, -14, w, 14); c.strokeRect(-w / 2, -14, w, 14);
     for (const tx of [-w / 2, -6, w / 2 - 12]) { c.fillRect(tx, -h, 12, h - 12); c.strokeRect(tx, -h, 12, h - 12); c.fillRect(tx, -h - 3, 3, 3); c.fillRect(tx + 9, -h - 3, 3, 3); }
     c.strokeStyle = INK; c.beginPath(); c.moveTo(0, -h); c.lineTo(0, -h - 12); c.stroke(); c.fillStyle = '#e23b4a'; c.beginPath(); c.moveTo(0, -h - 12); c.lineTo(8, -h - 9); c.lineTo(0, -h - 6); c.fill(); c.fillStyle = '#f08fb4'; c.beginPath(); c.arc(-10, -6, 2, 0, TAU); c.arc(8, -5, 2, 0, TAU); c.fill(); }
-  else if (k === 'escooter') { c.fillStyle = '#1d1f24'; c.beginPath(); c.roundRect(-16, -8, 30, 5, 2.5); c.fill(); c.strokeStyle = '#2c7bd1'; c.lineWidth = 3; c.beginPath(); c.moveTo(12, -6); c.lineTo(15, -h); c.moveTo(9, -h); c.lineTo(21, -h); c.stroke();
-    c.fillStyle = '#1b1b1f'; for (const wx of [-14, 14]) { c.beginPath(); c.arc(wx, -4, 4.5, 0, TAU); c.fill(); } c.fillStyle = '#7ee0b0'; c.fillRect(13, -h + 6, 4, 4); }
+  else if (k === 'escooter') { // a parked rental e-scooter, drawn solid in calm colours so it does not shimmer when it scrolls past
+    c.fillStyle = '#4a4f59'; c.beginPath(); c.moveTo(11, -7); c.lineTo(14.5, -h + 2); c.lineTo(19.5, -h + 2); c.lineTo(16, -7); c.closePath(); c.fill(); c.stroke(); // stem
+    c.beginPath(); c.roundRect(8, -h - 1, 15, 5, 2.5); c.fill(); c.stroke(); // handlebar
+    c.fillStyle = '#3a3e46'; c.beginPath(); c.roundRect(-18, -11, 36, 7, 3.5); c.fill(); c.stroke(); // deck
+    c.fillStyle = '#6b7280'; c.fillRect(-14, -10, 22, 2);
+    for (const wx of [-13, 13]) { c.fillStyle = '#26282e'; c.beginPath(); c.arc(wx, -4.5, 5, 0, TAU); c.fill(); c.stroke(); c.fillStyle = '#8b919c'; c.beginPath(); c.arc(wx, -4.5, 1.8, 0, TAU); c.fill(); }
+    c.fillStyle = '#e8b65a'; c.beginPath(); c.arc(18, -h + 9, 2.2, 0, TAU); c.fill(); }
   else if (k === 'basket') { c.fillStyle = '#b5803e'; c.beginPath(); c.moveTo(-w / 2, -16); c.lineTo(w / 2, -16); c.lineTo(w / 2 - 3, 0); c.lineTo(-w / 2 + 3, 0); c.closePath(); c.fill(); c.stroke();
     c.strokeStyle = '#8a5a26'; c.lineWidth = 1; c.beginPath(); for (let y = -12; y < 0; y += 4) { c.moveTo(-w / 2 + 2, y); c.lineTo(w / 2 - 2, y); } c.stroke();
     c.fillStyle = '#e23b4a'; c.fillRect(-w / 2 + 2, -19, w - 4, 4); c.fillStyle = '#fff'; for (let x = -w / 2 + 2; x < w / 2 - 2; x += 6) c.fillRect(x, -19, 3, 4);
@@ -2340,8 +2345,8 @@ function groundTile(c, z) {
     c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(20, GROUND + 20, 14, 2); c.fillRect(20, GROUND + 44, 14, 2); }
   else if (k === 1) { c.fillStyle = '#c9c3b8'; c.fillRect(0, GROUND, P, HB - GROUND); c.strokeStyle = 'rgba(70,60,50,.25)'; c.lineWidth = 1.2; c.beginPath();
     for (let x = 0; x <= P; x += 40) { c.moveTo(x, GROUND + 8); c.lineTo(x, GROUND + 40); } c.moveTo(0, GROUND + 40); c.lineTo(P, GROUND + 40); c.stroke();
-    c.fillStyle = '#4a4a50'; c.fillRect(0, GROUND + 42, P, HB - GROUND - 42); c.fillStyle = '#f2f2f2'; for (let x = 10; x < P; x += 60) c.fillRect(x, GROUND + 58, 30, 3);
-    for (let x = 0; x < P; x += 40) { c.fillStyle = '#1d1d1d'; c.fillRect(x, GROUND, 20, 8); c.fillStyle = '#f4f4f4'; c.fillRect(x + 20, GROUND, 20, 8); } }
+    c.fillStyle = '#4a4a50'; c.fillRect(0, GROUND + 42, P, HB - GROUND - 42); c.fillStyle = 'rgba(242,242,242,.5)'; for (let x = 10; x < P; x += 60) c.fillRect(x, GROUND + 58, 30, 3);
+    for (let x = 0; x < P; x += 120) { c.fillStyle = '#8d9099'; c.fillRect(x, GROUND, 60, 8); c.fillStyle = '#c4c7cd'; c.fillRect(x + 60, GROUND, 60, 8); } } // kerb: low contrast, wide blocks (fast thin stripes strain the eyes)
   else if (k === 2) { c.fillStyle = '#4f8a3a'; c.fillRect(0, GROUND, P, 7); c.fillStyle = '#d8b9a8'; c.fillRect(0, GROUND + 7, P, HB - GROUND - 7);
     c.strokeStyle = 'rgba(110,70,60,.3)'; c.lineWidth = 1.2; c.beginPath();
     for (let row = 0; row < 4; row++) { const yy = GROUND + 7 + row * 18; c.moveTo(0, yy); c.lineTo(P, yy); for (let x = (row % 2) * 20; x <= P; x += 40) { c.moveTo(x, yy); c.lineTo(x, yy + 18); } } c.stroke();
@@ -2379,6 +2384,7 @@ function ground(c) {
     c.fillStyle = PITG; c.fillRect(x0, GROUND, x1 - x0, H - GROUND + 20); c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(x0, GROUND, 6, H - GROUND + 20); c.fillRect(x1 - 6, GROUND, 6, H - GROUND + 20);
     c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.moveTo(x0, GROUND); c.lineTo(x0, H + 20); c.moveTo(x1, GROUND); c.lineTo(x1, H + 20); c.stroke(); }
 }
+const AWN = {};
 function platform(c, p) {
   const x = p.x - worldX + ABX; if (x > W || x + p.w < 0) return; const style = ZONES[p.z].plat;
   if (style === 'plank') { c.strokeStyle = '#5a3a22'; c.lineWidth = 5; c.beginPath(); c.moveTo(x + 12, p.y); c.lineTo(x + 12, GROUND + 4); c.moveTo(x + p.w - 12, p.y); c.lineTo(x + p.w - 12, GROUND + 4); c.stroke();
@@ -2396,9 +2402,10 @@ function platform(c, p) {
     c.strokeStyle = INK; c.lineWidth = 2; c.strokeRect(x, p.y, p.w, 12); return; }
   const [a, b] = style;
   c.strokeStyle = '#6b4a3a'; c.lineWidth = 4; c.beginPath(); c.moveTo(x + 10, p.y); c.lineTo(x + 10, GROUND + 4); c.moveTo(x + p.w - 10, p.y); c.lineTo(x + p.w - 10, GROUND + 4); c.stroke();
-  for (let k = 0; k < p.w; k += 16) { c.fillStyle = (k / 16) % 2 ? b : a; c.fillRect(x + k, p.y, Math.min(16, p.w - k), 12); }
+  const b2 = AWN[b] || (AWN[b] = rgb(mix(hex(b), hex(a), 0.45))); // calmer stripes: less contrast, and wider
+  for (let k = 0; k < p.w; k += 24) { c.fillStyle = (k / 24) % 2 ? b2 : a; c.fillRect(x + k, p.y, Math.min(24, p.w - k), 12); }
   c.strokeStyle = INK; c.lineWidth = 1.4;
-  for (let k = 0; k < p.w - 8; k += 16) { c.fillStyle = (k / 16) % 2 ? b : a; c.beginPath(); c.arc(x + k + 8, p.y + 12, 8, 0, Math.PI); c.fill(); c.stroke(); }
+  for (let k = 0; k < p.w - 12; k += 24) { c.fillStyle = (k / 24) % 2 ? b2 : a; c.beginPath(); c.arc(x + k + 12, p.y + 12, 10, 0, Math.PI); c.fill(); c.stroke(); }
   c.lineWidth = 2; c.strokeRect(x, p.y, p.w, 12);
 }
 function foreground(c, z) {
@@ -2485,7 +2492,7 @@ function render() {
   SK = skyAt((0.14 + dist / 1700) % 1);
   const A = zoneAt(routeM), na = nextAreaAt(routeM), B = (A + 1) % NZ, blend = clamp((routeM - (na - 35)) / 35, 0, 1), tf = tunnelF(routeM);
   ctx.setTransform(RES, 0, 0, RES, 0, offY * RES);
-  if (shake > 0 && !REDUCED) ctx.translate(rnd(-3, 3) * shake * 3, rnd(-3, 3) * shake * 3);
+  if (shake > 0 && !REDUCED) ctx.translate(rnd(-2, 2) * shake * 2.5, rnd(-2, 2) * shake * 2.5);
   if (tf < 1) {
     sky(ctx); clouds(ctx);
     layer('far', A, B, blend); landmarks(ctx, 'far'); haze(ctx, GROUND - 230, 0.38); drawBirds(ctx); layer('midfar', A, B, blend); landmarks(ctx, 'midfar');
@@ -2503,8 +2510,7 @@ function render() {
   for (const it of items) if (!it.got) { const x = it.x - worldX + ABX; if (x > -30 && x < W + 30) drawItem(ctx, it.kind, x, it.y, it.c || it.x * 0.01, it.mag); }
   for (const o of obs) { const x = o.x - worldX + ABX; if (x > -120 && x < W + 80) {
     if (!o.hit) { ctx.fillStyle = 'rgba(20,12,8,.32)'; ctx.beginPath(); ctx.ellipse(x + o.w / 2, GROUND + 1.5, o.w * 0.62 * (1 - Math.min(0.5, o.lift / 90)), 4.5, 0, 0, TAU); ctx.fill(); }
-    ctx.save(); ctx.shadowColor = SK.n > 0.45 ? 'rgba(255,236,180,.85)' : 'rgba(255,255,255,.95)'; ctx.shadowOffsetY = -2.2 * RES; ctx.shadowBlur = 0;
-    drawObstacle(ctx, o, x); ctx.restore(); } }
+    drawObstacle(ctx, o, x); } }
   for (const s of sandals) { ctx.save(); ctx.translate(s.sx, s.y); ctx.rotate(s.rot); ctx.translate(0, -7); sandalShape(ctx); ctx.restore(); }
   const fx = dadScreenX();
   ctx.fillStyle = 'rgba(0,0,0,.18)';

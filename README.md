@@ -140,7 +140,7 @@ On each deploy the commit id is stamped into `sw.js`, `index.html` and `js/game.
 - Phones start at a lower render resolution. If frames run slow for a few seconds, the game lowers its resolution further and switches off a few effects on its own.
 - The page only writes to the HUD when a value changes. Particle counts are capped, and lights and dust use pre-rendered sprites.
 - The canvas checks its size every frame, so when the phone's toolbar slides in or out the picture is never shown stretched.
-- Obstacles get a contact shadow and a bright top edge, and the street scenery behind them is slightly hazed, so they stand out from background props in every area.
+- Obstacles get a soft contact shadow, and the street scenery behind them is slightly hazed, so they stand out from background props. Fast-scrolling patterns are kept calm (low-contrast, wide kerb blocks and awning stripes, solid shapes instead of thin bright lines) to avoid eye strain.
 - Street-level scenery and paving change area at the boundary line, each layer at its own parallax speed, instead of fading two areas into each other in place.
 
 ## Project layout
