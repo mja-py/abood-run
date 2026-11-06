@@ -94,7 +94,7 @@ The game paces itself to each player (dynamic difficulty, in `director()` in `js
 - **Squeeze** (past 110%): Baba gets up to 80% faster by 160% of the target, with fewer power-ups and more sandals.
 - **Focus** cancels most of the squeeze (Focus 3 removes 90% of it), so a sharp player can keep beating their best.
 - **Mercy:** three hits within 30 seconds gives 10 seconds of relief.
-- **Grace:** at the start of every run, and after a second chance, Baba does not close in for 2 seconds and then eases up to full speed over the next 3.
+- **Grace:** at the start of every run, and after a second chance, Baba catches up at half speed for 2 minutes, then builds back up to full speed over 10 seconds.
 
 ## Ads hook
 

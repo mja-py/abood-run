@@ -232,8 +232,10 @@ function director(dt) {
   assist = mult;
 }
 let focusT = 0, focusLv = 0;
-const GRACE = 5; // seconds of grace for Baba's speed at the start of every run and after a second chance
-const graceK = () => clamp((GRACE - graceT - 2) / 3, 0, 1);
+// Grace at the start of every run and after a second chance: for 2 minutes Baba catches up at half speed,
+// then he builds back up to full speed over 10 seconds.
+const GRACE_HOLD = 120, GRACE_RAMP = 10, GRACE = GRACE_HOLD + GRACE_RAMP;
+const graceK = () => 0.5 + 0.5 * clamp((GRACE - graceT - GRACE_HOLD) / GRACE_RAMP, 0, 1);
 const runSpeed = d => 310 + Math.min(260, d * 0.05); // grows steadily: 360 at 1 km, 410 at 2 km, 560 at 5 km, capped at 570 from 5.2 km
 function reset() {
   focusT = 0; focusLv = 0; paceT = M.paceTarget(); assist = 1; spawnBoost = 1; sandalMul = 1; mercyT = 0; hitTimes = [];

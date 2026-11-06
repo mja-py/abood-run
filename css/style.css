@@ -133,8 +133,13 @@ h2{font-size:36px}
 .badge-strip{display:flex;flex-wrap:wrap;gap:8px;min-height:30px;align-items:center}
 .badge-chip{display:inline-flex;align-items:center;gap:6px;background:var(--cream);border:2px solid #e0a72a;border-radius:999px;padding:2px 10px 2px 3px;font-weight:700;font-size:13px}
 .badge-chip canvas{width:28px;height:28px}
-.over-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.over-actions .btn{flex:1;min-width:140px}
+.over-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+/* the three results buttons share one shape: second chance and run again side by side, the menu full width below */
+.over-actions>button{width:100%;min-width:0;min-height:50px;margin:0;padding:4px 12px;border:3px solid var(--ink);border-radius:14px;box-shadow:0 4px 0 var(--ink);
+  font:800 18px/1.15 var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.over-actions>button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+#reviveBtn[hidden]+#againBtn,#overMenuBtn{grid-column:1/-1}
+#overMenuBtn{background:var(--cream);color:var(--ink)}
 .btn.alt{background:var(--teal)}
 .sheet{max-width:720px;max-height:calc(100dvh - 32px);overflow:hidden;padding-bottom:12px}
 .sheet-top{display:flex;align-items:center;gap:10px}
@@ -226,5 +231,6 @@ h2{font-size:36px}
 /* short landscape phones: keep the results card and its buttons on one screen */
 @media (max-height:440px){ .over .avatar-box{display:none} .over .menu-main{grid-template-columns:1fr} .over #overMsg,.over .hint{display:none}
   .over .score div{padding:3px 8px} .over .score b{font-size:18px!important} .over h2{font-size:24px} .over .menu-text{gap:6px}
-  .swap-row{gap:8px} .sw-box b{font-size:18px} .swap-parts{font-size:11.5px} .over-actions .btn{min-height:40px;font-size:17px;padding:2px 10px}
+  .swap-row{gap:8px} .sw-box b{font-size:18px} .swap-parts{font-size:11.5px} .over-actions>button{min-height:40px;font-size:16px;padding:2px 10px}
+  .over-actions{grid-template-columns:1fr 1fr .7fr} #overMenuBtn{grid-column:auto} #reviveBtn[hidden]+#againBtn{grid-column:span 2} /* one row on short screens */
   .area-card{flex-basis:100px} .area-card b{font-size:11.5px} .area-card small{font-size:10px} }
