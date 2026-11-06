@@ -139,7 +139,8 @@ On each deploy the commit id is stamped into `sw.js`, `index.html` and `js/game.
 - Characters and scenery are drawn in code, then baked into cached sprite frames and background tiles. After that, each frame mostly copies images.
 - Phones start at a lower render resolution. If frames run slow for a few seconds, the game lowers its resolution further and switches off a few effects on its own.
 - The page only writes to the HUD when a value changes. Particle counts are capped, and lights and dust use pre-rendered sprites.
-- The canvas checks its size every frame, so when the phone's toolbar slides in or out the picture is never shown stretched.
+- Frame cap: at most 60 frames a second in a run and 30 behind the menus, pause and results card, so phones with 120 Hz screens don't draw twice the frames they need and run hot.
+- The canvas resizes from a ResizeObserver (after layout, before paint), so when the phone's toolbar slides in or out the picture is never shown stretched.
 - Obstacles get a soft contact shadow, and the street scenery behind them is slightly hazed, so they stand out from background props. Fast-scrolling patterns are kept calm (low-contrast, wide kerb blocks and awning stripes, solid shapes instead of thin bright lines) to avoid eye strain.
 - Street-level scenery and paving change area at the boundary line, each layer at its own parallax speed, instead of fading two areas into each other in place.
 

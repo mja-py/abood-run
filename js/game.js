@@ -49,7 +49,6 @@ let tileBudget = 0, sprBudget = 0;
 function resize() {
   const w = cv.clientWidth || innerWidth, h = cv.clientHeight || innerHeight, d = Math.min(devicePixelRatio || 1, QDPR[qLevel]);
   if (!w || !h) return;
-  cvW = w; cvH = h;
   cv.width = Math.round(w * d); cv.height = Math.round(h * d);
   scale = h / H; W = w / scale; offY = 0;
   if (W < 520) { scale = w / 520; W = 520; offY = h / scale - H; }
@@ -60,9 +59,11 @@ function resize() {
   FX = qLevel >= 2 ? 0.55 : 1; MAXP = Math.round(160 * FX);
   buildStars();
 }
-let rzT = 0, cvW = 0, cvH = 0;
+let rzT = 0;
 addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(resize, 80); });
-if (window.ResizeObserver) new ResizeObserver(() => { clearTimeout(rzT); rzT = setTimeout(resize, 60); }).observe(cv);
+// The observer runs after layout and before paint, so resizing here means the picture is never shown stretched
+// (e.g. Safari's toolbar sliding in or out), without measuring the canvas every frame.
+if (window.ResizeObserver) new ResizeObserver(() => resize()).observe(cv);
 
 // ---------- shared sprites ----------
 const GLOW = (() => { const c = mk(64, 64), g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -2802,13 +2803,18 @@ function perf(raw) {
   if (fN >= 90) { const avg = fAcc / fN; fAcc = 0; fN = 0;
     if (avg > 1 / 42) { if (++slowWins >= 2 && qLevel < QDPR.length - 1) { qLevel++; slowWins = 0; resize(); } } else slowWins = 0; }
 }
+// Frame cap: at most 60 frames a second in a run and 30 behind the menus, pause and results card. Phones with
+// 120 Hz screens would otherwise draw twice as many frames as needed, which runs them hot.
+let nextDue = 0;
 function loop(now) {
-  if (cv.clientWidth !== cvW || cv.clientHeight !== cvH) resize(); // e.g. Safari's toolbar sliding in or out: never show a stretched frame
+  requestAnimationFrame(loop);
+  const gap = 1000 / (st === 'play' ? 60 : 30);
+  if (now < nextDue - 2) return;
+  nextDue = now - nextDue > gap ? now + gap : nextDue + gap;
   const raw = last ? (now - last) / 1000 : 0.016; last = now;
   perf(raw); update(clamp(raw, 0, 0.033)); render(); stepSwap(clamp(raw, 0, 0.05));
   if (!$('menu').hidden) drawAvatar($('avMenu'), kidBase(), t * 8, kid.sayT > 0 ? 'tongue' : 'grin', false);
   else if (!$('over').hidden) drawAvatar($('avOver'), kidBase(), t * 3, 'o', true);
-  requestAnimationFrame(loop);
 }
 
 // ---------- service worker / updates ----------
