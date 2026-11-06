@@ -94,6 +94,7 @@ The game paces itself to each player (dynamic difficulty, in `director()` in `js
 - **Squeeze** (past 110%): Baba gets up to 80% faster by 160% of the target, with fewer power-ups and more sandals.
 - **Focus** cancels most of the squeeze (Focus 3 removes 90% of it), so a sharp player can keep beating their best.
 - **Mercy:** three hits within 30 seconds gives 10 seconds of relief.
+- **Grace:** at the start of every run, and after a second chance, Baba does not close in for 2 seconds and then eases up to full speed over the next 3.
 
 ## Ads hook
 
@@ -138,6 +139,9 @@ On each deploy the commit id is stamped into `sw.js`, `index.html` and `js/game.
 - Characters and scenery are drawn in code, then baked into cached sprite frames and background tiles. After that, each frame mostly copies images.
 - Phones start at a lower render resolution. If frames run slow for a few seconds, the game lowers its resolution further and switches off a few effects on its own.
 - The page only writes to the HUD when a value changes. Particle counts are capped, and lights and dust use pre-rendered sprites.
+- The canvas checks its size every frame, so when the phone's toolbar slides in or out the picture is never shown stretched.
+- Obstacles get a contact shadow and a bright top edge, and the street scenery behind them is slightly hazed, so they stand out from background props in every area.
+- Street-level scenery and paving change area at the boundary line, each layer at its own parallax speed, instead of fading two areas into each other in place.
 
 ## Project layout
 

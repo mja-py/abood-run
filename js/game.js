@@ -49,6 +49,7 @@ let tileBudget = 0, sprBudget = 0;
 function resize() {
   const w = cv.clientWidth || innerWidth, h = cv.clientHeight || innerHeight, d = Math.min(devicePixelRatio || 1, QDPR[qLevel]);
   if (!w || !h) return;
+  cvW = w; cvH = h;
   cv.width = Math.round(w * d); cv.height = Math.round(h * d);
   scale = h / H; W = w / scale; offY = 0;
   if (W < 520) { scale = w / 520; W = 520; offY = h / scale - H; }
@@ -59,7 +60,7 @@ function resize() {
   FX = qLevel >= 2 ? 0.55 : 1; MAXP = Math.round(160 * FX);
   buildStars();
 }
-let rzT = 0;
+let rzT = 0, cvW = 0, cvH = 0;
 addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(resize, 80); });
 if (window.ResizeObserver) new ResizeObserver(() => { clearTimeout(rzT); rzT = setTimeout(resize, 60); }).observe(cv);
 
@@ -205,7 +206,7 @@ function music() {
 function buzz(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
 
 // ---------- state ----------
-let st = 'boot', t = 0, stT = 0, worldX = 0, speed = 320, lead = 0.6, dist = 0, candies = 0, candyCount = 0, boost = 0, shake = 0, camZ = 1;
+let st = 'boot', t = 0, stT = 0, worldX = 0, speed = 320, lead = 0.6, dist = 0, candies = 0, candyCount = 0, boost = 0, shake = 0, graceT = 0;
 let combo = 0, comboT = 0, closeCalls = 0, zoneNow = 0, banner = null;
 let gaps = [], plats = [], obs = [], items = [], parts = [], sandals = [], birds = [], fish = [], genX = 0, holding = false;
 // route progress and per-run mission counters
@@ -231,10 +232,12 @@ function director(dt) {
   assist = mult;
 }
 let focusT = 0, focusLv = 0;
+const GRACE = 5; // seconds of grace for Baba's speed at the start of every run and after a second chance
+const graceK = () => clamp((GRACE - graceT - 2) / 3, 0, 1);
 const runSpeed = d => 310 + Math.min(260, d * 0.05); // grows steadily: 360 at 1 km, 410 at 2 km, 560 at 5 km, capped at 570 from 5.2 km
 function reset() {
   focusT = 0; focusLv = 0; paceT = M.paceTarget(); assist = 1; spawnBoost = 1; sandalMul = 1; mercyT = 0; hitTimes = [];
-  t = 0; worldX = 0; lead = 0.7; dist = 0; routeM = startM; nextStop = stopAfter(startM + 25); prevStopAt = startM; lastStop = null; stopBanner = null; fish = []; runHit = 0; runPow = 0; maxFocus = 0; comboMax = 0; runDone = []; candies = 0; candyCount = 0; boost = 0; shake = 0; camZ = 1; combo = 0; comboT = 0; closeCalls = 0; zoneNow = 0; banner = null;
+  t = 0; worldX = 0; lead = 0.7; dist = 0; routeM = startM; nextStop = stopAfter(startM + 25); prevStopAt = startM; lastStop = null; stopBanner = null; fish = []; runHit = 0; runPow = 0; maxFocus = 0; comboMax = 0; runDone = []; candies = 0; candyCount = 0; boost = 0; shake = 0; graceT = GRACE; combo = 0; comboT = 0; closeCalls = 0; zoneNow = 0; banner = null;
   gaps = []; plats = []; obs = []; items = []; parts = []; sandals = []; genX = 900;
   Object.assign(kid, { y: GROUND, vy: 0, on: true, jumps: 0, coyote: 0, buf: 0, inv: 0, stumble: 0, sx: 1, sy: 1, spin: 0, scoot: 0, mag: 0, shield: 0, say: '', sayT: 0, next: 6 });
   Object.assign(dad, { y: GROUND, vy: 0, on: true, slow: 0, freeze: 0, say: T('s_come'), sayT: 2, next: 3, anger: 0, windup: 0, cd: 9, has: true, regrab: 0 });
@@ -243,7 +246,7 @@ function reset() {
 // ---------- level generation ----------
 const OB = { box: { w: 34, h: 32 }, bin: { w: 30, h: 46 }, cat: { w: 34, h: 30 }, cone: { w: 24, h: 36 }, goat: { w: 44, h: 38, vx: -45 }, ball: { w: 22, h: 22, bounce: 1, vx: -60 },
   sack: { w: 30, h: 36 }, carpet: { w: 58, h: 20 }, crab: { w: 30, h: 18, side: 1 }, cooler: { w: 40, h: 30 }, rock: { w: 42, h: 28 }, bush: { w: 38, h: 30 }, lizard: { w: 46, h: 14, vx: -110 },
-  bike: { w: 44, h: 30 }, gas: { w: 22, h: 36 }, dbag: { w: 32, h: 30 }, dbike: { w: 54, h: 46, vx: -170 }, crate: { w: 32, h: 40 }, chairs: { w: 30, h: 46 },
+  bike: { w: 44, h: 30 }, gas: { w: 22, h: 36 }, dbag: { w: 32, h: 30 }, dbike: { w: 60, h: 54, vx: -170 }, crate: { w: 32, h: 40 }, chairs: { w: 30, h: 46 },
   castle: { w: 40, h: 28 }, mandoos: { w: 36, h: 32 }, ring: { w: 30, h: 30, vx: -40 }, gbag: { w: 22, h: 40 }, cart: { w: 50, h: 40, vx: -120 }, escooter: { w: 40, h: 38 }, basket: { w: 32, h: 24 }, flower: { w: 30, h: 32 }, dallah: { w: 28, h: 34 }, wood: { w: 44, h: 20 }, buggy: { w: 58, h: 38, vx: -150 } };
 function addObs(x, k) { obs.push({ x, x0: x, kind: k, w: OB[k].w, h: OB[k].h, hit: false, hx: 0, hy: 0, rot: 0, ph: 0, lift: 0, clear: 999, passed: false, seed: Math.random() * 6 }); }
 function candyArc(x0, x1, yBase, h) { const n = Math.max(3, Math.round((x1 - x0) / 36)); for (let i = 0; i < n; i++) { const f = i / (n - 1); items.push({ x: x0 + (x1 - x0) * f, y: yBase - Math.sin(f * Math.PI) * h, kind: 'candy', c: i }); } }
@@ -453,7 +456,7 @@ function revive() {
   else if (!M.useBooster('revive') && !M.spend(M.REVIVE_PRICE)) { note(T('notEnough')); return; }
   M.track('revive'); for (const b of M.checkBadges(null)) runBadges.push(b);
   st = 'play'; stT = 0; $('over').hidden = true; $('hud').hidden = false; $('routeHud').hidden = false; $('pauseBtn').hidden = false; hudCache.fill(null); if (swap && !swap.done) endSwap(); swap = null;
-  focusT = 0; focusLv = 0;
+  focusT = 0; focusLv = 0; graceT = GRACE;
   lead = 0.6; kid.y = GROUND; kid.vy = 0; kid.on = true; kid.inv = 2.5; kid.stumble = 0; kid.sayT = 0; dad.sayT = 0; dad.windup = 0; dad.cd = 6;
   compact(gaps, g => g.x1 < worldX - 60 || g.x0 > worldX + 500); compact(obs, o => o.x < worldX - 60 || o.x > worldX + 500); sandals.length = 0;
   floatText(T('f_revive'), worldX, kid.y - 80, '#9ff0ff'); wakeOn();
@@ -498,6 +501,7 @@ function update(dt) {
   focusT += dt; const fl = Math.min(FOCUS_MAX, Math.floor(focusT / FOCUS_STEP));
   if (fl > focusLv) { focusLv = fl; maxFocus = Math.max(maxFocus, fl); floatText(T('f_focus', fl), worldX + 40, kid.y - 90, '#9ff0ff'); sfx.close(); }
   let dl = -(0.03 + Math.min(0.11, dist * 0.000016)) * (M.robeOf().slow || 1) * (1 - 0.1 * focusLv) * assist; // Baba closes in steadily: 0.046/s at 1 km, 0.078/s at 3 km, 0.11/s at 5 km, 0.14/s from ~7 km. Gold kandura 0.6, kits 0.8
+  if (graceT > 0) { graceT = Math.max(0, graceT - dt); dl *= graceK(); }
   if (dad.freeze > 0) dl = 0.12; else if (dad.slow > 0) dl = 0.065;
   if (boost > 0) dl += 0.09; if (kid.scoot > 0) dl += 0.1;
   lead = clamp(lead + dl * dt, 0, 1);
@@ -505,7 +509,7 @@ function update(dt) {
   boost = Math.max(0, boost - dt); dad.slow = Math.max(0, dad.slow - dt); dad.freeze = Math.max(0, dad.freeze - dt);
   kid.scoot = Math.max(0, kid.scoot - dt); kid.mag = Math.max(0, kid.mag - dt);
   kid.inv = Math.max(0, kid.inv - dt); kid.stumble = Math.max(0, kid.stumble - dt); shake = Math.max(0, shake - dt);
-  camZ += (1 - camZ) * Math.min(1, dt * 5); comboT -= dt; if (comboT < 0) combo = 0;
+  comboT -= dt; if (comboT < 0) combo = 0;
 
   // kid physics (coyote time + jump buffer + variable jump height)
   kid.buf -= dt; kid.coyote -= dt;
@@ -622,7 +626,7 @@ function grab(it) {
     if (candyCount >= 10) { candyCount -= 10; lead = Math.min(1, lead + 0.06); }
     bump('candyBox'); return;
   }
-  sfx.power(); puff(it.x, it.y, 16, '#fff6c2', 150); camZ = 1.05; buzz(25); M.track('power', it.kind); runPow++;
+  sfx.power(); puff(it.x, it.y, 16, '#fff6c2', 150); buzz(25); M.track('power', it.kind); runPow++;
   if (it.kind === 'vimto') { boost = Math.max(boost, M.powerTime('vimto')); floatText(T('f_vimto'), it.x, it.y - 24); kidSay(T('s_yay'), 1.2); }
   if (it.kind === 'marbles') { dad.slow = M.powerTime('marbles'); dad.windup = 0; shout(T('s_slip'), 2); for (let i = 0; i < 8; i++) parts.push({ x: it.x, y: GROUND - 4, vx: -rnd(250, 420), vy: -rnd(0, 120), life: 1.3, max: 1.3, col: pick(['#3fa7d6', '#f25f5c', '#7bd389', '#ffe066']), r: 3.5, marble: 1 }); floatText(T('f_slip'), it.x, it.y - 24); }
   if (it.kind === 'phone') { dad.freeze = M.powerTime('phone'); dad.windup = 0; shout(T('s_phone'), dad.freeze); floatText(T('f_phone'), it.x, it.y - 24); }
@@ -834,7 +838,8 @@ function person(c, x, y, ph, air, o) {
     hp(); c.strokeStyle = INK; c.lineWidth = 1.6; c.stroke();
   } else if (o.head === 'swimcap') {
     c.beginPath(); c.moveTo(-7.9, -50); c.quadraticCurveTo(-8.4, -65.8, 2.4, -65.8); c.quadraticCurveTo(11.6, -65.4, 11.2, -55.5); c.quadraticCurveTo(2, -57.5, -7.9, -50); c.closePath();
-    c.fillStyle = o.girl ? '#ef6f9a' : '#2b9bd6'; c.fill(); c.strokeStyle = INK; c.lineWidth = 1.5; c.stroke();
+    c.fillStyle = o.capCol || (o.girl ? '#ef6f9a' : '#2b9bd6'); c.fill(); c.strokeStyle = INK; c.lineWidth = 1.5; c.stroke();
+    if (o.helmet) { c.fillStyle = 'rgba(30,40,60,.85)'; c.beginPath(); c.moveTo(11.4, -60); c.quadraticCurveTo(14, -55, 11.6, -51); c.lineTo(7, -53); c.quadraticCurveTo(8, -57, 6.4, -60.4); c.closePath(); c.fill(); c.stroke(); }
     c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(1, -63, 5, 1.6, -0.15, 0, TAU); c.fill();
     c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-5, -60); c.quadraticCurveTo(2, -62, 9, -59); c.stroke();
   } else {
@@ -911,6 +916,9 @@ function lookOf(robeId, headId, girl) {
   return o;
 }
 const isGirl = () => M.data().char === 'mozah';
+// the delivery rider: an adult in a blue jacket and a red helmet with a visor
+const RIDER = { s: 1.12, skin: '#b97a4c', skinD: '#956039', skinL: '#cf9465', beard: 1, still: true, arm: 'grip', baked: true, head: 'swimcap', capCol: '#e23b4a', helmet: 1,
+  sport: { main: '#2c5d9e', trim: '#f2c230', pants: '#26355c', legD: '#1c2848', shoe: '#1d1f24' }, robe: '#2c5d9e', robeD: '#22487c' };
 const kidBase = () => { const d = M.data(); return lookOf(d.robe, d.head, isGirl()); };
 const lookKey = () => { const d = M.data(); return d.char + d.robe + d.head; };
 const kname = () => T(isGirl() ? 'ch_mozah' : 'ch_abood');
@@ -1057,7 +1065,7 @@ function drawObstacle(c, o, sx) {
   else if (k === 'ball') { c.translate(0, -h / 2); c.rotate(o.ph); c.fillStyle = '#fff'; c.beginPath(); c.arc(0, 0, h / 2, 0, TAU); c.fill(); c.stroke();
     c.fillStyle = INK; c.beginPath(); for (let i = 0; i < 5; i++) { const a = i * TAU / 5; c.lineTo(Math.cos(a) * 4.5, Math.sin(a) * 4.5); } c.fill();
     for (let i = 0; i < 5; i++) { const a = i * TAU / 5; c.beginPath(); c.moveTo(Math.cos(a) * 4.5, Math.sin(a) * 4.5); c.lineTo(Math.cos(a) * 11, Math.sin(a) * 11); c.stroke(); } }
-  else if (k === 'sack') { c.fillStyle = '#b98a55'; c.beginPath(); c.moveTo(-w / 2 + 2, 0); c.quadraticCurveTo(-w / 2 - 3, -h * 0.6, -w / 2 + 3, -h + 6); c.lineTo(w / 2 - 3, -h + 6); c.quadraticCurveTo(w / 2 + 3, -h * 0.6, w / 2 - 2, 0); c.closePath(); c.fill(); c.stroke();
+  else if (k === 'sack') { c.fillStyle = '#d8a15a'; c.beginPath(); c.moveTo(-w / 2 + 2, 0); c.quadraticCurveTo(-w / 2 - 3, -h * 0.6, -w / 2 + 3, -h + 6); c.lineTo(w / 2 - 3, -h + 6); c.quadraticCurveTo(w / 2 + 3, -h * 0.6, w / 2 - 2, 0); c.closePath(); c.fill(); c.stroke();
     c.fillStyle = o.seed > 3 ? '#d9462b' : '#e8b52a'; c.beginPath(); c.ellipse(0, -h + 6, w / 2 - 3, 5, 0, Math.PI, 0); c.fill(); c.stroke();
     c.strokeStyle = '#8c6236'; c.beginPath(); c.moveTo(-w / 2 + 4, -h + 12); c.lineTo(w / 2 - 4, -h + 12); c.stroke(); }
   else if (k === 'carpet') { c.fillStyle = '#9e2a2b'; c.beginPath(); c.roundRect(-w / 2, -h, w, h, 3); c.fill(); c.stroke();
@@ -1071,7 +1079,7 @@ function drawObstacle(c, o, sx) {
     c.fillStyle = '#fff'; c.beginPath(); c.arc(-3, -15, 2.4, 0, TAU); c.arc(3, -15, 2.4, 0, TAU); c.fill(); c.stroke(); c.fillStyle = INK; c.beginPath(); c.arc(-3, -15, 1, 0, TAU); c.arc(3, -15, 1, 0, TAU); c.fill(); }
   else if (k === 'cooler') { c.fillStyle = '#2c7bd1'; c.beginPath(); c.roundRect(-w / 2, -h + 6, w, h - 6, 4); c.fill(); c.stroke(); c.fillStyle = '#f4f4f4'; c.beginPath(); c.roundRect(-w / 2 - 2, -h, w + 4, 9, 3); c.fill(); c.stroke();
     c.strokeStyle = '#f4f4f4'; c.lineWidth = 3; c.beginPath(); c.moveTo(-8, -h - 3); c.lineTo(8, -h - 3); c.stroke(); }
-  else if (k === 'rock') { c.fillStyle = '#a88866'; c.beginPath(); c.moveTo(-w / 2, 0); c.lineTo(-w / 2 + 5, -h + 10); c.lineTo(-6, -h); c.lineTo(10, -h + 4); c.lineTo(w / 2, -8); c.lineTo(w / 2 - 3, 0); c.closePath(); c.fill(); c.stroke();
+  else if (k === 'rock') { c.fillStyle = '#7f6f66'; c.beginPath(); c.moveTo(-w / 2, 0); c.lineTo(-w / 2 + 5, -h + 10); c.lineTo(-6, -h); c.lineTo(10, -h + 4); c.lineTo(w / 2, -8); c.lineTo(w / 2 - 3, 0); c.closePath(); c.fill(); c.stroke();
     c.strokeStyle = '#7c6248'; c.beginPath(); c.moveTo(-6, -h + 6); c.lineTo(0, -10); c.stroke(); }
   else if (k === 'bush') { c.strokeStyle = '#6f7a33'; c.lineWidth = 2.2; for (let i = 0; i < 9; i++) { const a = -Math.PI + 0.2 + i * (Math.PI - 0.4) / 8 + Math.sin(t * 3 + i) * 0.05; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * w * 0.6, Math.sin(a) * h); c.stroke(); }
     c.fillStyle = '#8f9a45'; c.strokeStyle = INK; c.lineWidth = 1.6; c.beginPath(); c.ellipse(0, -h * 0.45, w * 0.42, h * 0.45, 0, 0, TAU); c.fill(); c.stroke(); c.fillStyle = '#f2d24b'; c.beginPath(); c.arc(-6, -h * 0.6, 2, 0, TAU); c.arc(5, -h * 0.4, 2, 0, TAU); c.fill(); }
@@ -1087,11 +1095,17 @@ function drawObstacle(c, o, sx) {
     c.fillStyle = '#9aa0aa'; c.fillRect(-4, -h, 8, 8); c.strokeRect(-4, -h, 8, 8); c.fillStyle = '#3b3b46'; c.fillRect(-7, -h - 2, 14, 3); c.fillStyle = 'rgba(255,255,255,.3)'; c.fillRect(-w / 2 + 3, -h + 10, 3, h - 16); }
   else if (k === 'dbag') { c.fillStyle = '#f28c28'; c.beginPath(); c.roundRect(-w / 2, -h, w, h, 4); c.fill(); c.stroke(); c.strokeStyle = '#b55f12'; c.beginPath(); c.moveTo(-w / 2, -h + 8); c.lineTo(w / 2, -h + 8); c.stroke();
     c.fillStyle = '#fffaf0'; c.fillRect(-w / 2 + 4, -h / 2, w - 8, 5); c.strokeStyle = INK; c.lineWidth = 2.4; c.beginPath(); c.moveTo(-8, -h); c.quadraticCurveTo(0, -h - 9, 8, -h); c.stroke(); }
-  else if (k === 'dbike') { const wr = o.ph; c.fillStyle = '#1b1b1f'; for (const wx of [-18, 18]) { c.beginPath(); c.arc(wx, -9, 9, 0, TAU); c.fill(); c.fillStyle = '#b9bcc6'; c.beginPath(); c.arc(wx, -9, 3.5, 0, TAU); c.fill(); c.fillStyle = '#1b1b1f'; }
-    c.fillStyle = '#d94a3a'; c.beginPath(); c.moveTo(-22, -16); c.lineTo(-10, -26); c.lineTo(14, -24); c.lineTo(20, -14); c.lineTo(-18, -12); c.closePath(); c.fill(); c.stroke();
-    c.fillStyle = '#e23b4a'; c.beginPath(); c.roundRect(6, -46, 22, 20, 3); c.fill(); c.stroke(); c.fillStyle = '#fffaf0'; c.fillRect(9, -38, 16, 3);
-    c.fillStyle = '#2c5d9e'; c.beginPath(); c.roundRect(-8, -40, 12, 16, 4); c.fill(); c.stroke(); c.fillStyle = '#1d1f24'; c.beginPath(); c.arc(-4, -45, 6, 0, TAU); c.fill(); c.stroke(); c.fillStyle = '#8fd3ff'; c.fillRect(-10, -47, 5, 3);
-    c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.moveTo(-10, -36); c.lineTo(-18, -28); c.lineTo(-22, -30); c.stroke(); c.fillStyle = 'rgba(200,200,200,.5)'; c.beginPath(); c.arc(30 + Math.sin(wr * 2) * 2, -10, 4, 0, TAU); c.fill(); }
+  else if (k === 'dbike') { // delivery motorbike; the rider is drawn like everyone else, at adult size, crouched over the bars
+    const wr = o.ph;
+    c.fillStyle = '#e23b4a'; c.beginPath(); c.roundRect(10, -56, 26, 24, 3); c.fill(); c.stroke(); c.fillStyle = '#fffaf0'; c.fillRect(13, -47, 20, 3.4); // the box on the back
+    c.save(); c.translate(6, -31); c.scale(-1, 1); c.rotate(0.5);
+    person(c, 0, 22, 0.6, false, RIDER); c.restore();
+    c.fillStyle = '#1b1b1f'; for (const wx of [-20, 20]) { c.beginPath(); c.arc(wx, -10, 10, 0, TAU); c.fill(); c.stroke(); c.fillStyle = '#b9bcc6'; c.beginPath(); c.arc(wx, -10, 4, 0, TAU); c.fill(); c.fillStyle = '#1b1b1f'; }
+    c.fillStyle = '#d94a3a'; c.beginPath(); c.moveTo(-25, -17); c.lineTo(-13, -29); c.lineTo(16, -27); c.lineTo(24, -15); c.lineTo(-20, -13); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#1d1f24'; c.beginPath(); c.roundRect(-2, -33, 18, 6, 3); c.fill(); // seat
+    c.strokeStyle = INK; c.lineWidth = 2.4; c.beginPath(); c.moveTo(-14, -28); c.lineTo(-22, -40); c.lineTo(-27, -40); c.stroke();
+    c.fillStyle = '#ffe9a8'; c.lineWidth = 1.8; c.beginPath(); c.arc(-26, -22, 3, 0, TAU); c.fill(); c.stroke();
+    c.fillStyle = 'rgba(200,200,200,.5)'; c.beginPath(); c.arc(32 + Math.sin(wr * 2) * 2, -12, 4.5, 0, TAU); c.fill(); }
   else if (k === 'crate') { for (let r = 0; r < 2; r++) { const y0 = -20 - r * 20; c.fillStyle = r ? '#2b6cb0' : '#d9462b'; c.fillRect(-w / 2, y0, w, 20); c.strokeRect(-w / 2, y0, w, 20);
       c.fillStyle = 'rgba(0,0,0,.25)'; for (let k2 = 0; k2 < 3; k2++) c.fillRect(-w / 2 + 4 + k2 * 10, y0 + 10, 6, 6); c.fillStyle = '#e3b23c'; for (let k2 = 0; k2 < 4; k2++) { c.beginPath(); c.arc(-w / 2 + 4 + k2 * 8, y0 + 3, 2.4, 0, TAU); c.fill(); } } }
   else if (k === 'chairs') { c.fillStyle = '#f4f4f2'; c.strokeStyle = SOFT; c.lineWidth = 1.2; c.fillRect(-w / 2 + 2, -h, 7, h - 14); c.strokeRect(-w / 2 + 2, -h, 7, h - 14);
@@ -2272,6 +2286,30 @@ const LAYERS = [
   // Dubai Creek Harbour: Downtown across the water, the Creek, new towers
   { far: withAlpha(0.45, c => tiled(c, TL.dxb)), midfar: c => sea(c, true), mid: c => tiled(c, TL.harbour), near: c => tiled(c, TL.fNear) },
 ];
+// Where the areas meet on screen, for a layer that scrolls at parallax p (the ground is 1): the area behind Abood,
+// the one he is in, and the next, as [zone, x0, x1, start], start = where that area begins on screen. Each
+// boundary moves at the layer's own speed and reaches Abood together with the ground's.
+function areaSpans(p) {
+  const zc = zoneAt(routeM), pz = (zc + NZ - 1) % NZ, a0 = lapStart(routeM) + M.AREAS[zc].at, a1 = nextAreaAt(routeM);
+  const pStart = a0 - (((M.AREAS[zc].at - M.AREAS[pz].at) % RL + RL) % RL || RL);
+  const toX = m => ABX + ((m - startM) * 40 - worldX) * p;
+  return [[pz, -1e9, toX(a0), toX(pStart)], [zc, toX(a0), toX(a1), toX(a0)], [(zc + 1) % NZ, toX(a1), 1e9, toX(a1)]];
+}
+// one scenery layer drawn area by area, with a short soft edge where two areas meet (instead of fading both in place)
+function layerSpan(name, p) {
+  const F = 56, N = 4, sp = areaSpans(p), top = -offY - 40, hh = GROUND + offY + 42;
+  for (let k = 0; k < 3; k++) {
+    const [z, x0, x1] = sp[k], fn = LAYERS[z][name]; if (!fn) continue;
+    const l = Math.max(-40, k > 0 ? x0 + F / 2 : -40), r = Math.min(W + 40, k < 2 ? x1 - F / 2 : W + 40); if (r <= l) continue;
+    ctx.save(); ctx.beginPath(); ctx.rect(l, top, r - l, hh); ctx.clip(); fn(ctx); ctx.restore();
+  }
+  for (let k = 0; k < 2; k++) { // the seams: the two areas cross over in a few strips
+    const bx = sp[k][2]; if (bx < -F || bx > W + F) continue;
+    for (let i = 0; i < N; i++) { const xa = bx - F / 2 + i * F / N, a = (i + 0.5) / N;
+      for (const [z, al] of [[sp[k][0], 1 - a], [sp[k + 1][0], a]]) { const fn = LAYERS[z][name]; if (!fn) continue;
+        ctx.save(); ctx.globalAlpha = al; ctx.beginPath(); ctx.rect(xa, top, F / N + 0.5, hh); ctx.clip(); fn(ctx); ctx.restore(); } }
+  }
+}
 function layer(name, A, B, blend) {
   const la = LAYERS[A][name], lb = LAYERS[B][name];
   if (la && blend < 1) { ctx.globalAlpha = 1 - blend; la(ctx); }
@@ -2312,15 +2350,17 @@ function groundTile(c, z) {
   c.fillStyle = 'rgba(0,0,0,.16)'; c.fillRect(0, GROUND + 8, P, 2);
 }
 const GL = GP.map((P, z) => ({ id: 'g' + z, box: [0, GROUND, P, H + 20 - GROUND], draw: c => groundTile(c, z) }));
-function groundSeg(c, z, x0, x1) {
-  if (x1 <= x0) return; const P = GP[z], e = getTile(GL[z], 0, true);
+function groundSeg(c, z, x0, x1, anchor) { // anchor: where this area begins on screen, so its paving pattern starts there
+  x0 = Math.max(-20, x0); x1 = Math.min(W + 20, x1); if (x1 <= x0) return; const P = GP[z], e = getTile(GL[z], 0, true);
   c.save(); c.beginPath(); c.rect(x0, GROUND, x1 - x0, H - GROUND + 20); c.clip();
-  for (let x = -(worldX % P) - P; x < x1; x += P) if (x + P > x0) c.drawImage(e.c, x, GROUND, P, H + 20 - GROUND);
+  for (let x = anchor + Math.floor((x0 - anchor) / P) * P; x < x1; x += P) c.drawImage(e.c, x, GROUND, P, H + 20 - GROUND);
   c.restore();
 }
 function ground(c) {
-  const zc = zoneAt(routeM), bx = (nextAreaAt(routeM) - startM) * 40 - worldX + ABX;
-  groundSeg(c, zc, -20, Math.min(W + 20, bx)); if (bx < W + 20) groundSeg(c, (zc + 1) % NZ, Math.max(-20, bx), W + 20);
+  const sp = areaSpans(1); // the area behind Abood keeps its paving until it scrolls off, so nothing pops as he crosses over
+  for (const [z, x0, x1, a] of sp) groundSeg(c, z, x0, x1, a);
+  for (let k = 0; k < 2; k++) { const bx = sp[k][2]; if (bx > -10 && bx < W + 10) { // a joint where the paving changes
+    c.fillStyle = 'rgba(30,20,12,.35)'; c.fillRect(bx - 1.5, GROUND, 3, H - GROUND + 20); c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(bx + 1.5, GROUND, 1.5, H - GROUND + 20); } }
   if (!PITG) { PITG = c.createLinearGradient(0, GROUND, 0, H); PITG.addColorStop(0, '#3a2418'); PITG.addColorStop(1, '#120a06'); }
   for (const g of gaps) { const x0 = g.x0 - worldX + ABX, x1 = g.x1 - worldX + ABX; if (x1 < 0 || x0 > W) continue;
     c.fillStyle = PITG; c.fillRect(x0, GROUND, x1 - x0, H - GROUND + 20); c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(x0, GROUND, 6, H - GROUND + 20); c.fillRect(x1 - 6, GROUND, 6, H - GROUND + 20);
@@ -2433,11 +2473,11 @@ function render() {
   const A = zoneAt(routeM), na = nextAreaAt(routeM), B = (A + 1) % NZ, blend = clamp((routeM - (na - 35)) / 35, 0, 1), tf = tunnelF(routeM);
   ctx.setTransform(RES, 0, 0, RES, 0, offY * RES);
   if (shake > 0 && !REDUCED) ctx.translate(rnd(-3, 3) * shake * 3, rnd(-3, 3) * shake * 3);
-  if (camZ > 1.001) { const cx = ABX, cy = GROUND - 60; ctx.translate(cx, cy); ctx.scale(camZ, camZ); ctx.translate(-cx, -cy); }
   if (tf < 1) {
     sky(ctx); clouds(ctx);
     layer('far', A, B, blend); landmarks(ctx, 'far'); haze(ctx, GROUND - 230, 0.38); drawBirds(ctx); layer('midfar', A, B, blend); landmarks(ctx, 'midfar');
-    haze(ctx, GROUND - 120, 0.22); layer('mid', A, B, blend); landmarks(ctx, 'near'); layer('near', A, B, blend);
+    haze(ctx, GROUND - 120, 0.22); layerSpan('mid', 0.42); landmarks(ctx, 'near'); layerSpan('near', 0.75);
+    haze(ctx, GROUND - 170, 0.26); // pushes the street scenery back, so the obstacles in front read clearly
     if (SK.n > 0.02) { ctx.fillStyle = `rgba(12,16,48,${SK.n * 0.42})`; ctx.fillRect(-20, -offY - 20, W + 40, GROUND + offY + 22); }
   }
   if (tf > 0) aquarium(ctx, tf);
@@ -2448,7 +2488,10 @@ function render() {
   ctx.textBaseline = 'alphabetic';
   for (const p of plats) platform(ctx, p);
   for (const it of items) if (!it.got) { const x = it.x - worldX + ABX; if (x > -30 && x < W + 30) drawItem(ctx, it.kind, x, it.y, it.c || it.x * 0.01, it.mag); }
-  for (const o of obs) { const x = o.x - worldX + ABX; if (x > -120 && x < W + 80) drawObstacle(ctx, o, x); }
+  for (const o of obs) { const x = o.x - worldX + ABX; if (x > -120 && x < W + 80) {
+    if (!o.hit) { ctx.fillStyle = 'rgba(20,12,8,.32)'; ctx.beginPath(); ctx.ellipse(x + o.w / 2, GROUND + 1.5, o.w * 0.62 * (1 - Math.min(0.5, o.lift / 90)), 4.5, 0, 0, TAU); ctx.fill(); }
+    ctx.save(); ctx.shadowColor = SK.n > 0.45 ? 'rgba(255,236,180,.85)' : 'rgba(255,255,255,.95)'; ctx.shadowOffsetY = -2.2 * RES; ctx.shadowBlur = 0;
+    drawObstacle(ctx, o, x); ctx.restore(); } }
   for (const s of sandals) { ctx.save(); ctx.translate(s.sx, s.y); ctx.rotate(s.rot); ctx.translate(0, -7); sandalShape(ctx); ctx.restore(); }
   const fx = dadScreenX();
   ctx.fillStyle = 'rgba(0,0,0,.18)';
@@ -2741,6 +2784,7 @@ function perf(raw) {
     if (avg > 1 / 42) { if (++slowWins >= 2 && qLevel < QDPR.length - 1) { qLevel++; slowWins = 0; resize(); } } else slowWins = 0; }
 }
 function loop(now) {
+  if (cv.clientWidth !== cvW || cv.clientHeight !== cvH) resize(); // e.g. Safari's toolbar sliding in or out: never show a stretched frame
   const raw = last ? (now - last) / 1000 : 0.016; last = now;
   perf(raw); update(clamp(raw, 0, 0.033)); render(); stepSwap(clamp(raw, 0, 0.05));
   if (!$('menu').hidden) drawAvatar($('avMenu'), kidBase(), t * 8, kid.sayT > 0 ? 'tongue' : 'grin', false);
@@ -2823,7 +2867,9 @@ window.__abood = {
   goto: (d, r) => { if (r != null) startM = r - d; worldX = d * 40; dist = d; routeM = startM + d; zoneNow = zoneAt(routeM); genX = worldX + 500; gaps = []; obs = []; items = []; plats = []; lead = 0.6;
     nextStop = stopAfter(routeM); prevStopAt = routeM; },
   route: r => { startM = r - dist; routeM = r; },
-  set: o => { if (o.sweets != null) candies = o.sweets; if (o.lead != null) lead = o.lead; if (o.hits != null) closeCalls = o.hits; },
+  set: o => { if (o.sweets != null) candies = o.sweets; if (o.lead != null) lead = o.lead; if (o.hits != null) closeCalls = o.hits; if (o.inv != null) kid.inv = o.inv; },
+  spawn: (kind, ahead = 320) => { if (OB[kind]) addObs(worldX + ahead, kind); }, // put an obstacle in front of Abood
+  get grace() { return +graceT.toFixed(2); },
   quality: q => { qLevel = clamp(q, 0, QDPR.length - 1); resize(); },
   portrait: (size, pad = 1) => {
     const c = mk(size, size), g = c.getContext('2d'), bg = g.createLinearGradient(0, 0, 0, size);
