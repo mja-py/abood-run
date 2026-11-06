@@ -437,11 +437,22 @@ function settleRun() {
   if (res.girl) setTimeout(() => note(T('girlNew'), 4500), 1800); // after the results card is up
   lastRes = Object.assign({}, res, { levelUp: res.levelUp || (lastRes && lastRes.levelUp) }); return res;
 }
+// where Baba stands on the results scene: just behind Abood, but never on thin air. If that spot is over a hole
+// (Abood fell in), he stands on the edge of the hole and lifts Abood out.
+let overX = 0;
+function overSpot() {
+  let x = ABX - 40;
+  for (const g of gaps) {
+    const x0 = g.x0 - worldX + ABX, x1 = g.x1 - worldX + ABX;
+    if (x + 22 > x0 && x - 22 < x1) x = x0 - 24 > 30 ? x0 - 24 : x1 + 24; // the near edge if it is on screen, else the far one
+  }
+  return x;
+}
 function gameOver(why) {
   if (st !== 'play') return; st = 'over'; stT = 0; sfx.lose(); buzz([60, 40, 120]); wakeOff();
   const res = settleRun(), m = Math.floor(dist);
   dad.say = T(why === 'fell' ? 's_fell' : 's_got'); dad.sayT = 99; kid.say = T('s_sorry'); kid.sayT = 99;
-  lastOver = { why, m, nb: res && res.newBest }; swap = null; fillOver(); showBest();
+  lastOver = { why, m, nb: res && res.newBest }; swap = null; fillOver(); showBest(); overX = overSpot();
   $('hud').hidden = true; $('routeHud').hidden = true; $('pauseBtn').hidden = true; $('powers').textContent = ''; lastHud = '';
   const showOver = () => { if (st === 'over') { $('over').hidden = false; startSwap(); maybeToast(); } };
   setTimeout(() => {
@@ -2500,7 +2511,7 @@ function render() {
   if (st !== 'over') { ctx.beginPath(); ctx.ellipse(fx, GROUND + 2, 20 * (1 - Math.min(0.6, (GROUND - dad.y) / 300)), 4, 0, 0, TAU); ctx.fill(); }
   if (kid.y <= GROUND + 2 && st !== 'over') { ctx.beginPath(); ctx.ellipse(ABX, GROUND + 2, 13 * (1 - Math.min(0.6, (GROUND - kid.y) / 300)), 3, 0, 0, TAU); ctx.fill(); }
   if (st === 'over') {
-    const dx = ABX - 40; ctx.beginPath(); ctx.ellipse(dx, GROUND + 2, 22, 4, 0, 0, TAU); ctx.fill();
+    const dx = overX || ABX - 40; ctx.beginPath(); ctx.ellipse(dx, GROUND + 2, 22, 4, 0, 0, TAU); ctx.fill();
     drawDad(ctx, dx, GROUND, true); drawKid(ctx, dx + 9, GROUND - 34 + Math.sin(t * 8) * 1.5, kid.ph, false, 1, { kick: 1, mouth: 'o', arm: 'o', rot: 0.12, sweat: 1 });
   } else {
     drawDad(ctx, fx, dad.y);
