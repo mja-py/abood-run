@@ -1,0 +1,20 @@
+{
+  "name": "اركض يا عبود! Run, Abood!",
+  "short_name": "عبود",
+  "description": "عبود يهرب من أبوه في لفة حول دبي. Abood runs from Baba on a loop round Dubai.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#232a52",
+  "theme_color": "#232a52",
+  "categories": ["games", "kids", "entertainment"],
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

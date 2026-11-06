@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>اركض يا عبود!</title>
+<meta name="description" content="لعبة جري: عبود بالكندورة والشماغ الأحمر يهرب من أبوه في لفة حول دبي. Run, Abood! An endless runner on a loop round Dubai.">
+<meta name="theme-color" content="#232a52">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="عبود">
+<meta property="og:title" content="اركض يا عبود! Run, Abood!">
+<meta property="og:description" content="Abood runs from Baba on a loop round Dubai: Al Mamzar, the Deira souq, Burj Khalifa, Jumeirah, the Palm, JBR, then inland via Expo City and back.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="preload" href="assets/fonts/baloo-bhaijaan-2-arabic-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/baloo-bhaijaan-2-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="modulepreload" href="js/game.js?v=a60a0db6">
+<link rel="stylesheet" href="css/style.css?v=a60a0db6">
+</head>
+<body>
+<canvas id="cv" data-i18n-aria="title" aria-label="اركض يا عبود!"></canvas>
+
+<div class="hud" id="hud" hidden>
+  <div class="stat" id="distBox"><span id="mDist">0</span><small data-i18n="m">م</small></div>
+  <div class="chase"><span data-i18n="baba">بابا</span><div class="bar" id="bar"><i id="leadFill"></i></div><span data-i18n="abood">عبود</span></div>
+  <div class="stat" id="candyBox"><span id="mCandy">0</span><small data-i18n="sweets">حلاوة</small></div>
+</div>
+<div id="powers"></div>
+<div id="routeHud" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z" fill="#c8202b" stroke="#2b1a12" stroke-width="2"/><circle cx="12" cy="10" r="2.2" fill="#fffaf0"/></svg><span id="routeTxt"></span><i class="rbar"><i id="routeFill"></i></i></div>
+<button class="corner" id="pauseBtn" data-i18n-aria="pause" aria-label="إيقاف مؤقت" hidden>II</button>
+<button class="corner" id="mute" data-i18n-aria="sound" aria-label="الصوت والموسيقى" hidden>♪</button>
+
+<div class="overlay" id="menu" hidden>
+  <div class="panel menu">
+    <div class="panel-top"><div class="pills"><div class="coinpill"><i class="coin" aria-hidden="true"></i><span class="coinVal">0</span></div><div class="multpill" data-i18n-aria="multAria"><span class="multVal">×1</span></div></div><div class="lang" role="group" aria-label="Language / اللغة"></div></div>
+    <div class="menu-main">
+      <div class="avatar-box"><canvas id="avMenu" width="300" height="300" aria-hidden="true"></canvas><p class="av-name" id="avName"></p></div>
+      <div class="menu-text">
+        <p class="kicker" data-i18n="kicker"></p>
+        <h1 data-i18n="menuTitle">اركض يا عبود!</h1>
+        <p class="story" data-i18n="story"></p>
+        <div class="boost-wrap"><p class="label" data-i18n="startFrom"></p><div class="area-strip" id="startRow" role="group" data-i18n-aria="startFrom"></div><p class="hint journey" id="journeyLine"></p></div>
+        <div class="boost-wrap"><p class="label" data-i18n="boostersTitle"></p><div class="boost-row" id="boostRow"></div></div>
+        <button class="btn" id="startBtn" type="button" data-i18n="start">يلا اركض!</button>
+        <div class="menu-grid">
+          <button class="tile" type="button" data-sheet="wardrobe"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5a2 2 0 1 1 2 2c-1 0-2 .6-2 1.6V9l8 6.2c.9.7.4 1.8-.7 1.8H4.7c-1.1 0-1.6-1.1-.7-1.8L12 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="b_wardrobe"></span></button><button class="tile" type="button" data-sheet="shop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z M9 8V6.5a3 3 0 0 1 6 0V8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span data-i18n="b_shop"></span></button><button class="tile" type="button" data-sheet="badges"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="14" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 3l3 5M16 3l-3 5M10.5 14l1 1 2-2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="b_badges"></span></button><button class="tile" type="button" data-sheet="missions"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="b_missions"></span><em class="dot" id="dotMissions" hidden></em></button><button class="tile" type="button" data-sheet="help"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.2v.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span data-i18n="b_help"></span></button>
+        </div>
+        <div class="tools"><button class="ghost" id="fsBtn" type="button" data-i18n="fullscreen" hidden></button></div>
+        <p class="hint best" id="menuBest" hidden></p>
+        <p class="rotate" id="rotateHint" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M21 12a9 9 0 0 1-9 9"/><path d="M21 16v-4h-4"/></svg><span data-i18n="rotate"></span></p>
+        <p class="hint" id="iosHint" data-i18n="ios" hidden></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="over" hidden>
+  <div class="panel over">
+    <div class="panel-top"><p class="kicker" id="overQuote"></p><div class="pills"><div class="coinpill"><i class="coin" aria-hidden="true"></i><span class="coinVal">0</span></div><div class="multpill" data-i18n-aria="multAria"><span class="multVal">×1</span></div><div class="lang" role="group" aria-label="Language / اللغة"></div></div></div>
+    <div class="menu-main">
+      <div class="avatar-box"><canvas id="avOver" width="300" height="300" aria-hidden="true"></canvas><p class="av-name" id="avNameOver"></p></div>
+      <div class="menu-text">
+        <h2 id="overTitle"></h2>
+        <p id="overMsg"></p>
+        <div class="score">
+          <div><b id="sDist">0</b><span data-i18n="sMetres"></span></div>
+          <div><b id="sBest">0</b><span data-i18n="sBest"></span></div>
+          <div><b id="sClose">0</b><span data-i18n="sClose"></span></div>
+        </div>
+        <div class="swap" id="swap">
+          <p class="label" data-i18n="o_swap"></p>
+          <div class="swap-row">
+            <div class="sw-box"><canvas id="swCandyIc" width="64" height="64" aria-hidden="true"></canvas><b id="swSweets" dir="ltr">0</b></div>
+            <span class="sw-arrow" aria-hidden="true">➜</span>
+            <div class="sw-box gold"><i class="coin" id="swCoinIc" aria-hidden="true"></i><b id="swCoins" dir="ltr">0</b></div>
+          </div>
+          <div class="swap-parts"><span id="swPartS"></span><span id="swPartD"></span><span id="swPartM"></span></div>
+        </div>
+        <p class="route-line" id="overRoute"></p>
+        <div class="mission-strip" id="overMissions"></div>
+        <p class="label" data-i18n="o_badges"></p>
+        <div class="badge-strip" id="overBadges"></div>
+        <div class="over-actions">
+          <button class="btn alt" id="reviveBtn" type="button" hidden></button>
+          <button class="btn" id="againBtn" type="button" data-i18n="again"></button>
+          <button class="ghost" id="overMenuBtn" type="button" data-i18n="b_menu"></button>
+        </div>
+        <p class="hint" data-i18n="againHint"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="sheet" hidden>
+  <div class="panel sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-top"><h2 id="sheetTitle"></h2><div class="coinpill"><i class="coin" aria-hidden="true"></i><span class="coinVal">0</span></div><button class="ghost" id="sheetClose" type="button" data-i18n="b_close"></button></div>
+    <div class="sheet-body" id="sheetBody"></div>
+  </div>
+</div>
+
+<div class="overlay" id="loginPop" hidden>
+  <div class="panel pick">
+    <p class="pick-title" data-i18n="lg_title"></p>
+    <div class="login-days" id="loginDays"></div>
+    <p class="hint" id="loginStreak"></p>
+    <button class="btn" id="loginClaim" type="button"></button>
+  </div>
+</div>
+
+<div id="note" role="status" aria-live="polite" hidden></div>
+
+<div class="overlay" id="langPick" hidden>
+  <div class="panel pick">
+    <p class="pick-title" data-i18n="pickTitle">اختر اللغة</p>
+    <div class="pick-row">
+      <button type="button" class="pick-btn" data-pick="ar"><span class="flag-big" id="flagAr"></span><b lang="ar">العربية</b></button>
+      <button type="button" class="pick-btn" data-pick="en"><span class="flag-big" id="flagEn"></span><b lang="en">English</b></button>
+    </div>
+    <p class="hint" data-i18n="pickHint"></p>
+  </div>
+</div>
+
+<div id="toast" hidden><span data-i18n="update"></span><button type="button" id="toastBtn" data-i18n="updateBtn"></button></div>
+
+<div id="loader" role="status" aria-live="polite">
+  <div class="ld-card">
+    <canvas id="ldCv" width="480" height="300" aria-hidden="true"></canvas>
+    <p class="ld-title" data-i18n="title">اركض يا عبود!</p>
+    <div class="ld-bar"><i id="ldFill"></i></div>
+    <p class="ld-text"><span id="ldMsg">جاري التحميل…</span> <b id="ldPct" dir="ltr">0%</b></p>
+    <p class="ld-tip" id="ldTip"></p>
+  </div>
+</div>
+<noscript><p style="position:fixed;inset:auto 0 40%;text-align:center;color:#fffaf0;font-size:18px">هذي اللعبة تحتاج JavaScript. This game needs JavaScript.</p></noscript>
+
+<script type="module" src="js/game.js?v=a60a0db6"></script>
+</body>
+</html>
