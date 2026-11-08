@@ -242,9 +242,6 @@ h2{font-size:36px}
 .friend{gap:8px}
 .friend h2{margin:0}
 .f-status{font-weight:700!important;font-size:17px!important;min-height:1.45em}
-.f-link{display:flex;gap:8px;width:100%;direction:ltr}
-.f-link input{flex:1;min-width:0;font:700 14px var(--display);color:var(--ink);background:var(--cream);border:2px solid var(--ink);border-radius:12px;padding:6px 10px}
-.f-link input:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 .f-actions{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
 .f-vs{display:flex;align-items:center;justify-content:center;gap:12px}
 .f-vs>div{display:flex;flex-direction:column;align-items:center;background:var(--cream);border:2px solid var(--sand-d);border-radius:16px;padding:4px 10px 6px}
@@ -263,11 +260,16 @@ h2{font-size:36px}
 @media (max-height:440px){ .racing .score,.racing #overMsg,.racing .route-line{display:none} .racing .race-box{flex-direction:row;align-items:center;justify-content:space-between;gap:10px;padding:4px 12px} }
 .f-choose{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;text-align:start}
 .f-field{display:flex;flex-direction:column;gap:4px;min-width:0;font-weight:700;font-size:14px}
-.f-field input{font:800 18px var(--display);color:var(--ink);background:var(--cream);border:2px solid var(--ink);border-radius:12px;padding:6px 10px;min-width:0;width:100%}
-.f-field input:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.f-field input,.f-field select{font:800 18px var(--display);color:var(--ink);background:var(--cream);border:2px solid var(--ink);border-radius:12px;padding:6px 10px;min-width:0;width:100%}
+.f-field input:focus-visible,.f-field select:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 #fCode{letter-spacing:.12em;text-align:center}
 .f-join{display:flex;gap:6px}
 .f-join .btn{min-height:44px;font-size:18px;padding:2px 12px;flex:none}
 .f-code{font:800 40px var(--display)!important;letter-spacing:.14em;color:var(--ink);background:var(--cream);border:3px dashed var(--ink);border-radius:16px;padding:2px 18px;line-height:1.25!important;font-variant-numeric:tabular-nums}
 @media (max-width:520px){ .f-choose{grid-template-columns:1fr} }
 @media (max-height:440px){ .f-code{font-size:32px!important} .friend{gap:6px;padding:10px 18px 12px} .friend h2{font-size:24px} }
+.f-gate{display:flex;flex-direction:column;gap:8px;width:100%;text-align:start}
+.f-gate-text{font-size:14px!important;line-height:1.5!important;background:var(--cream);border:2px solid var(--sand-d);border-radius:12px;padding:8px 12px}
+#fGateA{letter-spacing:.1em;text-align:center;max-width:140px}
+.help-privacy{background:var(--cream);border:2px solid var(--sand-d);border-radius:12px;padding:8px 12px}
+@media (max-height:440px){ .f-gate-text{font-size:12.5px!important;padding:6px 10px} }

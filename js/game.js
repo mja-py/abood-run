@@ -330,7 +330,7 @@ document.addEventListener('click', e => {
   if (pk) { setLang(pk.dataset.pick); $('langPick').hidden = true; showMenu(); }
 });
 $('flagAr').innerHTML = FLAG.ar; $('flagEn').innerHTML = FLAG.en;
-function showMenu() { if (pendingJoin) { const c = pendingJoin; pendingJoin = null; openFriend('guest', c); return; } $('menu').hidden = false; renderMenu(); maybeToast(); maybeLogin(); const rf = M.takeRefund(); if (rf) setTimeout(() => note(T('refund', rf)), 600); }
+function showMenu() { $('menu').hidden = false; renderMenu(); maybeToast(); maybeLogin(); const rf = M.takeRefund(); if (rf) setTimeout(() => note(T('refund', rf)), 600); }
 function setMuteBtn() { $('mute').textContent = muted ? '✕' : '♪'; $('mute').setAttribute('aria-pressed', muted ? 'true' : 'false'); }
 $('mute').onclick = () => { unlockAudio(); muted = !muted; if (master) master.gain.value = muted ? 0 : 1; try { localStorage.setItem('abood-muted', muted ? '1' : '0'); } catch (e) {} setMuteBtn(); $('mute').blur(); };
 $('pauseBtn').onclick = () => { if (st === 'play') setPause(true); else if (st === 'pause') setPause(false); $('pauseBtn').blur(); };
@@ -489,34 +489,47 @@ function revive() {
 $('reviveBtn').onclick = () => { unlockAudio(); revive(); };
 
 // ---------- race a friend online ----------
-// The host makes a room with a 6-digit code (and a link); the friend types the code or opens the link. Both games get
+// The host creates a room and gets a 6-digit code; the friend types it to join the room. Both games get
 // the same seed and start area, so the course is identical, and the difficulty director is fixed. Each player runs
 // their own game and they swap positions 20 times a second; the friend shows as a see-through ghost that plays a
 // tenth of a second behind, gliding between the positions it received.
 // Dropped connections: the race goes on, the friend's last record stays, and the joining side keeps reconnecting.
 // When the same player comes back (same player id), both sides swap where they are and the result is worked out
 // again. After a minute without them, their last record counts.
-let pendingJoin = null;
 const num = v => (Number.isFinite(+v) ? +v : 0);
-const canShare = typeof navigator.share === 'function';
 const GHOST_DELAY = 110, LOST_GIVEUP = 60000;
-const mp = () => { const d = M.data(); if (!d.mp) d.mp = {}; if (!d.mp.pid) { d.mp.pid = Array.from(crypto.getRandomValues(new Uint8Array(8)), b => b.toString(16).padStart(2, '0')).join(''); M.save(); } return d.mp; };
-// names: letters and numbers only, 14 at most; only the friend you race sees it
-const cleanName = s => String(s || '').normalize('NFC').replace(/[^\p{L}\p{N} ._-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 14);
-const myName = () => cleanName(mp().name) || kname();
-const newOpp = () => ({ here: false, pid: '', name: '', ch: 'abood', robe: '', head: '', round: 0, d: 0, s: 0, out: false, run: false, gone: false, lost: false, lostAt: 0, buf: [], off: null });
+const mp = () => { const d = M.data(); if (!d.mp) d.mp = {}; if (d.mp.name != null) { delete d.mp.name; M.save(); } if (!d.mp.pid) { d.mp.pid = Array.from(crypto.getRandomValues(new Uint8Array(8)), b => b.toString(16).padStart(2, '0')).join(''); M.save(); } return d.mp; };
+// nicknames come from a fixed list (no typing), so a child never shares a real name; only the id is sent
+const NICKS = ['me', 'falcon', 'oryx', 'gazelle', 'camel', 'pearl', 'lightning', 'rocket', 'star', 'karak', 'luqaimat', 'sandstorm', 'wind'];
+const nickOk = n => (NICKS.includes(n) ? n : 'me');
+const nickName = (n, ch) => (n && n !== 'me' ? T('nk_' + n) : T('ch_' + (ch === 'mozah' ? 'mozah' : 'abood')));
+const myName = () => nickName(nickOk(mp().nick), M.data().char);
+const newOpp = () => ({ here: false, pid: '', nick: 'me', ch: 'abood', robe: '', head: '', round: 0, d: 0, s: 0, out: false, run: false, gone: false, lost: false, lostAt: 0, buf: [], off: null });
 const oppGirl = () => race.opp.ch === 'mozah';
-const oppName = () => race.opp.name || T('ch_' + race.opp.ch);
+const oppName = () => nickName(race.opp.nick, race.opp.ch);
 const oppLook = () => lookOf(race.opp.robe, race.opp.head, oppGirl());
 function openFriend(mode, c) {
   if (race) leaveRace(true);
-  race = { role: mode === 'choose' ? null : mode, fs: mode === 'choose' ? 'choose' : 'connecting', err: '', code: '', link: '', seed: 0, area: 0, hold: 0, goT: 0, sendT: 0, me: null, final: false, opp: newOpp() };
+  race = { role: mode === 'choose' ? null : mode, fs: mode === 'choose' ? 'choose' : 'connecting', err: '', code: '', seed: 0, area: 0, hold: 0, goT: 0, sendT: 0, me: null, final: false, opp: newOpp() };
   $('menu').hidden = true; $('friend').hidden = false;
-  $('fName').value = cleanName(mp().name); $('fName').placeholder = kname(); $('fCode').value = c ? N.showCode(c) : '';
+  $('fCode').value = c ? N.showCode(c) : '';
+  if (!mp().ok) { race.fs = 'gate'; race.after = { mode, c }; newGateQ(); renderFriend(); setTimeout(() => $('fGateA').focus(), 50); return; } // a grown-up agrees once, before the first race
   renderFriend();
   if (mode === 'guest') N.join(c, mp().pid);
 }
-function saveName() { const n = cleanName($('fName').value); $('fName').value = n; if (n !== (mp().name || '')) { mp().name = n; M.save(); } }
+function newGateQ() { const a = 12 + Math.floor(Math.random() * 8), b = 3 + Math.floor(Math.random() * 7); race.gate = a * b; $('fGateQ').textContent = T('mp_gateQ', a, b); $('fGateQ').dataset.ab = a + 'x' + b; $('fGateA').value = ''; }
+function gateOk() {
+  if (!race || race.fs !== 'gate') return;
+  if (parseInt($('fGateA').value.replace(/\D/g, ''), 10) !== race.gate) { note(T('mp_gateWrong')); newGateQ(); $('fGateA').focus(); return; }
+  mp().ok = 1; M.save();
+  const { mode, c } = race.after; race.fs = mode === 'choose' ? 'choose' : 'connecting'; renderFriend();
+  if (mode === 'guest') N.join(c, mp().pid);
+}
+function fillNicks() {
+  const sel = $('fNick'), cur = nickOk(mp().nick); sel.innerHTML = '';
+  for (const n of NICKS) { const o = document.createElement('option'); o.value = n; o.textContent = nickName(n, M.data().char); o.selected = n === cur; sel.appendChild(o); }
+}
+function saveName() { const n = nickOk($('fNick').value); if (n !== mp().nick) { mp().nick = n; delete mp().name; M.save(); } }
 function goHost() { if (!race) return; saveName(); race.role = 'host'; race.fs = 'connecting'; renderFriend(); N.host(mp().pid); }
 function goJoin() {
   if (!race) return; saveName(); const c = N.cleanCode($('fCode').value);
@@ -531,10 +544,10 @@ function leaveRace(quiet) {
 }
 function hello() {
   const d = M.data();
-  N.send({ t: 'hi', v: N.PROTO, pid: mp().pid, name: myName(), ch: d.char, robe: d.robe, head: d.head,
+  N.send({ t: 'hi', v: N.PROTO, pid: mp().pid, nick: nickOk(mp().nick), ch: d.char, robe: d.robe, head: d.head,
     seed: race.seed, me: race.me, live: !!race.seed && !race.me && (st === 'play' || st === 'pause'), d: Math.floor(dist) });
 }
-N.on('hosting', ({ code, link }) => { if (!race) return; race.code = code; race.link = link; if (race.fs === 'connecting') race.fs = 'waiting'; renderFriend(); });
+N.on('hosting', ({ code }) => { if (!race) return; race.code = code; if (race.fs === 'connecting') race.fs = 'waiting'; renderFriend(); });
 N.on('open', () => { if (!race) return; race.fs = 'joined'; hello(); renderFriend(); });
 N.on('error', why => { if (!race) return; race.fs = 'err'; race.err = why; renderFriend(); });
 N.on('lost', () => {
@@ -565,7 +578,7 @@ N.on('data', d => {
     if (d.v !== N.PROTO) { note(T('mp_version'), 4000); leaveRace(); return; }
     const pid = String(d.pid || '').slice(0, 40), back = !!o.pid && pid === o.pid;
     if (!back) { race.opp = o = newOpp(); o.pid = pid; o.round = num(d.seed) >>> 0; }
-    o.name = cleanName(d.name); o.ch = d.ch === 'mozah' ? 'mozah' : 'abood'; o.robe = String(d.robe || '').slice(0, 24); o.head = String(d.head || '').slice(0, 24);
+    o.nick = nickOk(String(d.nick || '')); o.ch = d.ch === 'mozah' ? 'mozah' : 'abood'; o.robe = String(d.robe || '').slice(0, 24); o.head = String(d.head || '').slice(0, 24);
     o.here = true; o.gone = false;
     if (back) {
       const wasLost = o.lost; o.lost = false; o.buf = []; o.off = null;
@@ -686,10 +699,11 @@ function fillRace() {
 function renderFriend() {
   if (!race || $('friend').hidden) return;
   const host = race.role === 'host', o = race.opp, fs = race.fs; let msg = '', go = null;
-  const choose = fs === 'choose' || fs === 'err', showCode = host && !!race.code && (fs === 'waiting' || o.lost || !o.here);
-  $('fChoose').hidden = !choose; $('fVs').hidden = true; $('fCopy').hidden = true; $('fCodeBig').hidden = !showCode; $('fLinkRow').hidden = !showCode;
-  if (showCode) { $('fCodeBig').textContent = N.showCode(race.code); $('fLink').value = race.link; go = canShare ? 'mp_share' : 'mp_copy'; $('fCopy').hidden = !canShare; }
-  if (choose) { msg = fs === 'err' ? T('mp_err_' + race.err) : T('mp_choose'); go = 'mp_host'; }
+  const gate = fs === 'gate', choose = fs === 'choose' || fs === 'err', showCode = host && !!race.code && (fs === 'waiting' || o.lost || !o.here);
+  $('fGate').hidden = !gate; $('fChoose').hidden = !choose; if (choose) fillNicks(); $('fVs').hidden = true; $('fCodeBig').hidden = !showCode;
+  if (showCode) $('fCodeBig').textContent = N.showCode(race.code);
+  if (gate) { msg = T('mp_gateLead'); go = 'mp_gateOk'; const ab = ($('fGateQ').dataset.ab || '').split('x'); if (ab.length === 2) $('fGateQ').textContent = T('mp_gateQ', ab[0], ab[1]); }
+  else if (choose) { msg = fs === 'err' ? T('mp_err_' + race.err) : T('mp_choose'); go = 'mp_host'; }
   else if (fs === 'connecting') msg = T(host ? 'mp_making' : 'mp_joining');
   else if (o.lost) msg = host ? T('mp_lostTag', oppName()) : T('mp_reconnecting');
   else if (fs === 'waiting' || !o.here) msg = host ? T('mp_send') : T('mp_hello');
@@ -699,24 +713,18 @@ function renderFriend() {
   }
   $('fStatus').textContent = msg; $('fGo').hidden = !go; if (go) { $('fGo').textContent = T(go); $('fGo').dataset.act = go; }
 }
-function copyLink() {
-  if (!race || !race.link) return; const inp = $('fLink'), ok = () => note(T('mp_copied'));
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(race.link).then(ok, () => inp.select());
-  else { inp.select(); try { document.execCommand('copy'); ok(); } catch (e) {} }
-}
 $('friendBtn').onclick = () => { unlockAudio(); openFriend('choose'); };
 $('fLeave').onclick = () => { unlockAudio(); leaveRace(); };
-$('fCopy').onclick = () => copyLink();
 $('fJoin').onclick = () => { unlockAudio(); goJoin(); };
-$('fName').addEventListener('change', saveName);
+$('fNick').addEventListener('change', saveName);
 $('fCode').addEventListener('input', () => { const c = N.cleanCode($('fCode').value); $('fCode').value = c.length > 3 ? c.slice(0, 3) + ' ' + c.slice(3) : c; });
+$('fGateA').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); gateOk(); } });
 $('fCode').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); goJoin(); } });
 $('fGo').onclick = () => {
   unlockAudio(); const a = $('fGo').dataset.act;
   if (a === 'mp_start') hostGo();
+  else if (a === 'mp_gateOk') gateOk();
   else if (a === 'mp_host') goHost();
-  else if (a === 'mp_share' && race) navigator.share({ title: T('title'), text: T('mp_shareText', N.showCode(race.code)), url: race.link }).catch(() => {});
-  else copyLink();
 };
 $('overMenuBtn').onclick = () => { if (race) leaveRace(); if (swap && !swap.done) endSwap(); swap = null; st = 'menu'; $('over').hidden = true; startM = M.AREAS[M.startArea()].at; reset(); worldX = 0; showMenu(); };
 onLang(() => { renderFriend(); if (swap && !swap.done) endSwap(); if (st === 'over' && lastOver) { dad.say = T(lastOver.why === 'fell' ? 's_fell' : 's_got'); kid.say = T('s_sorry'); } else { dad.sayT = 0; kid.sayT = 0; } fillOver(); showBest(); renderMenu(); if (!$('sheet').hidden) openSheet(sheetKind); hudCache.fill(null); lastHud = ''; });
@@ -3030,6 +3038,9 @@ function sheetHelp(body) {
   body.appendChild(el('p', null, T('help_focus')));
   body.appendChild(el('p', null, T('help_route')));
   body.appendChild(el('p', null, T('help_swap')));
+  const pv = el('div', 'help-privacy'); pv.appendChild(el('p', null, T('help_privacy')));
+  if (M.data().mp && M.data().mp.ok) { const b = el('button', 'ghost', T('help_privacyReset')); b.type = 'button'; b.onclick = () => { delete M.data().mp.ok; M.save(); b.remove(); }; pv.appendChild(b); }
+  body.appendChild(pv);
   const g = el('div', 'cards');
   for (const k of ['vimto', 'marbles', 'phone', 'scooter', 'magnet', 'sandal']) g.appendChild(card(cnv => { const c = cnv.getContext('2d'); c.setTransform(192 / 40, 0, 0, 192 / 40, 0, 0); drawItem(c, k, 20, 20, 1, true); }, T('it_' + k), T('it_' + k + '_d')));
   body.appendChild(g);
@@ -3126,7 +3137,6 @@ async function boot() {
   setLoad(0.96, 'ld_cache'); registerSW(); await sleep(120);
   setLoad(1, 'ready'); await sleep(280);
   clearInterval(tipTimer); ldRun = false; $('loader').classList.add('done'); setTimeout(() => { $('loader').hidden = true; }, 500);
-  try { const q = new URLSearchParams(location.search).get('race'); if (q) { pendingJoin = N.cleanCode(q) || null; history.replaceState(null, '', location.pathname + location.hash); } } catch (e) {} // opened from a friend's race link
   startM = M.AREAS[M.startArea()].at; reset(); st = 'menu'; t = 0; $('mute').hidden = false;
   if (hasStoredLang()) showMenu(); else $('langPick').hidden = false;
   if (!running) { running = true; requestAnimationFrame(loop); }

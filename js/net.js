@@ -1,5 +1,4 @@
-// Online race with a friend. One player hosts a room and gets a 6-digit code (and a link with it); the friend types
-// the code or opens the link. The two browsers then talk directly over WebRTC (PeerJS). The public PeerJS server only
+// Online race with a friend. One player creates a room and gets a 6-digit code; the friend types the code to join. The two browsers then talk directly over WebRTC (PeerJS). The public PeerJS server only
 // introduces them (and relays through its TURN servers on networks that block direct play), so the code works across
 // different networks. Nothing touches the network until a player opens "Race a friend".
 // No chat: the game only sends its own small messages (hello, start, position, result).
@@ -7,10 +6,17 @@
 // Dropped connections: both sides send a heartbeat every second and treat 5 s of silence as a drop. The joining
 // player then keeps trying to reconnect to the same code; the host keeps the room open. The game decides what a
 // returning player means (see the race section in game.js).
-export const PROTO = 2;
+export const PROTO = 3;
 const PFX = 'abood-run-v2-';
 const LIB = new URL('./vendor/peerjs.min.js', import.meta.url).href;
 const BEAT = 1000, SILENT = 5000, RETRY = 2500;
+// How the two phones find each other: Cloudflare's public STUN server tells each phone its own public address
+// (instead of PeerJS's default, Google). The PeerJS TURN relay stays for networks that block direct connections.
+const ICE = [
+  { urls: 'stun:stun.cloudflare.com:3478' },
+  { urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username: 'peerjs', credential: 'peerjsp' },
+];
+const OPTS = { debug: 0, config: { iceServers: ICE } };
 
 let peer = null, conn = null, connPid = '', role = null, code = null, timer = 0, beat = 0, retryT = 0, lastRx = 0, lib = null, myPid = '';
 const H = {};
@@ -29,7 +35,6 @@ function loadLib() {
 const newCode = () => String(100000 + crypto.getRandomValues(new Uint32Array(1))[0] % 900000);
 export const cleanCode = s => String(s || '').replace(/\D/g, '').slice(0, 6);
 export const showCode = c => (c && c.length === 6 ? c.slice(0, 3) + ' ' + c.slice(3) : c || '');
-export const linkFor = c => { const u = new URL(location.href); u.search = ''; u.hash = ''; u.searchParams.set('race', c); return u.href; };
 export const isOpen = () => !!(conn && conn.open);
 export const getRole = () => role;
 export const getCode = () => code;
@@ -64,19 +69,21 @@ function fail(why) { clearTimeout(timer); emit('error', why); leave(); }
 const offlineErr = t => t === 'network' || t === 'server-error' || t === 'socket-error' || t === 'socket-closed';
 function keepBroker(p) { p.on('disconnected', () => { if (peer === p && !p.destroyed) setTimeout(() => { try { if (peer === p && p.disconnected) p.reconnect(); } catch (e) {} }, 1500); }); }
 
-// Host: register a 6-digit room code with the broker and wait for the friend.
+// Host: register a 6-digit room code with the broker and wait for the friend. The code is the host's id on the PeerJS
+// server, and the server lets only one live peer hold an id, so two open rooms can never share a code: if the code is
+// taken ('unavailable-id'), we pick a new one and try again. The code is freed when the host leaves.
 export async function host(pid) {
   leave(); role = 'host'; myPid = pid;
   try { await loadLib(); } catch (e) { fail('offline'); return; }
   const tryOpen = n => {
     code = newCode();
-    const p = peer = new window.Peer(PFX + code, { debug: 0 });
+    const p = peer = new window.Peer(PFX + code, OPTS);
     keepBroker(p);
-    p.on('open', () => emit('hosting', { code, link: linkFor(code) }));
+    p.on('open', () => emit('hosting', { code }));
     p.on('connection', c => wire(c, c.metadata && String(c.metadata.pid || '')));
     p.on('error', e => {
       if (peer !== p) return;
-      if (e.type === 'unavailable-id' && n < 4) { try { p.destroy(); } catch (x) {} tryOpen(n + 1); return; }
+      if (e.type === 'unavailable-id' && n < 5) { try { p.destroy(); } catch (x) {} tryOpen(n + 1); return; }
       if (code && !offlineErr(e.type) && e.type !== 'unavailable-id') return; // per-connection trouble: the room stays open
       if (conn && conn.open) return; // the race keeps going if only the broker drops; keepBroker reconnects it
       if (!p.open) fail(offlineErr(e.type) ? 'offline' : 'error');
@@ -90,7 +97,7 @@ export async function join(c, pid) {
   leave(); role = 'guest'; code = cleanCode(c); myPid = pid;
   if (code.length !== 6) { fail('badcode'); return; }
   try { await loadLib(); } catch (e) { fail('offline'); return; }
-  const p = peer = new window.Peer({ debug: 0 });
+  const p = peer = new window.Peer(OPTS);
   keepBroker(p);
   p.on('open', () => connect());
   p.on('error', e => {
