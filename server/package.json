@@ -1,0 +1,19 @@
+{
+  "name": "abood-run-race-server",
+  "private": true,
+  "description": "Room server for Abood Run online races (PeerJS signalling + short-lived Cloudflare TURN credentials).",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "express": "4.22.3",
+    "peer": "1.0.2",
+    "ws": "8.22.2"
+  }
+}

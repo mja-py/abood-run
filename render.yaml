@@ -1,0 +1,26 @@
+# Render Blueprint for the Abood Run room server (server/). GitHub Pages ignores this file and that folder.
+# Render: New > Blueprint > pick this repo. It asks for the two Cloudflare TURN values once.
+services:
+  - type: web
+    name: abood-run-race
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm ci --omit=dev
+    startCommand: node index.js
+    healthCheckPath: /health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - server/**
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: ALLOWED_ORIGINS
+        value: https://mja-py.github.io
+      - key: ALLOW_LOCALHOST
+        value: "0"
+      - key: TURN_KEY_ID
+        sync: false
+      - key: TURN_KEY_API_TOKEN
+        sync: false
