@@ -520,6 +520,7 @@ function openFriend(mode, c) {
   renderFriend(); startMode(mode, c);
 }
 function startMode(mode, c) {
+  N.warm(); // wake our room server while the player picks a race name
   if (mode === 'guest') N.join(c, mp().pid);
 }
 function newGateQ() { const a = 12 + Math.floor(Math.random() * 8), b = 3 + Math.floor(Math.random() * 7); race.gate = a * b; $('fGateQ').textContent = T('mp_gateQ', a, b); $('fGateQ').dataset.ab = a + 'x' + b; $('fGateA').value = ''; }

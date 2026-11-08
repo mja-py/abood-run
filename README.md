@@ -111,13 +111,17 @@ Two players race on the same course, each on their own phone, from anywhere.
 
 **Side by side with no Wi-Fi?** One phone turns on its hotspot (with mobile data) and the other joins it, then they use the 6-digit code as usual. Only the introduction uses the internet (a few kilobytes); the race itself runs directly between the two phones over the hotspot. A truly offline version with a 6-digit code needs a native app (local network discovery), which a web page can't do.
 
-**No duplicate rooms.** The room code is the host's id on the PeerJS server (prefixed `abood-run-v2-`), and the server lets only one live peer hold an id. If a new room's code is taken, the server refuses it and the game picks another code (up to 5 tries) before showing it. The code is freed when the host leaves.
+**No duplicate rooms.** The room code is the host's id on the room server (prefixed `abood-run-v2-`), and the server lets only one live peer hold an id. If a new room's code is taken, the server refuses it and the game picks another code (up to 5 tries) before showing it. The code is freed when the host leaves.
 
-**How it connects.** The two browsers talk directly over WebRTC with [PeerJS](https://peerjs.com) (bundled in `js/vendor/`). The free public PeerJS server only introduces them using the room code. Cloudflare's public STUN server (`stun.cloudflare.com`) tells each phone its public address, and the PeerJS TURN relay is used on networks that block direct connections. There is no game server and no account.
+**How it connects.** The two browsers talk directly over WebRTC with [PeerJS](https://peerjs.com) (bundled in `js/vendor/`). Our own room server (`server/`, on Render) only introduces them using the room code. Cloudflare's public STUN server (`stun.cloudflare.com`) tells each phone its public address. On networks that block direct connections, the race goes through Cloudflare's TURN relay, using credentials the room server hands out that expire after 6 hours (the Cloudflare key itself never reaches the page). There is no account.
 
-**Privacy.** Nothing touches the network until a player opens *Race a friend*; solo play stays fully offline. There is no chat: the only typed text is the race name (letters only, 2 to 12, checked again on arrival); otherwise the game sends the character and outfit, and race positions and results. A direct connection lets the friend's device, and the connection services, see this device's IP address, which can show roughly which city it is in; the grown-up check says so. For players who must not share an IP address at all, the next step would be a relay-only mode (all traffic through a TURN relay).
+**If our server is down.** The game wakes the room server when the race screen opens (Render's free plan sleeps after 15 idle minutes and takes about a minute to wake). While it wakes, the loading screen says so and *Create room* keeps waiting. If the server answers with an error, or doesn't answer within 55 seconds, the room opens on the free public PeerJS server (0.peerjs.com) with its TURN relay instead. The first digit of the code says which server a room is on: codes starting 1–8 are on ours and codes starting 9 are on the public one. So the friend's game asks the right server straight away and can't land in a stranger's room on the other one. If ours is up but the Cloudflare relay isn't set up or doesn't answer, the PeerJS relay is used.
 
-Code: `js/net.js` (connection, codes, heartbeat, reconnect) and the "race a friend online" section of `js/game.js`.
+**Privacy.** Nothing touches the network until a player opens *Race a friend*; solo play stays fully offline. There is no chat: the only typed text is the race name (letters only, 2 to 12, checked again on arrival); otherwise the game sends the character and outfit, and race positions and results. A direct connection lets the friend's device, and the connection services (our room server, Cloudflare, and PeerJS when it is the fallback), see this device's IP address, which can show roughly which city it is in; the grown-up check says so. For players who must not share an IP address at all, the next step would be a relay-only mode (all traffic through a TURN relay).
+
+The room server writes no logs about players. It keeps each connected player's id and connection in memory only while they are connected, never lists who is connected, accepts only the game's own ids, and answers only pages from the game's address.
+
+Code: `js/net.js` (servers, codes, heartbeat, reconnect), the "race a friend online" section of `js/game.js`, and `server/` (room server; see `server/README.md` to set it up).
 
 ## Ads hook
 
@@ -175,7 +179,7 @@ css/style.css           layout, RTL, phone breakpoints, self-hosted font faces
 js/game.js              the game: world, physics, landmarks, drawing, caching, loader
 js/i18n.js              Arabic and English text, language switch
 js/meta.js              save data, the route, dirhams, shop, upgrades, wardrobe, badges, missions, login gift
-js/net.js               race a friend: PeerJS connection, room codes, heartbeat, reconnect, STUN/TURN servers
+js/net.js               race a friend: room server and PeerJS fallback, room codes, heartbeat, reconnect, STUN/TURN servers
 js/vendor/zzfx.js       ZzFX sound synth (MIT)
 js/vendor/peerjs.min.js PeerJS 1.5.4 for online races (MIT)
 assets/fonts/           Baloo Bhaijaan 2 (SIL OFL 1.1)
@@ -183,6 +187,8 @@ assets/icons/           app icons, generated from the game's own drawing of Aboo
 sw.js                   offline cache
 manifest.webmanifest    install settings
 .github/workflows/      GitHub Pages deploy
+server/                 room server for online races (Node, not published to Pages; see server/README.md)
+render.yaml             Render setup for the room server
 ```
 
 See [CREDITS.md](CREDITS.md) for third-party licences.
