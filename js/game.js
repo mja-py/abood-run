@@ -3,6 +3,7 @@
 // sprite frames and background tiles so phones only blit images each frame.
 import { T, getLang, applyLang, setLang, onLang, hasStoredLang, FLAG, setGirl } from './i18n.js?v=__BUILD__';
 import * as M from './meta.js?v=__BUILD__';
+import * as N from './net.js?v=__BUILD__';
 
 const BUILD = '__BUILD__';
 
@@ -35,6 +36,10 @@ const sr = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x -
 const rnd = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const pick = a => a[Math.floor(Math.random() * a.length)];
+// Course randomness: Math.random in solo play; in a race both players use the same seed, so they get the same course
+const seeded = a => () => { a = (a + 0x6D2B79F5) | 0; let x = Math.imul(a ^ (a >>> 15), 1 | a); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+let crand = Math.random;
+const crnd = (a, b) => a + crand() * (b - a), cpick = a => a[Math.floor(crand() * a.length)];
 const hex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 const mix = (a, b, f) => a.map((v, i) => v + (b[i] - v) * f);
 const rgb = (a, al = 1) => `rgba(${a[0] | 0},${a[1] | 0},${a[2] | 0},${al})`;
@@ -207,6 +212,7 @@ function music() {
 function buzz(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
 
 // ---------- state ----------
+let race = null; // set while racing a friend online (see the race section)
 let st = 'boot', t = 0, stT = 0, worldX = 0, speed = 320, lead = 0.6, dist = 0, candies = 0, candyCount = 0, boost = 0, shake = 0, graceT = 0;
 let combo = 0, comboT = 0, closeCalls = 0, zoneNow = 0, banner = null;
 let gaps = [], plats = [], obs = [], items = [], parts = [], sandals = [], birds = [], fish = [], genX = 0, holding = false;
@@ -223,6 +229,7 @@ const FOCUS_STEP = 20, FOCUS_MAX = 3;
 let paceT = 500, assist = 1, spawnBoost = 1, sandalMul = 1, mercyT = 0, hitTimes = [], playT = 0;
 function director(dt) {
   mercyT = Math.max(0, mercyT - dt);
+  if (race) { assist = mercyT > 0 ? 0.6 : 1; spawnBoost = 1; sandalMul = mercyT > 0 ? 1.6 : 1; return; } // a race: the same course and pace for both players, so no tuning to one player's history
   const p = dist / paceT;
   let mult;
   if (p < 0.85) { mult = 0.75; spawnBoost = 1.4; sandalMul = 1.4; }            // enjoy
@@ -251,32 +258,32 @@ const OB = { box: { w: 34, h: 32 }, bin: { w: 30, h: 46 }, cat: { w: 34, h: 30 }
   sack: { w: 30, h: 36 }, carpet: { w: 58, h: 20 }, crab: { w: 30, h: 18, side: 1 }, cooler: { w: 40, h: 30 }, rock: { w: 42, h: 28 }, bush: { w: 38, h: 30 }, lizard: { w: 46, h: 14, vx: -110 },
   bike: { w: 44, h: 30 }, gas: { w: 22, h: 36 }, dbag: { w: 32, h: 30 }, dbike: { w: 60, h: 54, vx: -170 }, crate: { w: 32, h: 40 }, chairs: { w: 30, h: 46 },
   castle: { w: 40, h: 28 }, mandoos: { w: 36, h: 32 }, ring: { w: 30, h: 30, vx: -40 }, gbag: { w: 22, h: 40 }, cart: { w: 50, h: 40, vx: -120 }, escooter: { w: 40, h: 38 }, basket: { w: 32, h: 24 }, flower: { w: 30, h: 32 }, dallah: { w: 28, h: 34 }, wood: { w: 44, h: 20 }, buggy: { w: 58, h: 38, vx: -150 } };
-function addObs(x, k) { obs.push({ x, x0: x, kind: k, w: OB[k].w, h: OB[k].h, hit: false, hx: 0, hy: 0, rot: 0, ph: 0, lift: 0, clear: 999, passed: false, seed: Math.random() * 6 }); }
+function addObs(x, k) { obs.push({ x, x0: x, kind: k, w: OB[k].w, h: OB[k].h, hit: false, hx: 0, hy: 0, rot: 0, ph: 0, lift: 0, clear: 999, passed: false, seed: crand() * 6 }); }
 function candyArc(x0, x1, yBase, h) { const n = Math.max(3, Math.round((x1 - x0) / 36)); for (let i = 0; i < n; i++) { const f = i / (n - 1); items.push({ x: x0 + (x1 - x0) * f, y: yBase - Math.sin(f * Math.PI) * h, kind: 'candy', c: i }); } }
-function power() { const r = Math.random(); return r < 0.24 ? 'vimto' : r < 0.46 ? 'marbles' : r < 0.62 ? 'phone' : r < 0.82 ? 'magnet' : 'scooter'; }
+function power() { const r = crand(); return r < 0.24 ? 'vimto' : r < 0.46 ? 'marbles' : r < 0.62 ? 'phone' : r < 0.82 ? 'magnet' : 'scooter'; }
 function gen() {
   while (genX < worldX + W + 400) {
-    const z = ZONES[zoneAt(routeOfX(genX))], r = Math.random(), hard = Math.min(1, dist / 8000), spread = Math.sqrt(runSpeed(dist) / 320); // spacing grows with speed so it stays jumpable
+    const z = ZONES[zoneAt(routeOfX(genX))], r = crand(), gd = race ? Math.max(0, (genX - 900) / 40) : dist, hard = Math.min(1, gd / 8000), spread = Math.sqrt(runSpeed(gd) / 320); // spacing grows with speed so it stays jumpable
     if (r < 0.34) {
-      const k = pick(z.obs); addObs(genX, k);
-      if (Math.random() < 0.5) candyArc(genX - 50, genX + OB[k].w + 50, GROUND - 50, 62);
-      if (Math.random() < 0.12 + hard * 0.38) { const dx = rnd(200, 250) * spread; addObs(genX + dx, pick(z.obs)); genX += dx; }
-      genX += rnd(270, 450) * spread;
+      const k = cpick(z.obs); addObs(genX, k);
+      if (crand() < 0.5) candyArc(genX - 50, genX + OB[k].w + 50, GROUND - 50, 62);
+      if (crand() < 0.12 + hard * 0.38) { const dx = crnd(200, 250) * spread; addObs(genX + dx, cpick(z.obs)); genX += dx; }
+      genX += crnd(270, 450) * spread;
     } else if (r < 0.52) {
-      const w = rnd(85, 110 + hard * 50); gaps.push({ x0: genX, x1: genX + w });
-      candyArc(genX - 30, genX + w + 30, GROUND - 60, 72); genX += w + rnd(250, 340);
+      const w = crnd(85, 110 + hard * 50); gaps.push({ x0: genX, x1: genX + w });
+      candyArc(genX - 30, genX + w + 30, GROUND - 60, 72); genX += w + crnd(250, 340);
     } else if (r < 0.72) {
-      const w = rnd(170, 260), y = GROUND - rnd(85, 120); plats.push({ x: genX, y, w, z: zoneAt(routeOfX(genX)) });
-      if (Math.random() < 0.4) { const gw = Math.min(w - 40, rnd(90, 140)); gaps.push({ x0: genX + 20, x1: genX + 20 + gw }); }
-      if (Math.random() < 0.4 * spawnBoost) items.push({ x: genX + w / 2, y: y - 34, kind: power() });
+      const w = crnd(170, 260), y = GROUND - crnd(85, 120); plats.push({ x: genX, y, w, z: zoneAt(routeOfX(genX)) });
+      if (crand() < 0.4) { const gw = Math.min(w - 40, crnd(90, 140)); gaps.push({ x0: genX + 20, x1: genX + 20 + gw }); }
+      if (crand() < 0.4 * spawnBoost) items.push({ x: genX + w / 2, y: y - 34, kind: power() });
       else for (let x = genX + 24; x < genX + w - 10; x += 34) items.push({ x, y: y - 26, kind: 'candy', c: x });
-      genX += w + rnd(230, 320);
+      genX += w + crnd(230, 320);
     } else if (r < 0.88) {
-      if (Math.random() < 0.1 * (spawnBoost - 0.8)) { items.push({ x: genX + 100, y: GROUND - 74, kind: power() }); genX += 260; continue; }
-      const jar = Math.random() < 0.18;
-      for (let i = 0; i < 6; i++) items.push({ x: genX + i * 34, y: GROUND - 26 - (i === 5 && jar ? 30 : 0), kind: i === 5 && jar ? 'jar' : 'candy', c: i }); genX += rnd(280, 360);
+      if (crand() < 0.1 * (spawnBoost - 0.8)) { items.push({ x: genX + 100, y: GROUND - 74, kind: power() }); genX += 260; continue; }
+      const jar = crand() < 0.18;
+      for (let i = 0; i < 6; i++) items.push({ x: genX + i * 34, y: GROUND - 26 - (i === 5 && jar ? 30 : 0), kind: i === 5 && jar ? 'jar' : 'candy', c: i }); genX += crnd(280, 360);
     } else {
-      items.push({ x: genX, y: GROUND - 74, kind: power() }); genX += rnd(260, 340);
+      items.push({ x: genX, y: GROUND - 74, kind: power() }); genX += crnd(260, 340);
     }
   }
   if (!Number.isFinite(genX)) genX = worldX + W + 100;
@@ -288,7 +295,8 @@ const overGap = (x, m = 5) => { for (const g of gaps) if (x > g.x0 + m && x < g.
 // ---------- input ----------
 function press() {
   unlockAudio();
-  if (!$('langPick').hidden || !$('sheet').hidden || !$('loginPop').hidden) return;
+  if (!$('langPick').hidden || !$('sheet').hidden || !$('loginPop').hidden || !$('friend').hidden) return;
+  if (race && st !== 'play' && st !== 'pause') return; // in a race, only the host starts the next one
   if (st === 'menu') { start(); return; }
   if (st === 'over') { if (swap && !swap.done) { endSwap(); return; } if (stT > 0.9 && !$('over').hidden) start(); return; }
   if (st === 'pause') { setPause(false); return; }
@@ -297,6 +305,7 @@ function press() {
 function release() { holding = false; }
 const isUI = e => e.target && e.target.closest && e.target.closest('button, a, .panel, #toast, #sheet, #loginPop');
 addEventListener('keydown', e => {
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return; // typing a name or a race code
   if (['Space', 'ArrowUp', 'KeyW'].includes(e.code)) { e.preventDefault(); if (!e.repeat && !(st !== 'play' && e.target.closest && e.target.closest('button'))) press(); }
   if (e.code === 'KeyP' || e.code === 'Escape') { if (st === 'play') setPause(true); else if (st === 'pause') setPause(false); }
 });
@@ -311,7 +320,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 $('startBtn').onclick = () => { unlockAudio(); start(); };
-$('againBtn').onclick = () => { unlockAudio(); start(); };
+$('againBtn').onclick = () => { unlockAudio(); if (race) hostGo(); else start(); };
 $('sheetClose').onclick = () => closeSheet();
 document.querySelectorAll('[data-sheet]').forEach(b => b.onclick = () => openSheet(b.dataset.sheet));
 document.addEventListener('click', e => {
@@ -321,7 +330,7 @@ document.addEventListener('click', e => {
   if (pk) { setLang(pk.dataset.pick); $('langPick').hidden = true; showMenu(); }
 });
 $('flagAr').innerHTML = FLAG.ar; $('flagEn').innerHTML = FLAG.en;
-function showMenu() { $('menu').hidden = false; renderMenu(); maybeToast(); maybeLogin(); const rf = M.takeRefund(); if (rf) setTimeout(() => note(T('refund', rf)), 600); }
+function showMenu() { if (pendingJoin) { const c = pendingJoin; pendingJoin = null; openFriend('guest', c); return; } $('menu').hidden = false; renderMenu(); maybeToast(); maybeLogin(); const rf = M.takeRefund(); if (rf) setTimeout(() => note(T('refund', rf)), 600); }
 function setMuteBtn() { $('mute').textContent = muted ? '✕' : '♪'; $('mute').setAttribute('aria-pressed', muted ? 'true' : 'false'); }
 $('mute').onclick = () => { unlockAudio(); muted = !muted; if (master) master.gain.value = muted ? 0 : 1; try { localStorage.setItem('abood-muted', muted ? '1' : '0'); } catch (e) {} setMuteBtn(); $('mute').blur(); };
 $('pauseBtn').onclick = () => { if (st === 'play') setPause(true); else if (st === 'pause') setPause(false); $('pauseBtn').blur(); };
@@ -348,15 +357,16 @@ function wakeOff() { try { wake && wake.release(); } catch (e) {} wake = null; }
 function showBest() { const b = M.bestDist(); $('menuBest').hidden = b <= 0; if (b > 0) $('menuBest').textContent = T('best', b); }
 const selBoost = new Set();
 let run = null, runBadges = [], badgeTimer = 0;
-function start() {
-  startM = M.AREAS[M.startArea()].at; reset(); st = 'play';
+function start(rc) {
+  if (race && !rc) return;
+  startM = M.AREAS[rc ? rc.area : M.startArea()].at; crand = rc ? seeded(rc.seed) : Math.random; reset(); st = 'play';
   run = { dist: 0, sweets: 0, close: 0, zoneMax: 0, paid: 0, route: startM, noHit: 0, comboMax: 0, focusMax: 0, powers: 0, stops: 0 }; runBadges = []; lastRes = null; M.track('run');
-  if (M.robeOf().shield) kid.shield = 1;
-  for (const id of selBoost) if (M.useBooster(id)) {
+  if (!rc && M.robeOf().shield) kid.shield = 1;
+  if (!rc) for (const id of selBoost) if (M.useBooster(id)) {
     if (id === 'vimto') boost = 6; if (id === 'magnet') kid.mag = 10; if (id === 'shield') kid.shield = 1;
     if (id === 'headstart') { kid.scoot = 6; lead = 0.85; }
   }
-  selBoost.clear(); renderMenu(); stT = 0; $('menu').hidden = true; $('over').hidden = true; $('toast').hidden = true; $('hud').hidden = false; $('routeHud').hidden = false; $('pauseBtn').hidden = false; $('pauseBtn').textContent = 'II';
+  if (!rc) selBoost.clear(); renderMenu(); stT = 0; $('menu').hidden = true; $('over').hidden = true; $('toast').hidden = true; $('hud').hidden = false; $('routeHud').hidden = false; $('pauseBtn').hidden = false; $('pauseBtn').textContent = 'II';
   if (actx) nextNote = actx.currentTime + 0.05; step = 0; zoneNow = zoneAt(startM); showBanner(zoneNow); wakeOn(); hudCache.fill(null);
   document.activeElement && document.activeElement.blur && document.activeElement.blur();
 }
@@ -377,7 +387,7 @@ function fillOver() {
   const strip = $('overBadges'); strip.innerHTML = '';
   if (!runBadges.length) strip.innerHTML = '<span class="hint">' + T('o_none') + '</span>';
   for (const b of runBadges) { const e2 = document.createElement('span'); e2.className = 'badge-chip'; const cnv = mk(56, 56); drawMedal(cnv.getContext('2d'), b.id, b.cat ? b.tier : 2, 56); e2.appendChild(cnv); e2.append(badgeName(b) + ' · ' + T('bg_reward', b.reward)); strip.appendChild(e2); }
-  const rv = M.data().boosters.revive || 0; $('reviveBtn').hidden = false;
+  const rv = M.data().boosters.revive || 0; $('reviveBtn').hidden = !!race; fillRace();
   $('reviveBtn').textContent = !run || !run.freeRevive ? T('o_reviveFree') : rv > 0 ? T('o_revive', rv) : T('o_reviveBuy', M.REVIVE_PRICE);
   if (!swap || swap.done) { syncCoins(); swapShow(lastRes ? lastRes.ex : null, 1, 3); }
 }
@@ -452,6 +462,7 @@ function overSpot() {
 function gameOver(why) {
   if (st !== 'play') return; st = 'over'; stT = 0; sfx.lose(); buzz([60, 40, 120]); wakeOff();
   const res = settleRun(), m = Math.floor(dist);
+  if (race) { race.me = { d: m, s: candies, why }; race.final = false; N.send({ t: 'out', d: m, s: candies, why }); }
   dad.say = T(why === 'fell' ? 's_fell' : 's_got'); dad.sayT = 99; kid.say = T('s_sorry'); kid.sayT = 99;
   lastOver = { why, m, nb: res && res.newBest }; swap = null; fillOver(); showBest(); overX = overSpot();
   $('hud').hidden = true; $('routeHud').hidden = true; $('pauseBtn').hidden = true; $('powers').textContent = ''; lastHud = '';
@@ -464,7 +475,7 @@ function gameOver(why) {
   }, 1100);
 }
 function revive() {
-  if (st !== 'over') return;
+  if (st !== 'over' || race) return;
   // the first second chance in every run is free; after that use a bought one, or pay on the spot
   if (run && !run.freeRevive) run.freeRevive = true;
   else if (!M.useBooster('revive') && !M.spend(M.REVIVE_PRICE)) { note(T('notEnough')); return; }
@@ -476,8 +487,239 @@ function revive() {
   floatText(T('f_revive'), worldX, kid.y - 80, '#9ff0ff'); wakeOn();
 }
 $('reviveBtn').onclick = () => { unlockAudio(); revive(); };
-$('overMenuBtn').onclick = () => { if (swap && !swap.done) endSwap(); swap = null; st = 'menu'; $('over').hidden = true; startM = M.AREAS[M.startArea()].at; reset(); worldX = 0; showMenu(); };
-onLang(() => { if (swap && !swap.done) endSwap(); if (st === 'over' && lastOver) { dad.say = T(lastOver.why === 'fell' ? 's_fell' : 's_got'); kid.say = T('s_sorry'); } else { dad.sayT = 0; kid.sayT = 0; } fillOver(); showBest(); renderMenu(); if (!$('sheet').hidden) openSheet(sheetKind); hudCache.fill(null); lastHud = ''; });
+
+// ---------- race a friend online ----------
+// The host makes a room with a 6-digit code (and a link); the friend types the code or opens the link. Both games get
+// the same seed and start area, so the course is identical, and the difficulty director is fixed. Each player runs
+// their own game and they swap positions 20 times a second; the friend shows as a see-through ghost that plays a
+// tenth of a second behind, gliding between the positions it received.
+// Dropped connections: the race goes on, the friend's last record stays, and the joining side keeps reconnecting.
+// When the same player comes back (same player id), both sides swap where they are and the result is worked out
+// again. After a minute without them, their last record counts.
+let pendingJoin = null;
+const num = v => (Number.isFinite(+v) ? +v : 0);
+const canShare = typeof navigator.share === 'function';
+const GHOST_DELAY = 110, LOST_GIVEUP = 60000;
+const mp = () => { const d = M.data(); if (!d.mp) d.mp = {}; if (!d.mp.pid) { d.mp.pid = Array.from(crypto.getRandomValues(new Uint8Array(8)), b => b.toString(16).padStart(2, '0')).join(''); M.save(); } return d.mp; };
+// names: letters and numbers only, 14 at most; only the friend you race sees it
+const cleanName = s => String(s || '').normalize('NFC').replace(/[^\p{L}\p{N} ._-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 14);
+const myName = () => cleanName(mp().name) || kname();
+const newOpp = () => ({ here: false, pid: '', name: '', ch: 'abood', robe: '', head: '', round: 0, d: 0, s: 0, out: false, run: false, gone: false, lost: false, lostAt: 0, buf: [], off: null });
+const oppGirl = () => race.opp.ch === 'mozah';
+const oppName = () => race.opp.name || T('ch_' + race.opp.ch);
+const oppLook = () => lookOf(race.opp.robe, race.opp.head, oppGirl());
+function openFriend(mode, c) {
+  if (race) leaveRace(true);
+  race = { role: mode === 'choose' ? null : mode, fs: mode === 'choose' ? 'choose' : 'connecting', err: '', code: '', link: '', seed: 0, area: 0, hold: 0, goT: 0, sendT: 0, me: null, final: false, opp: newOpp() };
+  $('menu').hidden = true; $('friend').hidden = false;
+  $('fName').value = cleanName(mp().name); $('fName').placeholder = kname(); $('fCode').value = c ? N.showCode(c) : '';
+  renderFriend();
+  if (mode === 'guest') N.join(c, mp().pid);
+}
+function saveName() { const n = cleanName($('fName').value); $('fName').value = n; if (n !== (mp().name || '')) { mp().name = n; M.save(); } }
+function goHost() { if (!race) return; saveName(); race.role = 'host'; race.fs = 'connecting'; renderFriend(); N.host(mp().pid); }
+function goJoin() {
+  if (!race) return; saveName(); const c = N.cleanCode($('fCode').value);
+  if (c.length !== 6) { race.fs = 'err'; race.err = 'badcode'; renderFriend(); $('fCode').focus(); return; }
+  race.role = 'guest'; race.fs = 'connecting'; renderFriend(); N.join(c, mp().pid);
+}
+function leaveRace(quiet) {
+  N.leave(); race = null; crand = Math.random;
+  $('raceBox').hidden = true; $('over').classList.remove('racing'); $('againBtn').hidden = false; $('againBtn').disabled = false;
+  $('againBtn').textContent = T('again'); $('againHint').textContent = T('againHint'); $('overMenuBtn').textContent = T('b_menu');
+  if (!$('friend').hidden) { $('friend').hidden = true; if (!quiet) showMenu(); }
+}
+function hello() {
+  const d = M.data();
+  N.send({ t: 'hi', v: N.PROTO, pid: mp().pid, name: myName(), ch: d.char, robe: d.robe, head: d.head,
+    seed: race.seed, me: race.me, live: !!race.seed && !race.me && (st === 'play' || st === 'pause'), d: Math.floor(dist) });
+}
+N.on('hosting', ({ code, link }) => { if (!race) return; race.code = code; race.link = link; if (race.fs === 'connecting') race.fs = 'waiting'; renderFriend(); });
+N.on('open', () => { if (!race) return; race.fs = 'joined'; hello(); renderFriend(); });
+N.on('error', why => { if (!race) return; race.fs = 'err'; race.err = why; renderFriend(); });
+N.on('lost', () => {
+  if (!race) return; const o = race.opp; if (o.gone || !o.here || o.lost) return;
+  o.lost = true; o.lostAt = Date.now(); o.buf = [];
+  if (st === 'play' || st === 'pause') floatText(T('mp_lost', oppName(), oppGirl()), worldX + 80, 120, '#9ff0ff'); else note(T('mp_lost', oppName(), oppGirl()), 2500);
+  renderFriend(); if (st === 'over') fillRace();
+});
+setInterval(() => { // a friend who stays away for a minute is out, with their last record
+  if (!race || !race.opp.lost || Date.now() - race.opp.lostAt < LOST_GIVEUP) return;
+  const o = race.opp; o.lost = false; o.gone = true; o.run = false; if (race.seed && o.round === race.seed) o.out = true;
+  note(T('mp_left', oppName(), oppGirl()), 3000);
+  if (race.role === 'guest') { N.leave(); if (!$('friend').hidden) { race.fs = 'err'; race.err = 'noroom'; } }
+  else if (!$('friend').hidden) { race.opp = newOpp(); race.fs = 'waiting'; }
+  renderFriend(); if (st === 'over') fillRace();
+}, 1000);
+N.on('data', d => {
+  if (!race) return; let o = race.opp;
+  if (d.t === 'p') {
+    if (o.round !== race.seed) return; // a position from a race we are not in
+    const now = performance.now(), ts = num(d.ts), off = now - ts, x = num(d.x), b = o.buf;
+    o.off = o.off == null || off < o.off ? off : o.off + (off - o.off) * 0.01; // the smallest delay seen, drifting slowly
+    const last = b[b.length - 1], at = last ? Math.max(last.t + 1, ts + o.off) : ts + o.off;
+    b.push({ t: at, x, y: clamp(num(d.y), -200, H + 60), a: !!d.a, sc: !!d.sc }); if (b.length > 40) b.shift();
+    o.d = Math.max(0, num(d.d) | 0); o.s = num(d.s) | 0; o.run = true;
+    if (st === 'over') fillRace();
+  } else if (d.t === 'hi') {
+    if (d.v !== N.PROTO) { note(T('mp_version'), 4000); leaveRace(); return; }
+    const pid = String(d.pid || '').slice(0, 40), back = !!o.pid && pid === o.pid;
+    if (!back) { race.opp = o = newOpp(); o.pid = pid; o.round = num(d.seed) >>> 0; }
+    o.name = cleanName(d.name); o.ch = d.ch === 'mozah' ? 'mozah' : 'abood'; o.robe = String(d.robe || '').slice(0, 24); o.head = String(d.head || '').slice(0, 24);
+    o.here = true; o.gone = false;
+    if (back) {
+      const wasLost = o.lost; o.lost = false; o.buf = []; o.off = null;
+      if (race.seed && o.round === race.seed) {
+        if ((num(d.seed) >>> 0) === race.seed) { // the same race: catch up with where they are now
+          if (d.me) { o.out = true; o.run = false; o.d = Math.max(0, num(d.me.d) | 0); } else { o.d = Math.max(o.d, num(d.d) | 0); o.run = !!d.live; }
+        } else if (!o.out) { o.out = true; o.run = false; } // their page restarted mid-race: their last record counts
+      }
+      if (wasLost) { if (st === 'play' || st === 'pause') floatText(T('mp_back', oppName(), oppGirl()), worldX + 80, 120, '#7ee0b0'); else note(T('mp_back', oppName(), oppGirl())); }
+    }
+    renderFriend(); if (st === 'over') fillRace();
+  } else if (d.t === 'go' && race.role === 'guest') {
+    race.seed = num(d.seed) >>> 0; race.area = clamp(num(d.area) | 0, 0, M.AREAS.length - 1); beginRace();
+  } else if (d.t === 'out') {
+    if (o.round !== race.seed) return;
+    o.out = true; o.run = false; o.d = Math.max(0, num(d.d) | 0); o.s = num(d.s) | 0;
+    if (st === 'play' || st === 'pause') floatText(T('mp_oppOut', oppName(), o.d), worldX + 80, 120, '#ffe066');
+    fillRace();
+  } else if (d.t === 'bye') oppGone();
+  else if (d.t === 'full') { note(T('mp_full'), 3500); leaveRace(); }
+});
+function oppGone() { // the friend left on purpose
+  if (!race || race.opp.gone) return; const o = race.opp;
+  o.gone = true; o.lost = false; o.run = false;
+  if (o.here) note(T('mp_left', oppName(), oppGirl()), 3000);
+  if (race.role === 'guest') N.leave(); // the host closed the room: stop reconnecting
+  if (!$('friend').hidden) {
+    if (race.role === 'host' && race.code) { race.opp = newOpp(); race.fs = 'waiting'; } // another friend can still join the same code
+    else { race.fs = 'err'; race.err = 'noroom'; }
+  }
+  renderFriend(); if (st === 'over') fillRace();
+}
+function hostGo() {
+  if (!race || race.role !== 'host' || !N.isOpen() || !race.opp.here || race.opp.lost || st === 'play' || st === 'pause') return;
+  const o = race.opp; if (race.me && o.round === race.seed && !o.out) return; // the next race starts once both have finished
+  race.seed = crypto.getRandomValues(new Uint32Array(1))[0] || 1; race.area = M.startArea();
+  N.send({ t: 'go', seed: race.seed, area: race.area }); beginRace();
+}
+function beginRace() {
+  if (!race) return;
+  $('friend').hidden = true; $('menu').hidden = true; $('over').hidden = true; $('sheet').hidden = true;
+  if (swap && !swap.done) endSwap(); swap = null;
+  Object.assign(race.opp, { round: race.seed, d: 0, s: 0, out: false, run: false, buf: [], off: null });
+  race.me = null; race.final = false;
+  start(race); race.hold = 3; race.goT = 0; race.sendT = 0; play('tek', 1.2, 0.9);
+}
+function raceHold(dt) {
+  const k = Math.ceil(race.hold); race.hold -= dt;
+  if (race.hold <= 0) { race.hold = 0; race.goT = 0.8; sfx.zone(); buzz(30); }
+  else if (Math.ceil(race.hold) !== k) play('tek', 1.2, 0.9);
+  raceTick(dt); hud();
+}
+function raceTick(dt) {
+  race.goT = Math.max(0, race.goT - dt);
+  race.sendT -= dt; if (race.sendT > 0) return; race.sendT = 0.05;
+  N.send({ t: 'p', ts: Math.round(performance.now()), x: Math.round(worldX), y: Math.round(kid.y), d: Math.floor(dist), s: candies, a: kid.on ? 0 : 1, sc: kid.scoot > 0 ? 1 : 0 });
+}
+// where the ghost is now: GHOST_DELAY ms in the past, between the two positions around that moment
+function ghostPos() {
+  const b = race.opp.buf; if (!b.length) return null;
+  const rt = performance.now() - GHOST_DELAY;
+  let i = b.length - 1; while (i > 0 && b[i].t > rt) i--;
+  const p = b[i], q = b[i + 1];
+  if (q) { const f = clamp((rt - p.t) / Math.max(1, q.t - p.t), 0, 1); return { x: p.x + (q.x - p.x) * f, y: p.y + (q.y - p.y) * f, a: f < 0.5 ? p.a : q.a, sc: q.sc }; }
+  const r = b[i - 1]; if (!r || rt < p.t) return p;
+  const vx = (p.x - r.x) / Math.max(1, p.t - r.t); // past the newest one: keep going a little (up to 0.25 s)
+  return { x: p.x + vx * Math.min(250, rt - p.t), y: p.y, a: p.a, sc: p.sc };
+}
+function tag(c, txt, x, y) {
+  c.save(); c.font = '800 14px ' + FONT; c.direction = getLang() === 'ar' ? 'rtl' : 'ltr'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  const w = c.measureText(txt).width + 18; x = clamp(x, w / 2 + 6, W - w / 2 - 6);
+  c.globalAlpha = 0.92; c.fillStyle = '#fffaf0'; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.roundRect(x - w / 2, y - 12, w, 24, 12); c.fill(); c.stroke();
+  c.globalAlpha = 1; c.fillStyle = INK; c.fillText(txt, x, y + 1); c.restore();
+}
+function drawGhost(c) {
+  const o = race.opp; if (!o.here || o.gone || o.out || o.round !== race.seed) return;
+  const name = oppName();
+  if (o.lost) { tag(c, T('mp_lostTag', name), W / 2, 150); return; }
+  const g = o.run && ghostPos(); if (!g) return;
+  const x = g.x - worldX + ABX;
+  if (x > -40 && x < W + 40) {
+    let y = g.y; const a = g.a && !g.sc, idx = a || g.sc ? 0 : qph(g.x * 0.034), look = oppLook();
+    c.save(); c.globalAlpha *= 0.5;
+    if (g.sc) { scooter(c, x, y); y -= 6; }
+    const e = spriteGet('gh' + o.ch + o.robe + o.head + (a ? 1 : 0) + (g.sc ? 1 : 0) + idx, KB, gg => person(gg, 0, 0, idx * STEP, a, Object.assign(look, { mouth: 'grin', still: g.sc, arm: g.sc ? 'grip' : undefined, baked: true })));
+    if (e) blitSprite(c, e, x, y, 0, 1, 1, 1, null); else person(c, x, y, idx * STEP, a, Object.assign(look, { mouth: 'grin', still: g.sc, arm: g.sc ? 'grip' : undefined }));
+    c.restore();
+    tag(c, name, x, y - 98);
+  } else {
+    const m = Math.round(Math.abs(g.x - worldX) / 40), ahead = g.x > worldX;
+    tag(c, T(ahead ? 'mp_ahead' : 'mp_behind', name, m), ahead ? W - 80 : 80, 150);
+  }
+}
+function drawCountdown(c) {
+  if (race.hold <= 0 && race.goT <= 0) return;
+  const go = race.hold <= 0, txt = go ? T('mp_go') : String(Math.ceil(race.hold)), f = go ? race.goT / 0.8 : race.hold % 1, s = REDUCED ? 1 : 1 + 0.25 * f;
+  c.save(); c.translate(W / 2, 205); c.scale(s, s); c.font = '800 72px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.direction = getLang() === 'ar' ? 'rtl' : 'ltr'; c.globalAlpha = go ? Math.min(1, f * 2) : 1;
+  c.lineJoin = 'round'; c.lineWidth = 8; c.strokeStyle = INK; c.strokeText(txt, 0, 0); c.fillStyle = go ? '#ffe066' : '#fffaf0'; c.fillText(txt, 0, 0); c.restore();
+}
+function fillRace() {
+  const box = $('raceBox');
+  if (!race) { box.hidden = true; $('over').classList.remove('racing'); return; }
+  const o = race.opp, on = !!race.me && !!race.seed && o.round === race.seed, done = o.out || o.gone || !o.here;
+  const host = race.role === 'host', live = N.isOpen() && o.here && !o.gone && !o.lost;
+  $('over').classList.toggle('racing', on);
+  $('againBtn').hidden = !(host && live); $('againBtn').disabled = on && !done; $('againBtn').textContent = T('mp_rematch');
+  $('againHint').textContent = live && !host ? T('mp_hint') : ''; $('overMenuBtn').textContent = T('mp_leave');
+  if (!on) { box.hidden = true; return; }
+  const me = race.me, name = oppName(), g = oppGirl(), byRecord = o.out;
+  const iWin = done && (byRecord ? me.d > o.d : true), theyWin = done && byRecord && o.d > me.d;
+  box.hidden = false;
+  $('raceMe').textContent = me.d; $('raceOpp').textContent = o.d; $('raceMeName').textContent = myName(); $('raceOppName').textContent = name;
+  $('raceHead').textContent = !done ? (o.lost ? T('mp_lostWait', name, g, o.d) : T('mp_wait', name, g)) : !byRecord ? T('mp_winLeft') : iWin ? T('mp_win') : theyWin ? T('mp_lose', name, g) : T('mp_tie');
+  box.querySelector('.race-me').classList.toggle('win', iWin); box.querySelector('.race-opp').classList.toggle('win', theyWin);
+  if (done && !race.final) { race.final = true; if (iWin) { play('power', 1.4, 0.8); buzz(30); } }
+}
+function renderFriend() {
+  if (!race || $('friend').hidden) return;
+  const host = race.role === 'host', o = race.opp, fs = race.fs; let msg = '', go = null;
+  const choose = fs === 'choose' || fs === 'err', showCode = host && !!race.code && (fs === 'waiting' || o.lost || !o.here);
+  $('fChoose').hidden = !choose; $('fVs').hidden = true; $('fCopy').hidden = true; $('fCodeBig').hidden = !showCode; $('fLinkRow').hidden = !showCode;
+  if (showCode) { $('fCodeBig').textContent = N.showCode(race.code); $('fLink').value = race.link; go = canShare ? 'mp_share' : 'mp_copy'; $('fCopy').hidden = !canShare; }
+  if (choose) { msg = fs === 'err' ? T('mp_err_' + race.err) : T('mp_choose'); go = 'mp_host'; }
+  else if (fs === 'connecting') msg = T(host ? 'mp_making' : 'mp_joining');
+  else if (o.lost) msg = host ? T('mp_lostTag', oppName()) : T('mp_reconnecting');
+  else if (fs === 'waiting' || !o.here) msg = host ? T('mp_send') : T('mp_hello');
+  else {
+    $('fVs').hidden = false; $('fMeName').textContent = myName(); $('fOppName').textContent = oppName();
+    msg = host ? T('mp_joined', oppName(), oppGirl()) : T('mp_waitHost'); if (host) go = 'mp_start';
+  }
+  $('fStatus').textContent = msg; $('fGo').hidden = !go; if (go) { $('fGo').textContent = T(go); $('fGo').dataset.act = go; }
+}
+function copyLink() {
+  if (!race || !race.link) return; const inp = $('fLink'), ok = () => note(T('mp_copied'));
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(race.link).then(ok, () => inp.select());
+  else { inp.select(); try { document.execCommand('copy'); ok(); } catch (e) {} }
+}
+$('friendBtn').onclick = () => { unlockAudio(); openFriend('choose'); };
+$('fLeave').onclick = () => { unlockAudio(); leaveRace(); };
+$('fCopy').onclick = () => copyLink();
+$('fJoin').onclick = () => { unlockAudio(); goJoin(); };
+$('fName').addEventListener('change', saveName);
+$('fCode').addEventListener('input', () => { const c = N.cleanCode($('fCode').value); $('fCode').value = c.length > 3 ? c.slice(0, 3) + ' ' + c.slice(3) : c; });
+$('fCode').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); goJoin(); } });
+$('fGo').onclick = () => {
+  unlockAudio(); const a = $('fGo').dataset.act;
+  if (a === 'mp_start') hostGo();
+  else if (a === 'mp_host') goHost();
+  else if (a === 'mp_share' && race) navigator.share({ title: T('title'), text: T('mp_shareText', N.showCode(race.code)), url: race.link }).catch(() => {});
+  else copyLink();
+};
+$('overMenuBtn').onclick = () => { if (race) leaveRace(); if (swap && !swap.done) endSwap(); swap = null; st = 'menu'; $('over').hidden = true; startM = M.AREAS[M.startArea()].at; reset(); worldX = 0; showMenu(); };
+onLang(() => { renderFriend(); if (swap && !swap.done) endSwap(); if (st === 'over' && lastOver) { dad.say = T(lastOver.why === 'fell' ? 's_fell' : 's_got'); kid.say = T('s_sorry'); } else { dad.sayT = 0; kid.sayT = 0; } fillOver(); showBest(); renderMenu(); if (!$('sheet').hidden) openSheet(sheetKind); hudCache.fill(null); lastHud = ''; });
 const fmt = s => s.replace('{n}', kname());
 function shout(s, d = 1.8) { dad.say = fmt(s); dad.sayT = d; }
 function kidSay(s, d = 1.6) { kid.say = fmt(s); kid.sayT = d; }
@@ -499,6 +741,7 @@ function update(dt) {
   }
   if (st === 'over') { updParts(dt); kid.ph += dt * 16; return; }
   if (st !== 'play') return;
+  if (race && race.hold > 0) { raceHold(dt); return; } // the 3-2-1 countdown: everyone stands still
   playT += dt; // stops while paused or on the results card, so moving obstacles and the mercy window don't jump
 
   const base = runSpeed(dist);
@@ -514,7 +757,7 @@ function update(dt) {
   director(dt);
   focusT += dt; const fl = Math.min(FOCUS_MAX, Math.floor(focusT / FOCUS_STEP));
   if (fl > focusLv) { focusLv = fl; maxFocus = Math.max(maxFocus, fl); floatText(T('f_focus', fl), worldX + 40, kid.y - 90, '#9ff0ff'); sfx.close(); }
-  let dl = -(0.03 + Math.min(0.11, dist * 0.000016)) * (M.robeOf().slow || 1) * (1 - 0.1 * focusLv) * assist; // Baba closes in steadily: 0.046/s at 1 km, 0.078/s at 3 km, 0.11/s at 5 km, 0.14/s from ~7 km. Gold kandura 0.6, kits 0.8
+  let dl = -(0.03 + Math.min(0.11, dist * 0.000016)) * (race ? 1 : M.robeOf().slow || 1) * (1 - 0.1 * focusLv) * assist; // Baba closes in steadily: 0.046/s at 1 km, 0.078/s at 3 km, 0.11/s at 5 km, 0.14/s from ~7 km. Gold kandura 0.6, kits 0.8
   if (graceT > 0) { graceT = Math.max(0, graceT - dt); dl *= graceK(); }
   if (dad.freeze > 0) dl = 0.12; else if (dad.slow > 0) dl = 0.065;
   if (boost > 0) dl += 0.09; if (kid.scoot > 0) dl += 0.1;
@@ -602,6 +845,7 @@ function update(dt) {
   kid.sayT -= dt; kid.next -= dt;
   if (kid.next <= 0) { if (lead > 0.7) { kidSay(pick(T('s_taunts'))); dad.anger = Math.min(1, dad.anger + 0.25); } else if (lead < 0.22) kidSay(pick(T('s_scared'))); kid.next = rnd(4, 7); }
 
+  if (race) raceTick(dt);
   updParts(dt); gen(); hud();
 }
 function land() { kid.vy = 0; kid.on = true; if (kid.jumps) puff(worldX, kid.y, 4, '#e7cfa3', 70); kid.jumps = 0; }
@@ -2522,6 +2766,7 @@ function render() {
     drawDad(ctx, dx, GROUND, true); drawKid(ctx, dx + 9, GROUND - 34 + Math.sin(t * 8) * 1.5, kid.ph, false, 1, { kick: 1, mouth: 'o', arm: 'o', rot: 0.12, sweat: 1 });
   } else {
     drawDad(ctx, fx, dad.y);
+    if (race && st !== 'over') drawGhost(ctx);
     if ((boost > 0 || kid.scoot > 0) && st === 'play') for (let i = 1; i <= 3; i++) drawKid(ctx, ABX - i * 14, kid.y, kid.ph - i * 0.4, !kid.on, 0.16);
     if (!(kid.inv > 0 && Math.floor(t * 14) % 2 && st === 'play')) drawKid(ctx, ABX, kid.y, kid.ph, !kid.on && st === 'play');
     if (kid.mag > 0 && st === 'play') { ctx.strokeStyle = `rgba(255,120,140,${0.35 + 0.2 * Math.sin(t * 10)})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(ABX, kid.y - 30, 40 + ((t * 60) % 30), 0, TAU); ctx.stroke(); }
@@ -2537,6 +2782,7 @@ function render() {
     ctx.globalAlpha = a * (p.steam ? 0.8 : 1); ctx.drawImage(puffSprite(p.col), x - r, p.y - r, r * 2, r * 2); ctx.globalAlpha = 1;
   }
   ctx.direction = 'inherit';
+  if (race && (st === 'play' || st === 'pause')) drawCountdown(ctx);
   if (st === 'play' && (boost > 0 || kid.scoot > 0) && !REDUCED) { ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2; ctx.beginPath(); for (let i = 0; i < 10; i++) { const y = 40 + sr(i * 3.3) * 280, x = ((sr(i) * W - t * 1400) % W + W) % W; ctx.moveTo(x, y); ctx.lineTo(x + 40 + sr(i) * 60, y); } ctx.stroke(); }
   if (qLevel < 3) foreground(ctx, A);
   const dsx = st === 'over' ? ABX - 40 : fx;
@@ -2815,6 +3061,7 @@ function loop(now) {
   perf(raw); update(clamp(raw, 0, 0.033)); render(); stepSwap(clamp(raw, 0, 0.05));
   if (!$('menu').hidden) drawAvatar($('avMenu'), kidBase(), t * 8, kid.sayT > 0 ? 'tongue' : 'grin', false);
   else if (!$('over').hidden) drawAvatar($('avOver'), kidBase(), t * 3, 'o', true);
+  if (!$('friend').hidden && race && race.opp.here) { drawAvatar($('avMe'), kidBase(), t * 8, 'grin', false); drawAvatar($('avOpp'), oppLook(), t * 8 + 1, 'grin', false); }
 }
 
 // ---------- service worker / updates ----------
@@ -2879,6 +3126,7 @@ async function boot() {
   setLoad(0.96, 'ld_cache'); registerSW(); await sleep(120);
   setLoad(1, 'ready'); await sleep(280);
   clearInterval(tipTimer); ldRun = false; $('loader').classList.add('done'); setTimeout(() => { $('loader').hidden = true; }, 500);
+  try { const q = new URLSearchParams(location.search).get('race'); if (q) { pendingJoin = N.cleanCode(q) || null; history.replaceState(null, '', location.pathname + location.hash); } } catch (e) {} // opened from a friend's race link
   startM = M.AREAS[M.startArea()].at; reset(); st = 'menu'; t = 0; $('mute').hidden = false;
   if (hasStoredLang()) showMenu(); else $('langPick').hidden = false;
   if (!running) { running = true; requestAnimationFrame(loop); }
@@ -2895,6 +3143,11 @@ window.__abood = {
   set: o => { if (o.sweets != null) candies = o.sweets; if (o.lead != null) lead = o.lead; if (o.hits != null) closeCalls = o.hits; if (o.inv != null) kid.inv = o.inv; },
   spawn: (kind, ahead = 320) => { if (OB[kind]) addObs(worldX + ahead, kind); }, // put an obstacle in front of Abood
   get grace() { return +graceT.toFixed(2); },
+  // the course ahead, to check that both players in a race get the same one
+  get course() { return { obs: obs.map(o => o.kind + '@' + Math.round(o.x0)), gaps: gaps.map(g => Math.round(g.x0)), plats: plats.map(p => Math.round(p.x)), items: items.filter(i => i.kind !== 'candy').map(i => i.kind + '@' + Math.round(i.x)) }; },
+  ghost: (m = 3, air = false) => { if (!race) return; const t0 = performance.now() - 400; Object.assign(race.opp, { here: true, run: true, out: false, gone: false, lost: false, round: race.seed, buf: [0, 1].map(i => ({ t: t0 + i * 300, x: worldX + m * 40 + i * 4, y: air ? GROUND - 80 : GROUND, a: air, sc: false })) }); }, // put the friend's ghost m metres ahead
+  dropNet: () => N.testDrop(), // testing: cut the race connection as if the network failed
+  get race() { return race && { role: race.role, seed: race.seed, area: race.area, hold: race.hold, me: race.me, opp: Object.assign({}, race.opp) }; },
   quality: q => { qLevel = clamp(q, 0, QDPR.length - 1); resize(); },
   portrait: (size, pad = 1) => {
     const c = mk(size, size), g = c.getContext('2d'), bg = g.createLinearGradient(0, 0, 0, size);

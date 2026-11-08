@@ -234,3 +234,40 @@ h2{font-size:36px}
   .swap-row{gap:8px} .sw-box b{font-size:18px} .swap-parts{font-size:11.5px} .over-actions>button{min-height:40px;font-size:16px;padding:2px 10px}
   .over-actions{grid-template-columns:1fr 1fr .7fr} #overMenuBtn{grid-column:auto} #reviveBtn[hidden]+#againBtn{grid-column:span 2} /* one row on short screens */
   .area-card{flex-basis:100px} .area-card b{font-size:11.5px} .area-card small{font-size:10px} }
+
+/* ---- race a friend ---- */
+.start-row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:8px}
+.start-row>.btn{width:100%;min-width:0;margin:0}
+#friendBtn{font-size:18px;padding:4px 10px}
+.friend{gap:8px}
+.friend h2{margin:0}
+.f-status{font-weight:700!important;font-size:17px!important;min-height:1.45em}
+.f-link{display:flex;gap:8px;width:100%;direction:ltr}
+.f-link input{flex:1;min-width:0;font:700 14px var(--display);color:var(--ink);background:var(--cream);border:2px solid var(--ink);border-radius:12px;padding:6px 10px}
+.f-link input:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.f-actions{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+.f-vs{display:flex;align-items:center;justify-content:center;gap:12px}
+.f-vs>div{display:flex;flex-direction:column;align-items:center;background:var(--cream);border:2px solid var(--sand-d);border-radius:16px;padding:4px 10px 6px}
+.f-vs canvas{width:96px;height:96px}
+.f-vs b{font-size:16px}
+.f-vs em,.race-row em{font-style:normal;font-weight:800;color:var(--shemagh);font-size:20px}
+.race-box{background:var(--cream);border:3px solid var(--ink);border-radius:16px;box-shadow:0 3px 0 var(--ink);padding:6px 12px;display:flex;flex-direction:column;gap:2px}
+.race-head{font-weight:800!important;font-size:20px!important;color:var(--shemagh);text-align:center}
+.race-row{display:flex;align-items:center;justify-content:center;gap:14px}
+.race-row>span{display:flex;flex-direction:column;align-items:center;min-width:0}
+.race-row b{font-size:26px;font-variant-numeric:tabular-nums;line-height:1.05}
+.race-row small{font-size:12px;opacity:.75}
+.race-row .win b{color:var(--shemagh)}
+@media (max-height:440px){ .f-vs canvas{width:64px;height:64px} .friend .hint{display:none} .race-row b{font-size:20px} .race-head{font-size:17px!important} #friendBtn{font-size:16px} }
+.over-actions>button[disabled],.f-actions>button[disabled]{background:#d9cfbd;color:#6b5a48;box-shadow:0 2px 0 var(--ink);cursor:default;transform:none}
+@media (max-height:440px){ .racing .score,.racing #overMsg,.racing .route-line{display:none} .racing .race-box{flex-direction:row;align-items:center;justify-content:space-between;gap:10px;padding:4px 12px} }
+.f-choose{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;text-align:start}
+.f-field{display:flex;flex-direction:column;gap:4px;min-width:0;font-weight:700;font-size:14px}
+.f-field input{font:800 18px var(--display);color:var(--ink);background:var(--cream);border:2px solid var(--ink);border-radius:12px;padding:6px 10px;min-width:0;width:100%}
+.f-field input:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+#fCode{letter-spacing:.12em;text-align:center}
+.f-join{display:flex;gap:6px}
+.f-join .btn{min-height:44px;font-size:18px;padding:2px 12px;flex:none}
+.f-code{font:800 40px var(--display)!important;letter-spacing:.14em;color:var(--ink);background:var(--cream);border:3px dashed var(--ink);border-radius:16px;padding:2px 18px;line-height:1.25!important;font-variant-numeric:tabular-nums}
+@media (max-width:520px){ .f-choose{grid-template-columns:1fr} }
+@media (max-height:440px){ .f-code{font-size:32px!important} .friend{gap:6px;padding:10px 18px 12px} .friend h2{font-size:24px} }

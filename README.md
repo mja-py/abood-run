@@ -96,6 +96,20 @@ The game paces itself to each player (dynamic difficulty, in `director()` in `js
 - **Mercy:** three hits within 30 seconds gives 10 seconds of relief.
 - **Grace:** at the start of every run, and after a second chance, Baba catches up at half speed for 2 minutes, then builds back up to full speed over 10 seconds.
 
+## Race a friend (online)
+
+Two players race on the same course, each on their own phone, from anywhere.
+
+- **Make a room:** tap *Race a friend* (تحدّى ربعك), type a name if you like, then *Make a room*. The game shows a 6-digit code and a link.
+- **Join:** the friend types the code under *Got a code?* and taps *Join*, or just opens the link.
+- **Race:** the host taps *Let's race!*; both get a 3-2-1 countdown. Both games use the same seed and start area, so the course is identical, and the difficulty director is fixed (no tuning to either player's history, no outfit perks, no boosters, no second chance). Whoever runs further before Baba catches them, or they fall, wins. The host starts the rematch.
+- **Ghost:** the friend shows as a see-through runner with their name. Positions are sent 20 times a second and the ghost plays 110 ms behind, gliding between them. When the friend is off screen a tag shows how far ahead or behind they are.
+- **Dropped connections:** a heartbeat spots a drop within 5 seconds. Both keep running, and the friend's last record stays. The joining player reconnects by itself; when the same player is back, both games swap where they are (still running, or finished and at what distance) and the result is worked out again. After a minute away, their last record counts.
+
+How it works: the two browsers talk directly over WebRTC with [PeerJS](https://peerjs.com) (bundled in `js/vendor/`). The free public PeerJS server only introduces them using the room code, and its TURN relay is used on networks that block direct connections, so it works across different networks. There is no game server and no account. Nothing touches the network until a player opens *Race a friend*; solo play stays fully offline. There is no chat: the only text a friend sees is the name (letters and numbers, 14 at most). A direct connection lets each player's device see the other's IP address, which is normal for peer-to-peer play but worth knowing before racing strangers.
+
+Code: `js/net.js` (connection, codes, heartbeat, reconnect) and the "race a friend online" section of `js/game.js`.
+
 ## Ads hook
 
 The game does not include any ad code. To show an ad after each run, define this before or after the game loads:
@@ -152,7 +166,9 @@ css/style.css           layout, RTL, phone breakpoints, self-hosted font faces
 js/game.js              the game: world, physics, landmarks, drawing, caching, loader
 js/i18n.js              Arabic and English text, language switch
 js/meta.js              save data, the route, dirhams, shop, upgrades, wardrobe, badges, missions, login gift
+js/net.js               race a friend: PeerJS connection, room codes, heartbeat, reconnect
 js/vendor/zzfx.js       ZzFX sound synth (MIT)
+js/vendor/peerjs.min.js PeerJS 1.5.4 for online races (MIT)
 assets/fonts/           Baloo Bhaijaan 2 (SIL OFL 1.1)
 assets/icons/           app icons, generated from the game's own drawing of Abood
 sw.js                   offline cache

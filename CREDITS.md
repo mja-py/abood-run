@@ -14,3 +14,9 @@ The files come from the `@fontsource/baloo-bhaijaan-2` package, version 5.3.0. T
 **ZzFX – Zuper Zmall Zound Zynth**, by Frank Force, MIT License. Source: https://github.com/KilledByAPixel/ZzFX
 The file is from the `zzfx` package, version 1.4.0. The licence is in `js/vendor/zzfx.LICENSE.txt`.
 The sound effects are generated at load time from ZzFX parameters. The music is a small Hijaz-scale melody with a maqsum darbuka beat, synthesised in `js/game.js`.
+
+## Online races
+
+**PeerJS**, by Michelle Bu, Eric Zhang and contributors, MIT License. Source: https://github.com/peers/peerjs
+The file is `dist/peerjs.min.js` from the `peerjs` package, version 1.5.4. The licence is in `js/vendor/peerjs.LICENSE.txt`.
+It is loaded only when a player opens "Race a friend", and connects through the free public PeerJS server (0.peerjs.com) and its TURN relay.
