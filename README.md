@@ -102,11 +102,12 @@ Two players race on the same course, each on their own phone, from anywhere.
 
 - **Grown-up check (once):** before the first race, a short screen asks a grown-up to read what is shared and to answer a multiplication question. The help sheet can ask again.
 - **Online or offline:** the lobby has an *Online / Offline* switch (أونلاين / بدون نت), remembered for next time.
-- **Create room (online):** tap *Race a friend* (تحدّى ربعك), pick a race nickname from the list, then *Create room*. The game shows a 6-digit code.
-- **Join room:** the friend types the code and taps *Join room*. There is no link; the code is the only way in.
+- **Create room (online):** tap *Race a friend* (تحدّى ربعك), type a race name if you like (tap the name tag), then *Create room*. The game shows a 6-digit code.
+- **Join room:** the friend taps *Join room* and types the code into six boxes (pasting works too). There is no link; the code is the only way in.
+- **Race names:** typed on a pop-up card, letters only in the game's language (Arabic letters in Arabic, English letters in English), 2 to 12, no numbers or symbols. Empty means the character's own name. The card asks for a nickname, not a full name, and only the friend you race sees it.
 - **Race:** the host taps *Let's race!*; both get a 3-2-1 countdown. Both games use the same seed and start area, so the course is identical. Whoever runs further before Baba catches them, or they fall, wins. The host starts the rematch.
 - **Classic rules, so races stay short and fair:** no pausing (the pause button, P/Esc and the automatic pause when the app is hidden are all off, because the friend keeps running); no 2-minute grace at the start; no mercy breaks after hits; the difficulty director is fixed; shop upgrades don't count (power-ups last their base time); no outfit perks, boosters or second chance. Baba also closes in a little faster every minute ("Baba speeds up!"), so even a strong player is caught within a few minutes. Focus still slows Baba, because it is earned during the race.
-- **Ghost:** the friend shows as a see-through runner with their nickname. Positions are sent 20 times a second and the ghost plays 110 ms behind, gliding between them. When the friend is off screen a tag shows how far ahead or behind they are.
+- **Ghost:** the friend shows as a see-through runner with their race name. Positions are sent 20 times a second and the ghost plays 110 ms behind, gliding between them. When the friend is off screen a tag shows how far ahead or behind they are.
 - **Dropped connections:** a heartbeat spots a drop within 5 seconds. Both keep running, and the friend's last record stays. The joining player reconnects by itself; when the same player is back, both games swap where they are (still running, or finished and at what distance) and the result is worked out again. After a minute away, their last record counts.
 
 **Offline (play nearby).** For two phones side by side on the same Wi-Fi or phone hotspot, with no internet. There are no servers at all: no PeerJS, no STUN, no relay (`js/near.js`, plain WebRTC with no ICE servers).
@@ -120,7 +121,7 @@ The game never asks for camera access: the phones' own camera apps read the code
 
 **How it connects.** The two browsers talk directly over WebRTC with [PeerJS](https://peerjs.com) (bundled in `js/vendor/`). The free public PeerJS server only introduces them using the room code. Cloudflare's public STUN server (`stun.cloudflare.com`) tells each phone its public address, and the PeerJS TURN relay is used on networks that block direct connections. There is no game server and no account.
 
-**Privacy.** Nothing touches the network until a player opens *Race a friend*; solo play stays fully offline. There is no chat and no typed text: the game sends a nickname id from a fixed list, the character and outfit, and race positions and results. A direct connection lets the friend's device, and the connection services, see this device's IP address, which can show roughly which city it is in; the grown-up check says so. For players who must not share an IP address at all, the next step would be a relay-only mode (all traffic through a TURN relay).
+**Privacy.** Nothing touches the network until a player opens *Race a friend*; solo play stays fully offline. There is no chat: the only typed text is the race name (letters only, 2 to 12, checked again on arrival); otherwise the game sends the character and outfit, and race positions and results. A direct connection lets the friend's device, and the connection services, see this device's IP address, which can show roughly which city it is in; the grown-up check says so. For players who must not share an IP address at all, the next step would be a relay-only mode (all traffic through a TURN relay).
 
 Code: `js/net.js` (connection, codes, heartbeat, reconnect) and the "race a friend online" section of `js/game.js`.
 

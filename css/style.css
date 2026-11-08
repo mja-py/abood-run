@@ -279,8 +279,7 @@ h2{font-size:36px}
 @keyframes fstripe{to{background-position:34px 0}}
 .f-load-hint{font-size:13px!important;opacity:.8;text-align:center}
 @media (prefers-reduced-motion:reduce){ .f-bar i{animation:none} }
-/* race nickname chips: the same sticker chips as the rest of the game, in a scrolling strip like the area picker */
-.f-nick{grid-column:1/-1}
+/* sticker chips (the online / offline switch) */
 .nick-strip{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding:2px 8px 6px;margin:0 -8px;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
   -webkit-mask-image:linear-gradient(to right,transparent 0,#000 12px,#000 calc(100% - 12px),transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 12px,#000 calc(100% - 12px),transparent 100%)}
 .nick-strip::-webkit-scrollbar{display:none}
@@ -297,3 +296,19 @@ h2{font-size:36px}
 .friend.qr-mode h2,.friend.qr-mode .kicker,.friend.qr-mode>.hint{display:none}
 @media (max-height:440px){ .f-qr canvas{width:190px;height:190px} .friend.qr-mode .f-status{font-size:14px!important} }
 @media (max-height:440px){ .friend .kicker{display:none} }
+/* race name tag and the pop-up cards for the name and the room code */
+.f-name-row{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:14px}
+.name-tag{display:inline-flex;align-items:center;gap:8px;font:800 18px var(--display);color:var(--ink);background:var(--cream);border:2px solid var(--ink);border-radius:999px;padding:4px 14px;min-height:40px;box-shadow:0 3px 0 var(--ink);cursor:pointer;max-width:100%}
+.name-tag b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.name-tag svg{width:18px;height:18px;flex:none;color:var(--teal)}
+.name-tag:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.name-tag:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.f-pop{max-width:400px;gap:12px}
+.f-pop-name{width:100%;font:800 26px var(--display);text-align:center;color:var(--ink);background:var(--cream);border:3px solid var(--ink);border-radius:16px;padding:8px 14px;box-shadow:inset 0 3px 0 rgba(43,26,18,.12)}
+.f-pop-name:focus-visible,.otp input:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.otp{display:flex;align-items:center;justify-content:center;gap:6px}
+.otp input{width:44px;height:56px;font:800 30px var(--display);text-align:center;color:var(--ink);background:var(--cream);border:3px solid var(--ink);border-radius:12px;padding:0;box-shadow:0 3px 0 var(--ink);caret-color:var(--shemagh)}
+.otp span{width:10px;height:3px;background:var(--ink);border-radius:2px;margin:0 2px}
+.f-pop-hint{font-size:13.5px!important;opacity:.8;text-align:center}
+.f-pop-hint.bad{color:var(--shemagh);opacity:1;font-weight:800!important}
+@media (max-height:440px){ .f-pop{gap:8px;padding:12px 18px} .otp input{width:40px;height:48px;font-size:26px} .f-pop-name{font-size:22px;padding:6px 12px} }

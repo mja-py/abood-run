@@ -508,22 +508,22 @@ let NX = N;
 const onNet = (ev, fn) => { N.on(ev, fn); NB.on(ev, fn); };
 let pendingNear = null, relayPending = false;
 const GHOST_DELAY = 110, LOST_GIVEUP = 60000;
-const mp = () => { const d = M.data(); if (!d.mp) d.mp = {}; if (d.mp.name != null) { delete d.mp.name; M.save(); } if (!d.mp.pid) { d.mp.pid = Array.from(crypto.getRandomValues(new Uint8Array(8)), b => b.toString(16).padStart(2, '0')).join(''); M.save(); } return d.mp; };
-// nicknames come from a fixed list (no typing), so a child never shares a real name; only the id is sent
-const NICKS = ['me', 'falcon', 'oryx', 'gazelle', 'camel', 'pearl', 'lightning', 'rocket', 'star', 'karak', 'luqaimat', 'sandstorm', 'wind'];
-const nickOk = n => (NICKS.includes(n) ? n : 'me');
-const nickName = (n, ch) => (n && n !== 'me' ? T('nk_' + n) : T('ch_' + (ch === 'mozah' ? 'mozah' : 'abood')));
-const myName = () => nickName(nickOk(mp().nick), M.data().char);
-const newOpp = () => ({ here: false, pid: '', nick: 'me', ch: 'abood', robe: '', head: '', round: 0, d: 0, s: 0, out: false, run: false, gone: false, lost: false, lostAt: 0, buf: [], off: null });
+const mp = () => { const d = M.data(); if (!d.mp) d.mp = {}; if (!d.mp.pid) { d.mp.pid = Array.from(crypto.getRandomValues(new Uint8Array(8)), b => b.toString(16).padStart(2, '0')).join(''); M.save(); } return d.mp; };
+// Race names are typed by the player: letters only, in the game's language (Arabic letters in Arabic, English
+// letters in English), 2 to 12, single spaces; no numbers or symbols. Only the friend you race sees it.
+const NAME_AR = /^[ء-غف-ي]+( [ء-غف-ي]+)*$/, NAME_EN = /^[A-Za-z]+( [A-Za-z]+)*$/;
+const nameOk = n => typeof n === 'string' && n.length <= 12 && n.replace(/ /g, '').length >= 2 && (NAME_AR.test(n) || NAME_EN.test(n));
+const nameFilter = v => (getLang() === 'ar' ? v.replace(/[^ء-غف-ي ]/g, '') : v.replace(/[^A-Za-z ]/g, '')).replace(/^ +/, '').replace(/ {2,}/g, ' ').slice(0, 12);
+const myName = () => (nameOk(mp().name) ? mp().name : kname());
+const newOpp = () => ({ here: false, pid: '', name: '', ch: 'abood', robe: '', head: '', round: 0, d: 0, s: 0, out: false, run: false, gone: false, lost: false, lostAt: 0, buf: [], off: null });
 const oppGirl = () => race.opp.ch === 'mozah';
-const oppName = () => nickName(race.opp.nick, race.opp.ch);
+const oppName = () => race.opp.name || T('ch_' + race.opp.ch);
 const oppLook = () => lookOf(race.opp.robe, race.opp.head, oppGirl());
 function openFriend(mode, c) {
   if (race) leaveRace(true);
   race = { role: mode === 'choose' ? null : mode === 'nearGuest' ? 'guest' : mode, near: mode === 'nearGuest', fs: mode === 'choose' ? 'choose' : 'connecting', err: '', code: '', seed: 0, area: 0, hold: 0, goT: 0, sendT: 0, me: null, final: false, opp: newOpp() };
   if (race.fs === 'connecting') setConnecting();
   $('menu').hidden = true; $('friend').hidden = false;
-  $('fCode').value = c ? N.showCode(c) : '';
   if (!mp().ok) { race.fs = 'gate'; race.after = { mode, c }; newGateQ(); renderFriend(); setTimeout(() => $('fGateA').focus(), 50); return; } // a grown-up agrees once, before the first race
   renderFriend(); startMode(mode, c);
 }
@@ -539,15 +539,48 @@ function gateOk() {
   const { mode, c } = race.after; if (mode === 'choose') race.fs = 'choose'; else setConnecting(); renderFriend();
   startMode(mode, c);
 }
-function fillNicks() { // sticker chips, the picked one in teal
-  const row = $('fNick'), cur = nickOk(mp().nick); row.innerHTML = '';
-  for (const n of NICKS) {
-    const b = el('button', 'nick', nickName(n, M.data().char)); b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', n === cur ? 'true' : 'false');
-    b.onclick = () => { unlockAudio(); saveName(n); fillNicks(); }; row.appendChild(b);
-  }
-  const on = row.querySelector('[aria-checked="true"]'); if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' });
+function fillNameTag() { $('fNameTxt').textContent = myName(); }
+// Pop-up cards over the lobby: one for the race name, one for the room code (six boxes).
+let popKind = null;
+const codeBoxes = () => [...$('fPopCode').querySelectorAll('input')];
+function openPop(kind) {
+  if (!canStart()) return;
+  const name = kind === 'name', ar = getLang() === 'ar'; popKind = kind; $('fPop').hidden = false;
+  $('fPopName').hidden = !name; $('fPopCode').hidden = name; $('fPopHint').classList.remove('bad');
+  $('fPopTitle').textContent = T(name ? 'mp_namePop' : 'mp_codePop');
+  $('fPopHint').textContent = T(name ? (ar ? 'mp_nameHintAr' : 'mp_nameHintEn') : 'mp_codeHint');
+  $('fPopOk').textContent = T(name ? 'mp_save' : 'mp_join');
+  if (name) { const inp = $('fPopName'); inp.value = nameFilter(mp().name || ''); inp.dir = ar ? 'rtl' : 'ltr'; inp.lang = ar ? 'ar' : 'en'; inp.placeholder = kname(); setTimeout(() => inp.focus(), 60); }
+  else { for (const b of codeBoxes()) b.value = ''; setTimeout(() => codeBoxes()[0].focus(), 60); }
 }
-function saveName(n) { if (n == null) return; n = nickOk(n); if (n !== mp().nick) { mp().nick = n; delete mp().name; M.save(); } }
+function closePop() { $('fPop').hidden = true; popKind = null; }
+function popBad(msg) { const h = $('fPopHint'); h.textContent = msg; h.classList.add('bad'); buzz(30); }
+function popOk() {
+  if (popKind === 'name') {
+    const n = nameFilter($('fPopName').value).trim();
+    if (n && !nameOk(n)) { popBad(T(getLang() === 'ar' ? 'mp_nameBadAr' : 'mp_nameBadEn')); return; }
+    mp().name = n; M.save(); closePop(); fillNameTag(); return; // an empty name means the character's own name
+  }
+  if (popKind === 'code') {
+    const c = codeBoxes().map(b => b.value).join('');
+    if (c.length !== 6) { popBad(T('mp_err_badcode')); return; }
+    closePop(); goJoin(c);
+  }
+}
+function fillCode(d, from) { const all = codeBoxes(); for (let k = 0; k < d.length && from + k < 6; k++) all[from + k].value = d[k]; all[Math.min(5, from + d.length)].focus(); if (all.every(x => x.value)) popOk(); }
+codeBoxes().forEach((b, i, all) => {
+  b.addEventListener('input', () => { const d = b.value.replace(/\D/g, ''); if (d.length > 1) { fillCode(d, i); return; } b.value = d; if (d && i < 5) all[i + 1].focus(); if (all.every(x => x.value)) popOk(); });
+  b.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && !b.value && i > 0) { e.preventDefault(); all[i - 1].value = ''; all[i - 1].focus(); }
+    else if (e.key === 'Enter') { e.preventDefault(); popOk(); } else if (e.key === 'Escape') closePop();
+  });
+  b.addEventListener('paste', e => { const d = ((e.clipboardData && e.clipboardData.getData('text')) || '').replace(/\D/g, ''); if (d) { e.preventDefault(); fillCode(d, i); } });
+});
+$('fPopName').addEventListener('input', e => { if (e.isComposing) return; const v = e.target.value, f = nameFilter(v); if (f !== v) e.target.value = f; });
+$('fPopName').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); popOk(); } else if (e.key === 'Escape') closePop(); });
+$('fPopOk').onclick = () => { unlockAudio(); popOk(); };
+$('fPopCancel').onclick = () => { unlockAudio(); closePop(); };
+$('fNameBtn').onclick = () => { unlockAudio(); openPop('name'); };
 // While connecting, the lobby shows a progress bar with each step, and the buttons are gone, so a slow
 // (or waking) server never tempts a second tap; goHost/goJoin also ignore taps that arrive mid-connect.
 function setConnecting() { race.fs = 'connecting'; race.stage = 'lib'; race.loadAt = race.stageAt = performance.now(); race.slow = false; }
@@ -591,9 +624,9 @@ function showRelay() {
   $('fStatus').textContent = T('mp_nearRelay');
   setTimeout(() => { try { window.close(); } catch (e) {} }, 1500); // works only where the browser allows it
 }
-function goJoin() {
-  if (!canStart()) return; NX = N; race.near = false; const c = N.cleanCode($('fCode').value);
-  if (c.length !== 6) { race.fs = 'err'; race.err = 'badcode'; renderFriend(); $('fCode').focus(); return; }
+function goJoin(code) {
+  if (!canStart()) return; NX = N; race.near = false; const c = N.cleanCode(code);
+  if (c.length !== 6) { race.fs = 'err'; race.err = 'badcode'; renderFriend(); return; }
   race.role = 'guest'; setConnecting(); renderFriend(); N.join(c, mp().pid);
 }
 function leaveRace(quiet) {
@@ -604,7 +637,7 @@ function leaveRace(quiet) {
 }
 function hello() {
   const d = M.data();
-  NX.send({ t: 'hi', v: N.PROTO, pid: mp().pid, nick: nickOk(mp().nick), ch: d.char, robe: d.robe, head: d.head,
+  NX.send({ t: 'hi', v: N.PROTO, pid: mp().pid, name: nameOk(mp().name) ? mp().name : '', ch: d.char, robe: d.robe, head: d.head,
     seed: race.seed, me: race.me, live: !!race.seed && !race.me && (st === 'play' || st === 'pause'), d: Math.floor(dist) });
 }
 N.on('hosting', ({ code }) => { if (!race) return; race.code = code; if (race.fs === 'connecting') race.fs = 'waiting'; renderFriend(); });
@@ -638,7 +671,7 @@ onNet('data', d => {
     if (d.v !== N.PROTO) { note(T('mp_version'), 4000); leaveRace(); return; }
     const pid = String(d.pid || '').slice(0, 40), back = !!o.pid && pid === o.pid;
     if (!back) { race.opp = o = newOpp(); o.pid = pid; o.round = num(d.seed) >>> 0; }
-    o.nick = nickOk(String(d.nick || '')); o.ch = d.ch === 'mozah' ? 'mozah' : 'abood'; o.robe = String(d.robe || '').slice(0, 24); o.head = String(d.head || '').slice(0, 24);
+    o.name = nameOk(d.name) ? d.name : ''; o.ch = d.ch === 'mozah' ? 'mozah' : 'abood'; o.robe = String(d.robe || '').slice(0, 24); o.head = String(d.head || '').slice(0, 24);
     o.here = true; o.gone = false;
     if (back) {
       const wasLost = o.lost; o.lost = false; o.buf = []; o.off = null;
@@ -766,8 +799,8 @@ function renderFriend() {
   const host = race.role === 'host', o = race.opp, fs = race.fs; let msg = '', go = null;
   const gate = fs === 'gate', choose = fs === 'choose' || fs === 'err', qr = fs === 'nearQR', showCode = !race.near && host && !!race.code && (fs === 'waiting' || o.lost || !o.here);
   $('fQR').hidden = !qr; $('friend').querySelector('.panel').classList.toggle('qr-mode', qr);
-  if (choose) { const near = modeNear(); $('fModeOn').setAttribute('aria-checked', near ? 'false' : 'true'); $('fModeOff').setAttribute('aria-checked', near ? 'true' : 'false'); $('fJoinField').hidden = near; $('fChoose').classList.toggle('near-mode', near); }
-  $('fLoad').hidden = fs !== 'connecting'; $('fGate').hidden = !gate; $('fChoose').hidden = !choose; if (choose) fillNicks(); $('fVs').hidden = true; $('fCodeBig').hidden = !showCode;
+  if (choose) { const near = modeNear(); $('fModeOn').setAttribute('aria-checked', near ? 'false' : 'true'); $('fModeOff').setAttribute('aria-checked', near ? 'true' : 'false'); $('fChoose').classList.toggle('near-mode', near); }
+  $('fLoad').hidden = fs !== 'connecting'; $('fGate').hidden = !gate; $('fChoose').hidden = !choose; if (choose) fillNameTag(); $('fJoin').hidden = !(choose && !modeNear()); $('fVs').hidden = true; $('fCodeBig').hidden = !showCode;
   if (showCode) $('fCodeBig').textContent = N.showCode(race.code);
   if (gate) { msg = T('mp_gateLead'); go = 'mp_gateOk'; const ab = ($('fGateQ').dataset.ab || '').split('x'); if (ab.length === 2) $('fGateQ').textContent = T('mp_gateQ', ab[0], ab[1]); }
   else if (choose) { msg = fs === 'err' ? T('mp_err_' + race.err) : T(modeNear() ? 'mp_chooseNear' : 'mp_choose'); go = modeNear() ? 'mp_near' : 'mp_host'; }
@@ -783,12 +816,9 @@ function renderFriend() {
 }
 $('friendBtn').onclick = () => { unlockAudio(); openFriend('choose'); };
 $('fLeave').onclick = () => { unlockAudio(); leaveRace(); };
-$('fJoin').onclick = () => { unlockAudio(); goJoin(); };
+$('fJoin').onclick = () => { unlockAudio(); openPop('code'); };
 $('fModeOn').onclick = () => { unlockAudio(); setMode('online'); };
 $('fModeOff').onclick = () => { unlockAudio(); setMode('near'); };
-$('fCode').addEventListener('input', () => { const c = N.cleanCode($('fCode').value); $('fCode').value = c.length > 3 ? c.slice(0, 3) + ' ' + c.slice(3) : c; });
-$('fGateA').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); gateOk(); } });
-$('fCode').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); goJoin(); } });
 $('fGo').onclick = () => {
   unlockAudio(); const a = $('fGo').dataset.act;
   if (a === 'mp_start') hostGo();

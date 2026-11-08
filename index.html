@@ -126,14 +126,23 @@
     </div>
     <div class="f-choose" id="fChoose" hidden>
       <div class="f-mode" role="radiogroup" data-i18n-aria="mp_modeAria" aria-label="طريقة اللعب"><button class="nick" id="fModeOn" type="button" role="radio" data-i18n="mp_online"></button><button class="nick" id="fModeOff" type="button" role="radio" data-i18n="mp_offline"></button></div>
-      <div class="f-field f-nick"><span id="fNickLbl" data-i18n="mp_name"></span><div class="nick-strip" id="fNick" role="radiogroup" aria-labelledby="fNickLbl"></div></div>
-      <div class="f-field" id="fJoinField"><span data-i18n="mp_haveCode"></span><div class="f-join"><input id="fCode" type="text" inputmode="numeric" maxlength="7" autocomplete="off" placeholder="123 456" dir="ltr" data-i18n-aria="mp_haveCode" aria-label="رمز السباق"><button class="btn alt" id="fJoin" type="button" data-i18n="mp_join"></button></div></div>
+      <div class="f-name-row"><span data-i18n="mp_name"></span><button class="name-tag" id="fNameBtn" type="button" data-i18n-aria="mp_editName" aria-label="غيّر الاسم"><b id="fNameTxt"></b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/></svg></button></div>
     </div>
     <p class="f-code" id="fCodeBig" dir="ltr" hidden></p>
     <div class="f-qr" id="fQR" hidden><canvas id="fQRCv" width="300" height="300" role="img" data-i18n-aria="mp_qrAria" aria-label="رمز QR"></canvas><p class="f-load-hint" id="fQRHint"></p></div>
     <div class="f-load" id="fLoad" hidden><div class="ld-bar f-bar" aria-hidden="true"><i id="fLoadFill"></i></div><p class="f-load-hint" id="fLoadHint"></p></div>
     <p class="hint" data-i18n="mp_rules"></p>
-    <div class="f-actions"><button class="btn" id="fGo" type="button" hidden></button><button class="ghost" id="fLeave" type="button" data-i18n="mp_leave"></button></div>
+    <div class="f-actions"><button class="btn" id="fGo" type="button" hidden></button><button class="btn alt" id="fJoin" type="button" data-i18n="mp_join" hidden></button><button class="ghost" id="fLeave" type="button" data-i18n="mp_leave"></button></div>
+  </div>
+</div>
+
+<div class="overlay" id="fPop" hidden>
+  <div class="panel pick f-pop" role="dialog" aria-modal="true" aria-labelledby="fPopTitle">
+    <p class="pick-title" id="fPopTitle"></p>
+    <input class="f-pop-name" id="fPopName" type="text" maxlength="12" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" data-i18n-aria="mp_name" aria-label="اسمك في السباق">
+    <div class="otp" id="fPopCode" dir="ltr" role="group" data-i18n-aria="mp_codePop" aria-label="رمز الغرفة"><input inputmode="numeric" autocomplete="one-time-code" aria-label="1"><input inputmode="numeric" aria-label="2"><input inputmode="numeric" aria-label="3"><span aria-hidden="true"></span><input inputmode="numeric" aria-label="4"><input inputmode="numeric" aria-label="5"><input inputmode="numeric" aria-label="6"></div>
+    <p class="f-pop-hint" id="fPopHint"></p>
+    <div class="f-actions"><button class="btn" id="fPopOk" type="button"></button><button class="ghost" id="fPopCancel" type="button" data-i18n="mp_cancel"></button></div>
   </div>
 </div>
 
