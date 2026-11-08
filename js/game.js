@@ -230,7 +230,7 @@ const FOCUS_STEP = 20, FOCUS_MAX = 3;
 let paceT = 500, assist = 1, spawnBoost = 1, sandalMul = 1, mercyT = 0, hitTimes = [], playT = 0;
 function director(dt) {
   mercyT = Math.max(0, mercyT - dt);
-  if (race) { assist = mercyT > 0 ? 0.6 : 1; spawnBoost = 1; sandalMul = mercyT > 0 ? 1.6 : 1; return; } // a race: the same course and pace for both players, so no tuning to one player's history
+  if (race) { assist = 1; spawnBoost = 1; sandalMul = 1; mercyT = 0; return; } // a race is classic: the same course and pace for both, no tuning, no mercy breaks
   const p = dist / paceT;
   let mult;
   if (p < 0.85) { mult = 0.75; spawnBoost = 1.4; sandalMul = 1.4; }            // enjoy
@@ -245,6 +245,7 @@ let focusT = 0, focusLv = 0;
 // then he builds back up to full speed over 10 seconds.
 const GRACE_HOLD = 120, GRACE_RAMP = 10, GRACE = GRACE_HOLD + GRACE_RAMP;
 const graceK = () => 0.5 + 0.5 * clamp((GRACE - graceT - GRACE_HOLD) / GRACE_RAMP, 0, 1);
+const pT = id => { if (!race) return M.powerTime(id); const u = M.UPGRADES.find(x => x.id === id); return u ? u.base : M.powerTime(id); }; // races use the base power-up times (no shop upgrades)
 const runSpeed = d => 310 + Math.min(260, d * 0.05); // grows steadily: 360 at 1 km, 410 at 2 km, 560 at 5 km, capped at 570 from 5.2 km
 function reset() {
   focusT = 0; focusLv = 0; paceT = M.paceTarget(); assist = 1; spawnBoost = 1; sandalMul = 1; mercyT = 0; hitTimes = [];
@@ -308,7 +309,7 @@ const isUI = e => e.target && e.target.closest && e.target.closest('button, a, .
 addEventListener('keydown', e => {
   if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return; // typing a name or a race code
   if (['Space', 'ArrowUp', 'KeyW'].includes(e.code)) { e.preventDefault(); if (!e.repeat && !(st !== 'play' && e.target.closest && e.target.closest('button'))) press(); }
-  if (e.code === 'KeyP' || e.code === 'Escape') { if (st === 'play') setPause(true); else if (st === 'pause') setPause(false); }
+  if ((e.code === 'KeyP' || e.code === 'Escape') && !race) { if (st === 'play') setPause(true); else if (st === 'pause') setPause(false); } // no pausing a race: the friend keeps running
 });
 addEventListener('keyup', e => { if (['Space', 'ArrowUp', 'KeyW'].includes(e.code)) release(); });
 addEventListener('pointerdown', e => { unlockAudio(); if (st === 'boot' || isUI(e)) return; press(); });
@@ -316,7 +317,7 @@ addEventListener('pointerup', release); addEventListener('pointercancel', releas
 addEventListener('touchend', unlockAudio, { passive: true });
 addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { if (st === 'play') setPause(true); }
+  if (document.hidden) { if (st === 'play' && !race) setPause(true); }
   else if (st === 'play') wakeOn();
 });
 
@@ -370,7 +371,7 @@ function start(rc) {
     if (id === 'vimto') boost = 6; if (id === 'magnet') kid.mag = 10; if (id === 'shield') kid.shield = 1;
     if (id === 'headstart') { kid.scoot = 6; lead = 0.85; }
   }
-  if (!rc) selBoost.clear(); renderMenu(); stT = 0; $('menu').hidden = true; $('over').hidden = true; $('toast').hidden = true; $('hud').hidden = false; $('routeHud').hidden = false; $('pauseBtn').hidden = false; $('pauseBtn').textContent = 'II';
+  if (!rc) selBoost.clear(); renderMenu(); stT = 0; $('menu').hidden = true; $('over').hidden = true; $('toast').hidden = true; $('hud').hidden = false; $('routeHud').hidden = false; $('pauseBtn').hidden = !!rc; $('pauseBtn').textContent = 'II';
   if (actx) nextNote = actx.currentTime + 0.05; step = 0; zoneNow = zoneAt(startM); showBanner(zoneNow); wakeOn(); hudCache.fill(null);
   document.activeElement && document.activeElement.blur && document.activeElement.blur();
 }
@@ -682,7 +683,7 @@ function beginRace() {
   if (swap && !swap.done) endSwap(); swap = null;
   Object.assign(race.opp, { round: race.seed, d: 0, s: 0, out: false, run: false, buf: [], off: null });
   race.me = null; race.final = false;
-  start(race); race.hold = 3; race.goT = 0; race.sendT = 0; play('tek', 1.2, 0.9);
+  start(race); graceT = 0; race.hold = 3; race.goT = 0; race.sendT = 0; race.runT = 0; race.faster = 0; play('tek', 1.2, 0.9); // classic: Baba chases at full pace from the start
 }
 function raceHold(dt) {
   const k = Math.ceil(race.hold); race.hold -= dt;
@@ -690,8 +691,13 @@ function raceHold(dt) {
   else if (Math.ceil(race.hold) !== k) play('tek', 1.2, 0.9);
   raceTick(dt); hud();
 }
+const RACE_SQUEEZE = 0.03; // extra closing speed per minute of racing: about +0.03/s at 1 min, +0.06 at 2, +0.09 at 3
 function raceTick(dt) {
   race.goT = Math.max(0, race.goT - dt);
+  if (race.hold <= 0 && st === 'play') {
+    race.runT += dt; const m = Math.floor(race.runT / 60);
+    if (m > race.faster) { race.faster = m; floatText(T('mp_faster'), worldX + 90, 110, '#ffb3b3'); play('power', 0.8, 0.7); buzz(30); }
+  }
   race.sendT -= dt; if (race.sendT > 0) return; race.sendT = 0.05;
   NX.send({ t: 'p', ts: Math.round(performance.now()), x: Math.round(worldX), y: Math.round(kid.y), d: Math.floor(dist), s: candies, a: kid.on ? 0 : 1, sc: kid.scoot > 0 ? 1 : 0 });
 }
@@ -831,6 +837,7 @@ function update(dt) {
   if (fl > focusLv) { focusLv = fl; maxFocus = Math.max(maxFocus, fl); floatText(T('f_focus', fl), worldX + 40, kid.y - 90, '#9ff0ff'); sfx.close(); }
   let dl = -(0.03 + Math.min(0.11, dist * 0.000016)) * (race ? 1 : M.robeOf().slow || 1) * (1 - 0.1 * focusLv) * assist; // Baba closes in steadily: 0.046/s at 1 km, 0.078/s at 3 km, 0.11/s at 5 km, 0.14/s from ~7 km. Gold kandura 0.6, kits 0.8
   if (graceT > 0) { graceT = Math.max(0, graceT - dt); dl *= graceK(); }
+  if (race) dl -= RACE_SQUEEZE * race.runT / 60; // a race: Baba closes in faster every minute, so nobody runs forever
   if (dad.freeze > 0) dl = 0.12; else if (dad.slow > 0) dl = 0.065;
   if (boost > 0) dl += 0.09; if (kid.scoot > 0) dl += 0.1;
   lead = clamp(lead + dl * dt, 0, 1);
@@ -957,11 +964,11 @@ function grab(it) {
     bump('candyBox'); return;
   }
   sfx.power(); puff(it.x, it.y, 16, '#fff6c2', 150); buzz(25); M.track('power', it.kind); runPow++;
-  if (it.kind === 'vimto') { boost = Math.max(boost, M.powerTime('vimto')); floatText(T('f_vimto'), it.x, it.y - 24); kidSay(T('s_yay'), 1.2); }
-  if (it.kind === 'marbles') { dad.slow = M.powerTime('marbles'); dad.windup = 0; shout(T('s_slip'), 2); for (let i = 0; i < 8; i++) parts.push({ x: it.x, y: GROUND - 4, vx: -rnd(250, 420), vy: -rnd(0, 120), life: 1.3, max: 1.3, col: pick(['#3fa7d6', '#f25f5c', '#7bd389', '#ffe066']), r: 3.5, marble: 1 }); floatText(T('f_slip'), it.x, it.y - 24); }
-  if (it.kind === 'phone') { dad.freeze = M.powerTime('phone'); dad.windup = 0; shout(T('s_phone'), dad.freeze); floatText(T('f_phone'), it.x, it.y - 24); }
-  if (it.kind === 'magnet') { kid.mag = Math.max(kid.mag, M.powerTime('magnet')); floatText(T('f_magnet'), it.x, it.y - 24); }
-  if (it.kind === 'scooter') { kid.scoot = Math.max(kid.scoot, M.powerTime('scooter')); floatText(T('f_scooter'), it.x, it.y - 24); kidSay(T('s_scoot'), 1.4); }
+  if (it.kind === 'vimto') { boost = Math.max(boost, pT('vimto')); floatText(T('f_vimto'), it.x, it.y - 24); kidSay(T('s_yay'), 1.2); }
+  if (it.kind === 'marbles') { dad.slow = pT('marbles'); dad.windup = 0; shout(T('s_slip'), 2); for (let i = 0; i < 8; i++) parts.push({ x: it.x, y: GROUND - 4, vx: -rnd(250, 420), vy: -rnd(0, 120), life: 1.3, max: 1.3, col: pick(['#3fa7d6', '#f25f5c', '#7bd389', '#ffe066']), r: 3.5, marble: 1 }); floatText(T('f_slip'), it.x, it.y - 24); }
+  if (it.kind === 'phone') { dad.freeze = pT('phone'); dad.windup = 0; shout(T('s_phone'), dad.freeze); floatText(T('f_phone'), it.x, it.y - 24); }
+  if (it.kind === 'magnet') { kid.mag = Math.max(kid.mag, pT('magnet')); floatText(T('f_magnet'), it.x, it.y - 24); }
+  if (it.kind === 'scooter') { kid.scoot = Math.max(kid.scoot, pT('scooter')); floatText(T('f_scooter'), it.x, it.y - 24); kidSay(T('s_scoot'), 1.4); }
 }
 function bump(id) { const el = $(id); el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
 function updParts(dt) {
@@ -1002,9 +1009,9 @@ function hud() {
     $('routeTxt').textContent = T('next', T('st_' + ns.id), kmTxt(Math.max(0, nextStop.abs - routeM)));
     $('routeFill').style.transform = 'scaleX(' + clamp((routeM - prevStopAt) / Math.max(1, nextStop.abs - prevStopAt), 0, 1).toFixed(3) + ')'; }
   const chips = []; const ch = (k, v, m) => chips.push([T(k) + ' ' + v.toFixed(1) + T('sec'), v / m]);
-  if (boost > 0) ch('c_vimto', boost, M.powerTime('vimto')); if (kid.scoot > 0) ch('c_scooter', kid.scoot, M.powerTime('scooter')); if (kid.mag > 0) ch('c_magnet', kid.mag, M.powerTime('magnet'));
+  if (boost > 0) ch('c_vimto', boost, pT('vimto')); if (kid.scoot > 0) ch('c_scooter', kid.scoot, pT('scooter')); if (kid.mag > 0) ch('c_magnet', kid.mag, pT('magnet'));
   chips.push([T('c_focus', focusLv), focusLv >= FOCUS_MAX ? 1 : (focusT % FOCUS_STEP) / FOCUS_STEP]);
-  if (dad.slow > 0) ch('c_slip', dad.slow, M.powerTime('marbles')); if (dad.freeze > 0) ch('c_phone', dad.freeze, M.powerTime('phone'));
+  if (dad.slow > 0) ch('c_slip', dad.slow, pT('marbles')); if (dad.freeze > 0) ch('c_phone', dad.freeze, pT('phone'));
   const h = chips.map(c => '<span class="chip">' + c[0] + '<i style="width:' + (c[1] * 100).toFixed(0) + '%"></i></span>').join('');
   if (h !== lastHud) { $('powers').innerHTML = h; lastHud = h; }
 }
@@ -3225,6 +3232,7 @@ window.__abood = {
   // the course ahead, to check that both players in a race get the same one
   get course() { return { obs: obs.map(o => o.kind + '@' + Math.round(o.x0)), gaps: gaps.map(g => Math.round(g.x0)), plats: plats.map(p => Math.round(p.x)), items: items.filter(i => i.kind !== 'candy').map(i => i.kind + '@' + Math.round(i.x)) }; },
   ghost: (m = 3, air = false) => { if (!race) return; const t0 = performance.now() - 400; Object.assign(race.opp, { here: true, run: true, out: false, gone: false, lost: false, round: race.seed, buf: [0, 1].map(i => ({ t: t0 + i * 300, x: worldX + m * 40 + i * 4, y: air ? GROUND - 80 : GROUND, a: air, sc: false })) }); }, // put the friend's ghost m metres ahead
+  raceTime: sec => { if (race) race.runT = sec; }, // testing: jump the race clock (Baba speeds up every minute)
   dropNet: () => N.testDrop(), // testing: cut the race connection as if the network failed
   get race() { return race && { role: race.role, fs: race.fs, qr: race.qr, near: !!race.near, seed: race.seed, area: race.area, hold: race.hold, me: race.me, opp: Object.assign({}, race.opp) }; },
   quality: q => { qLevel = clamp(q, 0, QDPR.length - 1); resize(); },
