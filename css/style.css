@@ -273,3 +273,9 @@ h2{font-size:36px}
 #fGateA{letter-spacing:.1em;text-align:center;max-width:140px}
 .help-privacy{background:var(--cream);border:2px solid var(--sand-d);border-radius:12px;padding:8px 12px}
 @media (max-height:440px){ .f-gate-text{font-size:12.5px!important;padding:6px 10px} }
+.f-load{display:flex;flex-direction:column;gap:8px;width:100%;align-items:center}
+.f-bar{max-width:360px}
+.f-bar i{animation:fstripe .8s linear infinite;transition:transform .25s ease}
+@keyframes fstripe{to{background-position:34px 0}}
+.f-load-hint{font-size:13px!important;opacity:.8;text-align:center}
+@media (prefers-reduced-motion:reduce){ .f-bar i{animation:none} }

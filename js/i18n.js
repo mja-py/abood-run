@@ -86,6 +86,8 @@ const STR = {
     again: 'اركض مرة ثانية', againHint: 'المس الشاشة أو اضغط مسافة للعب مرة ثانية',
     sec: ' ث', m: 'م', sweets: 'حلاوة', baba: 'بابا', abood: 'عبود',
     // race a friend online
+    mp_st_lib: 'نجهّز اللعب أونلاين…', mp_st_make: 'نسوّي غرفتك على خادم السباقات…', mp_st_retry: 'الرمز مستخدم، نختار رمز ثاني…', mp_st_server: 'نتصل بخادم السباقات…', mp_st_peer: 'ندوّر على الغرفة ونوصلك بربعك…', mp_st_peerG: 'ندوّر على الغرفة ونوصلج بربعج…',
+    mp_noTap: 'ما يحتاج تضغط مرة ثانية، احنا نكمل.', mp_noTapG: 'ما يحتاج تضغطين مرة ثانية، احنا نكمل.', mp_slow: 'الخادم يصحى من النوم، ممكن ياخذ لين دقيقة. خلك هني وما يحتاج تضغط.', mp_slowG: 'الخادم يصحى من النوم، ممكن ياخذ لين دقيقة. خلج هني وما يحتاج تضغطين.',
     mp_gateLead: 'قبل أول سباق: خل واحد من أهلك يقرا هذا.', mp_gateLeadG: 'قبل أول سباق: خلي وحدة من أهلج تقرا هذا.',
     mp_gateText: 'السباق أونلاين يوصل هالجهاز بجهاز الربع مباشرة. عشان يتصلون، جهاز الربع وخدمة الاتصال (PeerJS و Cloudflare) يشوفون عنوان الإنترنت (IP)، واللي ممكن يبين المدينة تقريباً. ما نرسل اسم ولا موقع ولا أي شي ثاني، واللعب بروحك يظل بدون نت. العبوا بس مع ناس تعرفونهم.',
     mp_gateQ: (a, b) => `للكبار: كم ${a} × ${b}؟`, mp_gateOk: 'موافق، كمّل', mp_gateWrong: 'الجواب غلط. جرّبوا مرة ثانية.',
@@ -216,6 +218,8 @@ const STR = {
     again: 'Run again', againHint: 'Tap or press Space to run again',
     sec: 's', m: 'm', sweets: 'sweets', baba: 'Baba', abood: 'Abood',
     // race a friend online
+    mp_st_lib: 'Getting online play ready…', mp_st_make: 'Creating your room on the race server…', mp_st_retry: 'That code is taken, picking another…', mp_st_server: 'Connecting to the race server…', mp_st_peer: 'Finding the room and connecting you…',
+    mp_noTap: "No need to tap again, we're on it.", mp_slow: 'The server is waking up; this can take up to a minute. Stay here, no need to tap again.',
     mp_gateLead: 'Before your first race: ask a grown-up to read this.',
     mp_gateText: "Online races connect this device directly to your friend's. To connect, the friend's device and the connection services (PeerJS and Cloudflare) see this device's internet (IP) address, which can show roughly which city you are in. We never send a name, a location or anything else, and playing on your own stays offline. Only race people you know.",
     mp_gateQ: (a, b) => `For grown-ups: what is ${a} × ${b}?`, mp_gateOk: 'Agree and continue', mp_gateWrong: "That's not right. Try again.",

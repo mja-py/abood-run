@@ -511,6 +511,7 @@ const oppLook = () => lookOf(race.opp.robe, race.opp.head, oppGirl());
 function openFriend(mode, c) {
   if (race) leaveRace(true);
   race = { role: mode === 'choose' ? null : mode, fs: mode === 'choose' ? 'choose' : 'connecting', err: '', code: '', seed: 0, area: 0, hold: 0, goT: 0, sendT: 0, me: null, final: false, opp: newOpp() };
+  if (race.fs === 'connecting') setConnecting();
   $('menu').hidden = true; $('friend').hidden = false;
   $('fCode').value = c ? N.showCode(c) : '';
   if (!mp().ok) { race.fs = 'gate'; race.after = { mode, c }; newGateQ(); renderFriend(); setTimeout(() => $('fGateA').focus(), 50); return; } // a grown-up agrees once, before the first race
@@ -522,7 +523,7 @@ function gateOk() {
   if (!race || race.fs !== 'gate') return;
   if (parseInt($('fGateA').value.replace(/\D/g, ''), 10) !== race.gate) { note(T('mp_gateWrong')); newGateQ(); $('fGateA').focus(); return; }
   mp().ok = 1; M.save();
-  const { mode, c } = race.after; race.fs = mode === 'choose' ? 'choose' : 'connecting'; renderFriend();
+  const { mode, c } = race.after; if (mode === 'choose') race.fs = 'choose'; else setConnecting(); renderFriend();
   if (mode === 'guest') N.join(c, mp().pid);
 }
 function fillNicks() {
@@ -530,11 +531,25 @@ function fillNicks() {
   for (const n of NICKS) { const o = document.createElement('option'); o.value = n; o.textContent = nickName(n, M.data().char); o.selected = n === cur; sel.appendChild(o); }
 }
 function saveName() { const n = nickOk($('fNick').value); if (n !== mp().nick) { mp().nick = n; delete mp().name; M.save(); } }
-function goHost() { if (!race) return; saveName(); race.role = 'host'; race.fs = 'connecting'; renderFriend(); N.host(mp().pid); }
+// While connecting, the lobby shows a progress bar with each step, and the buttons are gone, so a slow
+// (or waking) server never tempts a second tap; goHost/goJoin also ignore taps that arrive mid-connect.
+function setConnecting() { race.fs = 'connecting'; race.stage = 'lib'; race.loadAt = race.stageAt = performance.now(); race.slow = false; }
+const canStart = () => race && (race.fs === 'choose' || race.fs === 'err');
+const STAGE = { host: { lib: [0.05, 0.25, 'mp_st_lib'], server: [0.25, 0.85, 'mp_st_make'], retry: [0.5, 0.85, 'mp_st_retry'] },
+  guest: { lib: [0.05, 0.25, 'mp_st_lib'], server: [0.25, 0.6, 'mp_st_server'], peer: [0.6, 0.95, 'mp_st_peer'] } };
+const stageOf = () => (STAGE[race.role] || STAGE.host)[race.stage] || STAGE.host.lib;
+function friendLoad() { // runs every frame while connecting: the bar creeps forward within the current step
+  const [a, b] = stageOf(), now = performance.now(), p = a + (b - a) * (1 - Math.exp(-(now - race.stageAt) / 6000));
+  $('fLoadFill').style.transform = 'scaleX(' + p.toFixed(3) + ')';
+  const slow = now - race.loadAt > 6000;
+  if (slow !== race.slow) { race.slow = slow; $('fLoadHint').textContent = T(slow ? 'mp_slow' : 'mp_noTap'); }
+}
+N.on('stage', s => { if (!race || race.fs !== 'connecting') return; race.stage = s; race.stageAt = performance.now(); renderFriend(); });
+function goHost() { if (!canStart()) return; saveName(); race.role = 'host'; setConnecting(); renderFriend(); N.host(mp().pid); }
 function goJoin() {
-  if (!race) return; saveName(); const c = N.cleanCode($('fCode').value);
+  if (!canStart()) return; saveName(); const c = N.cleanCode($('fCode').value);
   if (c.length !== 6) { race.fs = 'err'; race.err = 'badcode'; renderFriend(); $('fCode').focus(); return; }
-  race.role = 'guest'; race.fs = 'connecting'; renderFriend(); N.join(c, mp().pid);
+  race.role = 'guest'; setConnecting(); renderFriend(); N.join(c, mp().pid);
 }
 function leaveRace(quiet) {
   N.leave(); race = null; crand = Math.random;
@@ -700,11 +715,11 @@ function renderFriend() {
   if (!race || $('friend').hidden) return;
   const host = race.role === 'host', o = race.opp, fs = race.fs; let msg = '', go = null;
   const gate = fs === 'gate', choose = fs === 'choose' || fs === 'err', showCode = host && !!race.code && (fs === 'waiting' || o.lost || !o.here);
-  $('fGate').hidden = !gate; $('fChoose').hidden = !choose; if (choose) fillNicks(); $('fVs').hidden = true; $('fCodeBig').hidden = !showCode;
+  $('fLoad').hidden = fs !== 'connecting'; $('fGate').hidden = !gate; $('fChoose').hidden = !choose; if (choose) fillNicks(); $('fVs').hidden = true; $('fCodeBig').hidden = !showCode;
   if (showCode) $('fCodeBig').textContent = N.showCode(race.code);
   if (gate) { msg = T('mp_gateLead'); go = 'mp_gateOk'; const ab = ($('fGateQ').dataset.ab || '').split('x'); if (ab.length === 2) $('fGateQ').textContent = T('mp_gateQ', ab[0], ab[1]); }
   else if (choose) { msg = fs === 'err' ? T('mp_err_' + race.err) : T('mp_choose'); go = 'mp_host'; }
-  else if (fs === 'connecting') msg = T(host ? 'mp_making' : 'mp_joining');
+  else if (fs === 'connecting') { msg = T(stageOf()[2]); $('fLoadHint').textContent = T(race.slow ? 'mp_slow' : 'mp_noTap'); }
   else if (o.lost) msg = host ? T('mp_lostTag', oppName()) : T('mp_reconnecting');
   else if (fs === 'waiting' || !o.here) msg = host ? T('mp_send') : T('mp_hello');
   else {
@@ -3072,6 +3087,7 @@ function loop(now) {
   perf(raw); update(clamp(raw, 0, 0.033)); render(); stepSwap(clamp(raw, 0, 0.05));
   if (!$('menu').hidden) drawAvatar($('avMenu'), kidBase(), t * 8, kid.sayT > 0 ? 'tongue' : 'grin', false);
   else if (!$('over').hidden) drawAvatar($('avOver'), kidBase(), t * 3, 'o', true);
+  if (!$('friend').hidden && race && race.fs === 'connecting') friendLoad();
   if (!$('friend').hidden && race && race.opp.here) { drawAvatar($('avMe'), kidBase(), t * 8, 'grin', false); drawAvatar($('avOpp'), oppLook(), t * 8 + 1, 'grin', false); }
 }
 

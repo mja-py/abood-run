@@ -9,7 +9,7 @@
 export const PROTO = 3;
 const PFX = 'abood-run-v2-';
 const LIB = new URL('./vendor/peerjs.min.js', import.meta.url).href;
-const BEAT = 1000, SILENT = 5000, RETRY = 2500;
+const BEAT = 1000, SILENT = 5000, RETRY = 2500, WAIT = 75000; // WAIT: give a slow (waking) server up to 75 s
 // How the two phones find each other: Cloudflare's public STUN server tells each phone its own public address
 // (instead of PeerJS's default, Google). The PeerJS TURN relay stays for networks that block direct connections.
 const ICE = [
@@ -73,13 +73,18 @@ function keepBroker(p) { p.on('disconnected', () => { if (peer === p && !p.destr
 // server, and the server lets only one live peer hold an id, so two open rooms can never share a code: if the code is
 // taken ('unavailable-id'), we pick a new one and try again. The code is freed when the host leaves.
 export async function host(pid) {
-  leave(); role = 'host'; myPid = pid;
+  leave(); role = 'host'; myPid = pid; const me = role;
+  emit('stage', 'lib');
   try { await loadLib(); } catch (e) { fail('offline'); return; }
+  if (role !== me) return; // left while loading
+  emit('stage', 'server');
+  timer = setTimeout(() => { if (role === 'host' && !(peer && peer.open)) fail('timeout'); }, WAIT);
   const tryOpen = n => {
+    if (n) emit('stage', 'retry'); // that code was taken: try another
     code = newCode();
     const p = peer = new window.Peer(PFX + code, OPTS);
     keepBroker(p);
-    p.on('open', () => emit('hosting', { code }));
+    p.on('open', () => { clearTimeout(timer); emit('hosting', { code }); });
     p.on('connection', c => wire(c, c.metadata && String(c.metadata.pid || '')));
     p.on('error', e => {
       if (peer !== p) return;
@@ -96,16 +101,19 @@ export async function host(pid) {
 export async function join(c, pid) {
   leave(); role = 'guest'; code = cleanCode(c); myPid = pid;
   if (code.length !== 6) { fail('badcode'); return; }
+  emit('stage', 'lib');
   try { await loadLib(); } catch (e) { fail('offline'); return; }
+  if (role !== 'guest') return; // left while loading
+  emit('stage', 'server');
   const p = peer = new window.Peer(OPTS);
   keepBroker(p);
-  p.on('open', () => connect());
+  p.on('open', () => { if (!isOpen()) emit('stage', 'peer'); connect(); });
   p.on('error', e => {
     if (peer !== p) return;
     if (retryT || (conn && conn.open)) { if (e.type === 'peer-unavailable' && !conn) scheduleRetry(); return; } // already reconnecting
     fail(e.type === 'peer-unavailable' ? 'noroom' : offlineErr(e.type) ? 'offline' : 'error');
   });
-  timer = setTimeout(() => { if (!isOpen() && role === 'guest' && !retryT) fail('timeout'); }, 20000);
+  timer = setTimeout(() => { if (!isOpen() && role === 'guest' && !retryT) fail('timeout'); }, WAIT);
 }
 let pending = null;
 function connect() {
