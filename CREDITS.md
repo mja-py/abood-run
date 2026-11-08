@@ -19,4 +19,4 @@ The sound effects are generated at load time from ZzFX parameters. The music is 
 
 **PeerJS**, by Michelle Bu, Eric Zhang and contributors, MIT License. Source: https://github.com/peers/peerjs
 The file is `dist/peerjs.min.js` from the `peerjs` package, version 1.5.4. The licence is in `js/vendor/peerjs.LICENSE.txt`.
-It is loaded only when a player opens "Race a friend", and connects through the free public PeerJS server (0.peerjs.com) and its TURN relay, with Cloudflare's public STUN server (stun.cloudflare.com).
+It is loaded only when a player opens "Race a friend", and connects through the free public PeerJS server (0.peerjs.com) and its TURN relay, with Google's public STUN server (stun.l.google.com).
