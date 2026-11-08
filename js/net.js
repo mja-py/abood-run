@@ -10,10 +10,10 @@ export const PROTO = 4;
 const PFX = 'abood-run-v2-';
 const LIB = new URL('./vendor/peerjs.min.js', import.meta.url).href;
 const BEAT = 1000, SILENT = 5000, RETRY = 2500, WAIT = 75000; // WAIT: give a slow (waking) server up to 75 s
-// How the two phones find each other: Cloudflare's public STUN server tells each phone its own public address
-// (instead of PeerJS's default, Google). The PeerJS TURN relay stays for networks that block direct connections.
+// How the two phones find each other: Google's free public STUN server tells each phone its own public address, and
+// the free PeerJS TURN relay is used on networks that block direct connections. These are PeerJS's own defaults.
 const ICE = [
-  { urls: 'stun:stun.cloudflare.com:3478' },
+  { urls: 'stun:stun.l.google.com:19302' },
   { urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username: 'peerjs', credential: 'peerjsp' },
 ];
 const OPTS = { debug: 0, config: { iceServers: ICE } };
