@@ -101,11 +101,19 @@ The game paces itself to each player (dynamic difficulty, in `director()` in `js
 Two players race on the same course, each on their own phone, from anywhere.
 
 - **Grown-up check (once):** before the first race, a short screen asks a grown-up to read what is shared and to answer a multiplication question. The help sheet can ask again.
-- **Create room:** tap *Race a friend* (تحدّى ربعك), pick a race nickname from the list, then *Create room*. The game shows a 6-digit code.
+- **Online or offline:** the lobby has an *Online / Offline* switch (أونلاين / بدون نت), remembered for next time.
+- **Create room (online):** tap *Race a friend* (تحدّى ربعك), pick a race nickname from the list, then *Create room*. The game shows a 6-digit code.
 - **Join room:** the friend types the code and taps *Join room*. There is no link; the code is the only way in.
 - **Race:** the host taps *Let's race!*; both get a 3-2-1 countdown. Both games use the same seed and start area, so the course is identical, and the difficulty director is fixed (no tuning to either player's history, no outfit perks, no boosters, no second chance). Whoever runs further before Baba catches them, or they fall, wins. The host starts the rematch.
 - **Ghost:** the friend shows as a see-through runner with their nickname. Positions are sent 20 times a second and the ghost plays 110 ms behind, gliding between them. When the friend is off screen a tag shows how far ahead or behind they are.
 - **Dropped connections:** a heartbeat spots a drop within 5 seconds. Both keep running, and the friend's last record stays. The joining player reconnects by itself; when the same player is back, both games swap where they are (still running, or finished and at what distance) and the result is worked out again. After a minute away, their last record counts.
+
+**Offline (play nearby).** For two phones side by side on the same Wi-Fi or phone hotspot, with no internet. There are no servers at all: no PeerJS, no STUN, no relay (`js/near.js`, plain WebRTC with no ICE servers).
+1. The host picks *Offline* and taps *Make the pairing code*. The game shows a QR code: a link to the game carrying the host's connection details in the address after `#n1=`.
+2. The friend points their phone's **normal camera app** at it. That opens the game (from the offline cache), which shows a reply QR code (`#n2=`).
+3. The host scans the reply with their camera app. It opens the game in a new tab, which hands the reply to the host's race tab (BroadcastChannel, with a localStorage fallback) and closes itself where the browser allows. The phones link and the race is the same as online.
+
+The game never asks for camera access: the phones' own camera apps read the codes. A 6-digit code can't work offline because without a server the phones must swap the full details themselves (ICE password, the DTLS fingerprint the browser requires, local addresses): about 122 characters each way, packed into a 161-character link. Notes: both phones must have opened the game once while online (so it is in the offline cache); on iPhone, play nearby from Safari rather than the home-screen icon, because the camera opens links in Safari, which doesn't share storage with the installed app; some public or school Wi-Fi blocks phones from reaching each other, where a phone hotspot works. After a drop, the phones have to pair again.
 
 **No duplicate rooms.** The room code is the host's id on the PeerJS server (prefixed `abood-run-v2-`), and the server lets only one live peer hold an id. If a new room's code is taken, the server refuses it and the game picks another code (up to 5 tries) before showing it. The code is freed when the host leaves.
 
@@ -172,8 +180,10 @@ js/game.js              the game: world, physics, landmarks, drawing, caching, l
 js/i18n.js              Arabic and English text, language switch
 js/meta.js              save data, the route, dirhams, shop, upgrades, wardrobe, badges, missions, login gift
 js/net.js               race a friend: PeerJS connection, room codes, heartbeat, reconnect, STUN/TURN servers
+js/near.js              play nearby offline: WebRTC with no servers, QR pairing links, hand-off between tabs
 js/vendor/zzfx.js       ZzFX sound synth (MIT)
 js/vendor/peerjs.min.js PeerJS 1.5.4 for online races (MIT)
+js/vendor/qrcode.js     QR Code Generator 1.4.4 for offline pairing (MIT)
 assets/fonts/           Baloo Bhaijaan 2 (SIL OFL 1.1)
 assets/icons/           app icons, generated from the game's own drawing of Abood
 sw.js                   offline cache

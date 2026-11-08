@@ -260,8 +260,8 @@ h2{font-size:36px}
 @media (max-height:440px){ .racing .score,.racing #overMsg,.racing .route-line{display:none} .racing .race-box{flex-direction:row;align-items:center;justify-content:space-between;gap:10px;padding:4px 12px} }
 .f-choose{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;text-align:start}
 .f-field{display:flex;flex-direction:column;gap:4px;min-width:0;font-weight:700;font-size:14px}
-.f-field input,.f-field select{font:800 18px var(--display);color:var(--ink);background:var(--cream);border:2px solid var(--ink);border-radius:12px;padding:6px 10px;min-width:0;width:100%}
-.f-field input:focus-visible,.f-field select:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.f-field input{font:800 18px var(--display);color:var(--ink);background:var(--cream);border:2px solid var(--ink);border-radius:12px;padding:6px 10px;min-width:0;width:100%}
+.f-field input:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 #fCode{letter-spacing:.12em;text-align:center}
 .f-join{display:flex;gap:6px}
 .f-join .btn{min-height:44px;font-size:18px;padding:2px 12px;flex:none}
@@ -279,3 +279,21 @@ h2{font-size:36px}
 @keyframes fstripe{to{background-position:34px 0}}
 .f-load-hint{font-size:13px!important;opacity:.8;text-align:center}
 @media (prefers-reduced-motion:reduce){ .f-bar i{animation:none} }
+/* race nickname chips: the same sticker chips as the rest of the game, in a scrolling strip like the area picker */
+.f-nick{grid-column:1/-1}
+.nick-strip{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding:2px 8px 6px;margin:0 -8px;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 12px,#000 calc(100% - 12px),transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 12px,#000 calc(100% - 12px),transparent 100%)}
+.nick-strip::-webkit-scrollbar{display:none}
+.nick{flex:none;font:700 15px var(--display);color:var(--ink);background:var(--cream);border:2px solid var(--ink);border-radius:999px;padding:4px 14px;min-height:38px;cursor:pointer;box-shadow:0 3px 0 var(--ink);white-space:nowrap}
+.nick:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.nick[aria-checked="true"]{background:var(--teal);color:var(--cream);font-weight:800}
+.nick:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+/* play nearby: a QR code for the other phone's camera app */
+.f-mode{grid-column:1/-1;display:flex;justify-content:center;gap:8px}
+.f-mode .nick{min-width:120px}
+.f-choose.near-mode{grid-template-columns:1fr}
+.f-qr{display:flex;flex-direction:column;align-items:center;gap:6px}
+.f-qr canvas{width:220px;height:220px;image-rendering:pixelated;background:#fff;border:3px solid var(--ink);border-radius:12px;box-shadow:0 4px 0 var(--ink)}
+.friend.qr-mode h2,.friend.qr-mode .kicker,.friend.qr-mode>.hint{display:none}
+@media (max-height:440px){ .f-qr canvas{width:190px;height:190px} .friend.qr-mode .f-status{font-size:14px!important} }
+@media (max-height:440px){ .friend .kicker{display:none} }

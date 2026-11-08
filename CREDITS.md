@@ -20,3 +20,7 @@ The sound effects are generated at load time from ZzFX parameters. The music is 
 **PeerJS**, by Michelle Bu, Eric Zhang and contributors, MIT License. Source: https://github.com/peers/peerjs
 The file is `dist/peerjs.min.js` from the `peerjs` package, version 1.5.4. The licence is in `js/vendor/peerjs.LICENSE.txt`.
 It is loaded only when a player opens "Race a friend", and connects through the free public PeerJS server (0.peerjs.com) and its TURN relay, with Cloudflare's public STUN server (stun.cloudflare.com).
+
+**QR Code Generator for JavaScript**, by Kazuhiko Arase, MIT License. Source: https://github.com/kazuhikoarase/qrcode-generator
+The file is `qrcode.js` from the `qrcode-generator` package, version 1.4.4. The licence is in `js/vendor/qrcode.LICENSE.txt`.
+It draws the pairing codes for offline play and loads only when a player makes one. "QR Code" is a registered trademark of DENSO WAVE INCORPORATED.

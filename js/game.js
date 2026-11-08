@@ -4,6 +4,7 @@
 import { T, getLang, applyLang, setLang, onLang, hasStoredLang, FLAG, setGirl } from './i18n.js?v=__BUILD__';
 import * as M from './meta.js?v=__BUILD__';
 import * as N from './net.js?v=__BUILD__';
+import * as NB from './near.js?v=__BUILD__';
 
 const BUILD = '__BUILD__';
 
@@ -330,7 +331,10 @@ document.addEventListener('click', e => {
   if (pk) { setLang(pk.dataset.pick); $('langPick').hidden = true; showMenu(); }
 });
 $('flagAr').innerHTML = FLAG.ar; $('flagEn').innerHTML = FLAG.en;
-function showMenu() { $('menu').hidden = false; renderMenu(); maybeToast(); maybeLogin(); const rf = M.takeRefund(); if (rf) setTimeout(() => note(T('refund', rf)), 600); }
+function showMenu() {
+  if (relayPending) { relayPending = false; showRelay(); return; }
+  if (pendingNear) { const c = pendingNear; pendingNear = null; openFriend('nearGuest', c); return; }
+  $('menu').hidden = false; renderMenu(); maybeToast(); maybeLogin(); const rf = M.takeRefund(); if (rf) setTimeout(() => note(T('refund', rf)), 600); }
 function setMuteBtn() { $('mute').textContent = muted ? '✕' : '♪'; $('mute').setAttribute('aria-pressed', muted ? 'true' : 'false'); }
 $('mute').onclick = () => { unlockAudio(); muted = !muted; if (master) master.gain.value = muted ? 0 : 1; try { localStorage.setItem('abood-muted', muted ? '1' : '0'); } catch (e) {} setMuteBtn(); $('mute').blur(); };
 $('pauseBtn').onclick = () => { if (st === 'play') setPause(true); else if (st === 'pause') setPause(false); $('pauseBtn').blur(); };
@@ -462,7 +466,7 @@ function overSpot() {
 function gameOver(why) {
   if (st !== 'play') return; st = 'over'; stT = 0; sfx.lose(); buzz([60, 40, 120]); wakeOff();
   const res = settleRun(), m = Math.floor(dist);
-  if (race) { race.me = { d: m, s: candies, why }; race.final = false; N.send({ t: 'out', d: m, s: candies, why }); }
+  if (race) { race.me = { d: m, s: candies, why }; race.final = false; NX.send({ t: 'out', d: m, s: candies, why }); }
   dad.say = T(why === 'fell' ? 's_fell' : 's_got'); dad.sayT = 99; kid.say = T('s_sorry'); kid.sayT = 99;
   lastOver = { why, m, nb: res && res.newBest }; swap = null; fillOver(); showBest(); overX = overSpot();
   $('hud').hidden = true; $('routeHud').hidden = true; $('pauseBtn').hidden = true; $('powers').textContent = ''; lastHud = '';
@@ -497,6 +501,11 @@ $('reviveBtn').onclick = () => { unlockAudio(); revive(); };
 // When the same player comes back (same player id), both sides swap where they are and the result is worked out
 // again. After a minute without them, their last record counts.
 const num = v => (Number.isFinite(+v) ? +v : 0);
+// Online (PeerJS, 6-digit code) or offline (near.js: same Wi-Fi or hotspot, paired with QR codes, no servers).
+// Both share one interface, so everything after pairing (hello, race, ghost, results) is the same code.
+let NX = N;
+const onNet = (ev, fn) => { N.on(ev, fn); NB.on(ev, fn); };
+let pendingNear = null, relayPending = false;
 const GHOST_DELAY = 110, LOST_GIVEUP = 60000;
 const mp = () => { const d = M.data(); if (!d.mp) d.mp = {}; if (d.mp.name != null) { delete d.mp.name; M.save(); } if (!d.mp.pid) { d.mp.pid = Array.from(crypto.getRandomValues(new Uint8Array(8)), b => b.toString(16).padStart(2, '0')).join(''); M.save(); } return d.mp; };
 // nicknames come from a fixed list (no typing), so a child never shares a real name; only the id is sent
@@ -510,13 +519,16 @@ const oppName = () => nickName(race.opp.nick, race.opp.ch);
 const oppLook = () => lookOf(race.opp.robe, race.opp.head, oppGirl());
 function openFriend(mode, c) {
   if (race) leaveRace(true);
-  race = { role: mode === 'choose' ? null : mode, fs: mode === 'choose' ? 'choose' : 'connecting', err: '', code: '', seed: 0, area: 0, hold: 0, goT: 0, sendT: 0, me: null, final: false, opp: newOpp() };
+  race = { role: mode === 'choose' ? null : mode === 'nearGuest' ? 'guest' : mode, near: mode === 'nearGuest', fs: mode === 'choose' ? 'choose' : 'connecting', err: '', code: '', seed: 0, area: 0, hold: 0, goT: 0, sendT: 0, me: null, final: false, opp: newOpp() };
   if (race.fs === 'connecting') setConnecting();
   $('menu').hidden = true; $('friend').hidden = false;
   $('fCode').value = c ? N.showCode(c) : '';
   if (!mp().ok) { race.fs = 'gate'; race.after = { mode, c }; newGateQ(); renderFriend(); setTimeout(() => $('fGateA').focus(), 50); return; } // a grown-up agrees once, before the first race
-  renderFriend();
+  renderFriend(); startMode(mode, c);
+}
+function startMode(mode, c) {
   if (mode === 'guest') N.join(c, mp().pid);
+  else if (mode === 'nearGuest') { NX = NB; race.near = true; race.stage = 'nearJoin'; renderFriend(); NB.answer(c); } // opened from the host's QR code
 }
 function newGateQ() { const a = 12 + Math.floor(Math.random() * 8), b = 3 + Math.floor(Math.random() * 7); race.gate = a * b; $('fGateQ').textContent = T('mp_gateQ', a, b); $('fGateQ').dataset.ab = a + 'x' + b; $('fGateA').value = ''; }
 function gateOk() {
@@ -524,19 +536,23 @@ function gateOk() {
   if (parseInt($('fGateA').value.replace(/\D/g, ''), 10) !== race.gate) { note(T('mp_gateWrong')); newGateQ(); $('fGateA').focus(); return; }
   mp().ok = 1; M.save();
   const { mode, c } = race.after; if (mode === 'choose') race.fs = 'choose'; else setConnecting(); renderFriend();
-  if (mode === 'guest') N.join(c, mp().pid);
+  startMode(mode, c);
 }
-function fillNicks() {
-  const sel = $('fNick'), cur = nickOk(mp().nick); sel.innerHTML = '';
-  for (const n of NICKS) { const o = document.createElement('option'); o.value = n; o.textContent = nickName(n, M.data().char); o.selected = n === cur; sel.appendChild(o); }
+function fillNicks() { // sticker chips, the picked one in teal
+  const row = $('fNick'), cur = nickOk(mp().nick); row.innerHTML = '';
+  for (const n of NICKS) {
+    const b = el('button', 'nick', nickName(n, M.data().char)); b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', n === cur ? 'true' : 'false');
+    b.onclick = () => { unlockAudio(); saveName(n); fillNicks(); }; row.appendChild(b);
+  }
+  const on = row.querySelector('[aria-checked="true"]'); if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' });
 }
-function saveName() { const n = nickOk($('fNick').value); if (n !== mp().nick) { mp().nick = n; delete mp().name; M.save(); } }
+function saveName(n) { if (n == null) return; n = nickOk(n); if (n !== mp().nick) { mp().nick = n; delete mp().name; M.save(); } }
 // While connecting, the lobby shows a progress bar with each step, and the buttons are gone, so a slow
 // (or waking) server never tempts a second tap; goHost/goJoin also ignore taps that arrive mid-connect.
 function setConnecting() { race.fs = 'connecting'; race.stage = 'lib'; race.loadAt = race.stageAt = performance.now(); race.slow = false; }
 const canStart = () => race && (race.fs === 'choose' || race.fs === 'err');
-const STAGE = { host: { lib: [0.05, 0.25, 'mp_st_lib'], server: [0.25, 0.85, 'mp_st_make'], retry: [0.5, 0.85, 'mp_st_retry'] },
-  guest: { lib: [0.05, 0.25, 'mp_st_lib'], server: [0.25, 0.6, 'mp_st_server'], peer: [0.6, 0.95, 'mp_st_peer'] } };
+const STAGE = { host: { lib: [0.05, 0.25, 'mp_st_lib'], server: [0.25, 0.85, 'mp_st_make'], retry: [0.5, 0.85, 'mp_st_retry'], nearMake: [0.1, 0.9, 'mp_st_nearMake'], nearLink: [0.3, 0.95, 'mp_st_nearLink'] },
+  guest: { lib: [0.05, 0.25, 'mp_st_lib'], server: [0.25, 0.6, 'mp_st_server'], peer: [0.6, 0.95, 'mp_st_peer'], nearJoin: [0.1, 0.9, 'mp_st_nearJoin'] } };
 const stageOf = () => (STAGE[race.role] || STAGE.host)[race.stage] || STAGE.host.lib;
 function friendLoad() { // runs every frame while connecting: the bar creeps forward within the current step
   const [a, b] = stageOf(), now = performance.now(), p = a + (b - a) * (1 - Math.exp(-(now - race.stageAt) / 6000));
@@ -544,28 +560,56 @@ function friendLoad() { // runs every frame while connecting: the bar creeps for
   const slow = now - race.loadAt > 6000;
   if (slow !== race.slow) { race.slow = slow; $('fLoadHint').textContent = T(slow ? 'mp_slow' : 'mp_noTap'); }
 }
-N.on('stage', s => { if (!race || race.fs !== 'connecting') return; race.stage = s; race.stageAt = performance.now(); renderFriend(); });
-function goHost() { if (!canStart()) return; saveName(); race.role = 'host'; setConnecting(); renderFriend(); N.host(mp().pid); }
+onNet('stage', s => { if (race && s === 'nearLink' && race.fs === 'nearQR') setConnecting(); if (!race || race.fs !== 'connecting') return; race.stage = s; race.stageAt = performance.now(); renderFriend(); });
+const modeNear = () => mp().mode === 'near';
+function setMode(m) { if (!canStart()) return; mp().mode = m; M.save(); race.fs = 'choose'; renderFriend(); }
+function goHost() { if (!canStart()) return; NX = N; race.near = false; race.role = 'host'; setConnecting(); renderFriend(); N.host(mp().pid); }
+function goNear() { // offline: make the pairing QR code for the friend's camera app
+  if (!canStart()) return;
+  if (!NB.supported()) { race.fs = 'err'; race.err = 'near'; renderFriend(); return; }
+  NX = NB; race.near = true; race.role = 'host'; setConnecting(); race.stage = 'nearMake'; renderFriend(); NB.host();
+}
+NB.on('nearCode', ({ link }) => { if (!race) return; race.fs = 'nearQR'; race.qr = link; renderFriend(); });
+let qrLib = null;
+function loadQR() {
+  if (window.qrcode) return Promise.resolve();
+  return qrLib || (qrLib = new Promise((ok, bad) => { const sc = document.createElement('script'); sc.src = new URL('./vendor/qrcode.js', import.meta.url).href; sc.onload = ok; sc.onerror = () => { qrLib = null; bad(); }; document.head.appendChild(sc); }));
+}
+async function drawQR(link) { // black on white with a quiet zone, so any camera app reads it
+  try { await loadQR(); } catch (e) { return; }
+  if (!race || race.qr !== link) return;
+  const q = window.qrcode(0, 'M'); q.addData(link); q.make();
+  const n = q.getModuleCount(), cell = 6, pad = 4, size = (n + pad * 2) * cell, cv = $('fQRCv'), c = cv.getContext('2d');
+  cv.width = cv.height = size; c.fillStyle = '#fff'; c.fillRect(0, 0, size, size); c.fillStyle = '#000';
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (q.isDark(y, x)) c.fillRect((x + pad) * cell, (y + pad) * cell, cell, cell);
+}
+// On the host's phone, its camera app opens the friend's reply code in a new tab: that tab passes it to the race tab.
+function showRelay() {
+  $('menu').hidden = true; $('friend').hidden = false; $('friend').querySelector('.panel').classList.remove('qr-mode');
+  for (const id of ['fLoad', 'fGate', 'fChoose', 'fVs', 'fCodeBig', 'fQR', 'fGo']) $(id).hidden = true;
+  $('fStatus').textContent = T('mp_nearRelay');
+  setTimeout(() => { try { window.close(); } catch (e) {} }, 1500); // works only where the browser allows it
+}
 function goJoin() {
-  if (!canStart()) return; saveName(); const c = N.cleanCode($('fCode').value);
+  if (!canStart()) return; NX = N; race.near = false; const c = N.cleanCode($('fCode').value);
   if (c.length !== 6) { race.fs = 'err'; race.err = 'badcode'; renderFriend(); $('fCode').focus(); return; }
   race.role = 'guest'; setConnecting(); renderFriend(); N.join(c, mp().pid);
 }
 function leaveRace(quiet) {
-  N.leave(); race = null; crand = Math.random;
+  N.leave(); NB.leave(); NX = N; race = null; crand = Math.random;
   $('raceBox').hidden = true; $('over').classList.remove('racing'); $('againBtn').hidden = false; $('againBtn').disabled = false;
   $('againBtn').textContent = T('again'); $('againHint').textContent = T('againHint'); $('overMenuBtn').textContent = T('b_menu');
   if (!$('friend').hidden) { $('friend').hidden = true; if (!quiet) showMenu(); }
 }
 function hello() {
   const d = M.data();
-  N.send({ t: 'hi', v: N.PROTO, pid: mp().pid, nick: nickOk(mp().nick), ch: d.char, robe: d.robe, head: d.head,
+  NX.send({ t: 'hi', v: N.PROTO, pid: mp().pid, nick: nickOk(mp().nick), ch: d.char, robe: d.robe, head: d.head,
     seed: race.seed, me: race.me, live: !!race.seed && !race.me && (st === 'play' || st === 'pause'), d: Math.floor(dist) });
 }
 N.on('hosting', ({ code }) => { if (!race) return; race.code = code; if (race.fs === 'connecting') race.fs = 'waiting'; renderFriend(); });
-N.on('open', () => { if (!race) return; race.fs = 'joined'; hello(); renderFriend(); });
-N.on('error', why => { if (!race) return; race.fs = 'err'; race.err = why; renderFriend(); });
-N.on('lost', () => {
+onNet('open', () => { if (!race) return; race.fs = 'joined'; hello(); renderFriend(); });
+onNet('error', why => { if (!race) return; race.fs = 'err'; race.err = why; renderFriend(); });
+onNet('lost', () => {
   if (!race) return; const o = race.opp; if (o.gone || !o.here || o.lost) return;
   o.lost = true; o.lostAt = Date.now(); o.buf = [];
   if (st === 'play' || st === 'pause') floatText(T('mp_lost', oppName(), oppGirl()), worldX + 80, 120, '#9ff0ff'); else note(T('mp_lost', oppName(), oppGirl()), 2500);
@@ -575,11 +619,11 @@ setInterval(() => { // a friend who stays away for a minute is out, with their l
   if (!race || !race.opp.lost || Date.now() - race.opp.lostAt < LOST_GIVEUP) return;
   const o = race.opp; o.lost = false; o.gone = true; o.run = false; if (race.seed && o.round === race.seed) o.out = true;
   note(T('mp_left', oppName(), oppGirl()), 3000);
-  if (race.role === 'guest') { N.leave(); if (!$('friend').hidden) { race.fs = 'err'; race.err = 'noroom'; } }
+  if (race.role === 'guest') { NX.leave(); if (!$('friend').hidden) { race.fs = 'err'; race.err = race.near ? 'near' : 'noroom'; } }
   else if (!$('friend').hidden) { race.opp = newOpp(); race.fs = 'waiting'; }
   renderFriend(); if (st === 'over') fillRace();
 }, 1000);
-N.on('data', d => {
+onNet('data', d => {
   if (!race) return; let o = race.opp;
   if (d.t === 'p') {
     if (o.round !== race.seed) return; // a position from a race we are not in
@@ -619,18 +663,18 @@ function oppGone() { // the friend left on purpose
   if (!race || race.opp.gone) return; const o = race.opp;
   o.gone = true; o.lost = false; o.run = false;
   if (o.here) note(T('mp_left', oppName(), oppGirl()), 3000);
-  if (race.role === 'guest') N.leave(); // the host closed the room: stop reconnecting
+  if (race.role === 'guest') NX.leave(); // the host closed the room: stop reconnecting
   if (!$('friend').hidden) {
     if (race.role === 'host' && race.code) { race.opp = newOpp(); race.fs = 'waiting'; } // another friend can still join the same code
-    else { race.fs = 'err'; race.err = 'noroom'; }
+    else { race.fs = 'err'; race.err = race.near ? 'near' : 'noroom'; }
   }
   renderFriend(); if (st === 'over') fillRace();
 }
 function hostGo() {
-  if (!race || race.role !== 'host' || !N.isOpen() || !race.opp.here || race.opp.lost || st === 'play' || st === 'pause') return;
+  if (!race || race.role !== 'host' || !NX.isOpen() || !race.opp.here || race.opp.lost || st === 'play' || st === 'pause') return;
   const o = race.opp; if (race.me && o.round === race.seed && !o.out) return; // the next race starts once both have finished
   race.seed = crypto.getRandomValues(new Uint32Array(1))[0] || 1; race.area = M.startArea();
-  N.send({ t: 'go', seed: race.seed, area: race.area }); beginRace();
+  NX.send({ t: 'go', seed: race.seed, area: race.area }); beginRace();
 }
 function beginRace() {
   if (!race) return;
@@ -649,7 +693,7 @@ function raceHold(dt) {
 function raceTick(dt) {
   race.goT = Math.max(0, race.goT - dt);
   race.sendT -= dt; if (race.sendT > 0) return; race.sendT = 0.05;
-  N.send({ t: 'p', ts: Math.round(performance.now()), x: Math.round(worldX), y: Math.round(kid.y), d: Math.floor(dist), s: candies, a: kid.on ? 0 : 1, sc: kid.scoot > 0 ? 1 : 0 });
+  NX.send({ t: 'p', ts: Math.round(performance.now()), x: Math.round(worldX), y: Math.round(kid.y), d: Math.floor(dist), s: candies, a: kid.on ? 0 : 1, sc: kid.scoot > 0 ? 1 : 0 });
 }
 // where the ghost is now: GHOST_DELAY ms in the past, between the two positions around that moment
 function ghostPos() {
@@ -698,7 +742,7 @@ function fillRace() {
   const box = $('raceBox');
   if (!race) { box.hidden = true; $('over').classList.remove('racing'); return; }
   const o = race.opp, on = !!race.me && !!race.seed && o.round === race.seed, done = o.out || o.gone || !o.here;
-  const host = race.role === 'host', live = N.isOpen() && o.here && !o.gone && !o.lost;
+  const host = race.role === 'host', live = NX.isOpen() && o.here && !o.gone && !o.lost;
   $('over').classList.toggle('racing', on);
   $('againBtn').hidden = !(host && live); $('againBtn').disabled = on && !done; $('againBtn').textContent = T('mp_rematch');
   $('againHint').textContent = live && !host ? T('mp_hint') : ''; $('overMenuBtn').textContent = T('mp_leave');
@@ -714,11 +758,14 @@ function fillRace() {
 function renderFriend() {
   if (!race || $('friend').hidden) return;
   const host = race.role === 'host', o = race.opp, fs = race.fs; let msg = '', go = null;
-  const gate = fs === 'gate', choose = fs === 'choose' || fs === 'err', showCode = host && !!race.code && (fs === 'waiting' || o.lost || !o.here);
+  const gate = fs === 'gate', choose = fs === 'choose' || fs === 'err', qr = fs === 'nearQR', showCode = !race.near && host && !!race.code && (fs === 'waiting' || o.lost || !o.here);
+  $('fQR').hidden = !qr; $('friend').querySelector('.panel').classList.toggle('qr-mode', qr);
+  if (choose) { const near = modeNear(); $('fModeOn').setAttribute('aria-checked', near ? 'false' : 'true'); $('fModeOff').setAttribute('aria-checked', near ? 'true' : 'false'); $('fJoinField').hidden = near; $('fChoose').classList.toggle('near-mode', near); }
   $('fLoad').hidden = fs !== 'connecting'; $('fGate').hidden = !gate; $('fChoose').hidden = !choose; if (choose) fillNicks(); $('fVs').hidden = true; $('fCodeBig').hidden = !showCode;
   if (showCode) $('fCodeBig').textContent = N.showCode(race.code);
   if (gate) { msg = T('mp_gateLead'); go = 'mp_gateOk'; const ab = ($('fGateQ').dataset.ab || '').split('x'); if (ab.length === 2) $('fGateQ').textContent = T('mp_gateQ', ab[0], ab[1]); }
-  else if (choose) { msg = fs === 'err' ? T('mp_err_' + race.err) : T('mp_choose'); go = 'mp_host'; }
+  else if (choose) { msg = fs === 'err' ? T('mp_err_' + race.err) : T(modeNear() ? 'mp_chooseNear' : 'mp_choose'); go = modeNear() ? 'mp_near' : 'mp_host'; }
+  else if (qr) { msg = T(host ? 'mp_nearHost' : 'mp_nearGuest'); $('fQRHint').textContent = host && IOS && STANDALONE ? T('mp_nearIOS') : T('mp_nearHint'); drawQR(race.qr); }
   else if (fs === 'connecting') { msg = T(stageOf()[2]); $('fLoadHint').textContent = T(race.slow ? 'mp_slow' : 'mp_noTap'); }
   else if (o.lost) msg = host ? T('mp_lostTag', oppName()) : T('mp_reconnecting');
   else if (fs === 'waiting' || !o.here) msg = host ? T('mp_send') : T('mp_hello');
@@ -731,7 +778,8 @@ function renderFriend() {
 $('friendBtn').onclick = () => { unlockAudio(); openFriend('choose'); };
 $('fLeave').onclick = () => { unlockAudio(); leaveRace(); };
 $('fJoin').onclick = () => { unlockAudio(); goJoin(); };
-$('fNick').addEventListener('change', saveName);
+$('fModeOn').onclick = () => { unlockAudio(); setMode('online'); };
+$('fModeOff').onclick = () => { unlockAudio(); setMode('near'); };
 $('fCode').addEventListener('input', () => { const c = N.cleanCode($('fCode').value); $('fCode').value = c.length > 3 ? c.slice(0, 3) + ' ' + c.slice(3) : c; });
 $('fGateA').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); gateOk(); } });
 $('fCode').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); goJoin(); } });
@@ -740,6 +788,7 @@ $('fGo').onclick = () => {
   if (a === 'mp_start') hostGo();
   else if (a === 'mp_gateOk') gateOk();
   else if (a === 'mp_host') goHost();
+  else if (a === 'mp_near') goNear();
 };
 $('overMenuBtn').onclick = () => { if (race) leaveRace(); if (swap && !swap.done) endSwap(); swap = null; st = 'menu'; $('over').hidden = true; startM = M.AREAS[M.startArea()].at; reset(); worldX = 0; showMenu(); };
 onLang(() => { renderFriend(); if (swap && !swap.done) endSwap(); if (st === 'over' && lastOver) { dad.say = T(lastOver.why === 'fell' ? 's_fell' : 's_got'); kid.say = T('s_sorry'); } else { dad.sayT = 0; kid.sayT = 0; } fillOver(); showBest(); renderMenu(); if (!$('sheet').hidden) openSheet(sheetKind); hudCache.fill(null); lastHud = ''; });
@@ -3139,6 +3188,10 @@ async function prebake() {
   sprBudget = 0;
 }
 async function boot() {
+  try { // opened from a play-nearby QR code: take the code out of the address straight away
+    const hm = /^#(n1|n2)=([\w-]{20,600})$/.exec(location.hash);
+    if (hm) { history.replaceState(null, '', location.pathname + location.search); if (hm[1] === 'n2') { NB.relay(hm[2]); relayPending = true; } else pendingNear = hm[2]; }
+  } catch (e) {}
   setGirl(isGirl()); applyLang(); setMuteBtn(); syncRotate(); showBest();
   const tips = T('tips'); let tipI = Math.floor(Math.random() * tips.length); $('ldTip').textContent = tips[tipI];
   const tipTimer = setInterval(() => { tipI = (tipI + 1) % tips.length; $('ldTip').textContent = T('tips')[tipI]; }, 2200);
@@ -3173,7 +3226,7 @@ window.__abood = {
   get course() { return { obs: obs.map(o => o.kind + '@' + Math.round(o.x0)), gaps: gaps.map(g => Math.round(g.x0)), plats: plats.map(p => Math.round(p.x)), items: items.filter(i => i.kind !== 'candy').map(i => i.kind + '@' + Math.round(i.x)) }; },
   ghost: (m = 3, air = false) => { if (!race) return; const t0 = performance.now() - 400; Object.assign(race.opp, { here: true, run: true, out: false, gone: false, lost: false, round: race.seed, buf: [0, 1].map(i => ({ t: t0 + i * 300, x: worldX + m * 40 + i * 4, y: air ? GROUND - 80 : GROUND, a: air, sc: false })) }); }, // put the friend's ghost m metres ahead
   dropNet: () => N.testDrop(), // testing: cut the race connection as if the network failed
-  get race() { return race && { role: race.role, seed: race.seed, area: race.area, hold: race.hold, me: race.me, opp: Object.assign({}, race.opp) }; },
+  get race() { return race && { role: race.role, fs: race.fs, qr: race.qr, near: !!race.near, seed: race.seed, area: race.area, hold: race.hold, me: race.me, opp: Object.assign({}, race.opp) }; },
   quality: q => { qLevel = clamp(q, 0, QDPR.length - 1); resize(); },
   portrait: (size, pad = 1) => {
     const c = mk(size, size), g = c.getContext('2d'), bg = g.createLinearGradient(0, 0, 0, size);
