@@ -333,8 +333,14 @@ document.addEventListener('click', e => {
 $('flagAr').innerHTML = FLAG.ar; $('flagEn').innerHTML = FLAG.en;
 function showMenu() {
   $('menu').hidden = false; renderMenu(); maybeToast(); maybeLogin(); const rf = M.takeRefund(); if (rf) setTimeout(() => note(T('refund', rf)), 600); }
-function setMuteBtn() { $('mute').textContent = muted ? '✕' : '♪'; $('mute').setAttribute('aria-pressed', muted ? 'true' : 'false'); }
-$('mute').onclick = () => { unlockAudio(); muted = !muted; if (master) master.gain.value = muted ? 0 : 1; try { localStorage.setItem('abood-muted', muted ? '1' : '0'); } catch (e) {} setMuteBtn(); $('mute').blur(); };
+// sound: the round corner button while running, and the speaker in the menu's top bar (the same look as Abood to the Moon)
+const SPK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="',
+  SPK_ON = SPK + 'M15.5 9a4.2 4.2 0 0 1 0 6M18.2 6.5a8 8 0 0 1 0 11"/></svg>', SPK_OFF = SPK + 'M16 9.5l5 5M21 9.5l-5 5"/></svg>';
+function setMuteBtn() {
+  $('mute').textContent = muted ? '✕' : '♪'; $('menuMute').innerHTML = muted ? SPK_OFF : SPK_ON;
+  for (const b of [$('mute'), $('menuMute')]) b.setAttribute('aria-pressed', muted ? 'true' : 'false');
+}
+$('mute').onclick = $('menuMute').onclick = e => { unlockAudio(); muted = !muted; if (master) master.gain.value = muted ? 0 : 1; try { localStorage.setItem('abood-muted', muted ? '1' : '0'); } catch (e2) {} setMuteBtn(); e.currentTarget.blur(); };
 $('pauseBtn').onclick = () => { if (st === 'play') setPause(true); else if (st === 'pause') setPause(false); $('pauseBtn').blur(); };
 function setPause(p) { st = p ? 'pause' : 'play'; $('pauseBtn').textContent = p ? '▶' : 'II'; if (p) wakeOff(); else wakeOn(); }
 
@@ -356,7 +362,7 @@ let wake = null;
 async function wakeOn() { try { if (navigator.wakeLock && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch (e) { wake = null; } }
 function wakeOff() { try { wake && wake.release(); } catch (e) {} wake = null; }
 
-function showBest() { const b = M.bestDist(); $('menuBest').hidden = b <= 0; if (b > 0) $('menuBest').textContent = T('best', b); }
+function showBest() { const b = M.bestDist(); $('menuBest').hidden = b <= 0; if (b > 0) $('menuBest').textContent = T('bestTag', b); }
 const selBoost = new Set();
 let run = null, runBadges = [], badgeTimer = 0;
 function start(rc) {
@@ -2956,7 +2962,7 @@ function renderMenu() {
     const pic = mk(TH_W, TH_H); pic.setAttribute('aria-hidden', 'true'); b.appendChild(pic);
     const fill = () => pic.getContext('2d').drawImage(areaThumb(i), 0, 0);
     if (THUMBS.has(i + ':' + getLang())) fill(); else setTimeout(fill, 30 + i * 40); // draw the pictures a few at a time, after the menu is up
-    if (!open) b.appendChild(el('span', 'lock', '🔒'));
+    if (!open) { const lk = el('span', 'lock'); lk.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'; b.appendChild(lk); }
     b.appendChild(el('b', null, T('zn_' + a.id)));
     b.appendChild(el('small', null, open ? T('km', a.at / 1000) + ' · ' + T('pcShort', have, stops.length) : T('areaLocked', a.at / 1000)));
     b.onclick = () => { if (!open || sr2.moved) return; if (M.setStart(i) && st === 'menu') { startM = a.at; reset(); worldX = 0; zoneNow = zoneAt(startM); showBanner(zoneNow); } renderMenu(); };
@@ -2968,7 +2974,7 @@ function renderMenu() {
   const hk = document.querySelector('.chase span:last-child'); if (hk) hk.textContent = kname();
   const D = M.data(), row = $('boostRow'); row.innerHTML = '';
   const ids = ['vimto', 'magnet', 'headstart', 'shield'].filter(id => (D.boosters[id] || 0) > 0);
-  if (!ids.length) row.appendChild(el('span', 'hint', T('noBoosters')));
+  if (!ids.length) { const g = el('button', 'boost-none', T('noBoosters')); g.type = 'button'; g.onclick = () => openSheet('shop'); row.appendChild(g); }
   for (const id of ids) {
     const b = el('button', 'boost'); b.type = 'button'; b.setAttribute('aria-pressed', selBoost.has(id) ? 'true' : 'false');
     const cnv = mk(52, 52); drawBoosterIcon(cnv.getContext('2d'), id, 52); b.appendChild(cnv); b.append(T('bo_' + id)); b.appendChild(el('small', null, '×' + D.boosters[id]));
