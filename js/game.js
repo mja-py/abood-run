@@ -250,7 +250,7 @@ function reset() {
   focusT = 0; focusLv = 0; paceT = M.paceTarget(); assist = 1; spawnBoost = 1; sandalMul = 1; mercyT = 0; hitTimes = [];
   t = 0; worldX = 0; lead = 0.7; dist = 0; routeM = startM; nextStop = stopAfter(startM + 25); prevStopAt = startM; lastStop = null; stopBanner = null; fish = []; runHit = 0; runPow = 0; maxFocus = 0; comboMax = 0; runDone = []; candies = 0; candyCount = 0; boost = 0; shake = 0; graceT = GRACE; combo = 0; comboT = 0; closeCalls = 0; zoneNow = 0; banner = null;
   gaps = []; plats = []; obs = []; items = []; parts = []; sandals = []; genX = 900;
-  Object.assign(kid, { y: GROUND, vy: 0, on: true, jumps: 0, coyote: 0, buf: 0, inv: 0, stumble: 0, sx: 1, sy: 1, spin: 0, scoot: 0, mag: 0, shield: 0, say: '', sayT: 0, next: 6 });
+  Object.assign(kid, { y: GROUND, vy: 0, on: true, jumps: 0, coyote: 0, buf: 0, inv: 0, stumble: 0, sx: 1, sy: 1, spin: 0, scoot: 0, mag: 0, shield: 0, held: 0, say: '', sayT: 0, next: 6 });
   Object.assign(dad, { y: GROUND, vy: 0, on: true, slow: 0, freeze: 0, say: T('s_come'), sayT: 2, next: 3, anger: 0, windup: 0, cd: 9, has: true, regrab: 0 });
 }
 
@@ -264,7 +264,7 @@ function candyArc(x0, x1, yBase, h) { const n = Math.max(3, Math.round((x1 - x0)
 function power() { const r = crand(); return r < 0.24 ? 'vimto' : r < 0.46 ? 'marbles' : r < 0.62 ? 'phone' : r < 0.82 ? 'magnet' : 'scooter'; }
 function gen() {
   while (genX < worldX + W + 400) {
-    const z = ZONES[zoneAt(routeOfX(genX))], r = crand(), gd = race ? Math.max(0, (genX - 900) / 40) : dist, hard = Math.min(1, gd / 8000), spread = Math.sqrt(runSpeed(gd) / 320); // spacing grows with speed so it stays jumpable
+    const z = ZONES[zoneAt(routeOfX(genX))], r = crand(), gd = race ? Math.max(0, (genX - 900) / 40) + SPRINT_HARD : dist, hard = Math.min(1, gd / 8000), spread = Math.sqrt(runSpeed(gd) / 320); // spacing grows with speed so it stays jumpable
     if (r < 0.34) {
       const k = cpick(z.obs); addObs(genX, k);
       if (crand() < 0.5) candyArc(genX - 50, genX + OB[k].w + 50, GROUND - 50, 62);
@@ -297,7 +297,7 @@ const overGap = (x, m = 5) => { for (const g of gaps) if (x > g.x0 + m && x < g.
 function press() {
   unlockAudio();
   if (!$('langPick').hidden || !$('sheet').hidden || !$('loginPop').hidden || !$('friend').hidden) return;
-  if (race && st !== 'play' && st !== 'pause') return; // in a race, only the host starts the next one
+  if (race && st !== 'play' && st !== 'pause') return; // in a race, the next round starts from the course picker
   if (st === 'menu') { start(); return; }
   if (st === 'over') { if (swap && !swap.done) { endSwap(); return; } if (stT > 0.9 && !$('over').hidden) start(); return; }
   if (st === 'pause') { setPause(false); return; }
@@ -321,7 +321,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 $('startBtn').onclick = () => { unlockAudio(); start(); };
-$('againBtn').onclick = () => { unlockAudio(); if (race) hostGo(); else start(); };
+$('againBtn').onclick = () => { unlockAudio(); if (race) openPick(); else start(); };
 $('sheetClose').onclick = () => closeSheet();
 document.querySelectorAll('[data-sheet]').forEach(b => b.onclick = () => openSheet(b.dataset.sheet));
 document.addEventListener('click', e => {
@@ -368,22 +368,23 @@ let run = null, runBadges = [], badgeTimer = 0;
 function start(rc) {
   if (race && !rc) return;
   startM = M.AREAS[rc ? rc.area : M.startArea()].at; crand = rc ? seeded(rc.seed) : Math.random; reset(); st = 'play';
-  run = { dist: 0, sweets: 0, close: 0, zoneMax: 0, paid: 0, route: startM, noHit: 0, comboMax: 0, focusMax: 0, powers: 0, stops: 0 }; runBadges = []; lastRes = null; M.track('run');
+  run = { dist: 0, sweets: 0, close: 0, zoneMax: 0, paid: 0, route: rc ? 0 : startM, race: rc ? 1 : 0, noHit: 0, comboMax: 0, focusMax: 0, powers: 0, stops: 0 }; runBadges = []; lastRes = null; M.track('run');
   if (!rc && M.robeOf().shield) kid.shield = 1;
   if (!rc) for (const id of selBoost) if (M.useBooster(id)) {
     if (id === 'vimto') boost = 6; if (id === 'magnet') kid.mag = 10; if (id === 'shield') kid.shield = 1;
     if (id === 'headstart') { kid.scoot = 6; lead = 0.85; }
   }
-  if (!rc) selBoost.clear(); renderMenu(); stT = 0; $('menu').hidden = true; $('over').hidden = true; $('toast').hidden = true; $('hud').hidden = false; $('routeHud').hidden = false; $('pauseBtn').hidden = !!rc; $('pauseBtn').textContent = 'II';
+  if (!rc) selBoost.clear(); renderMenu(); stT = 0; $('menu').hidden = true; $('over').hidden = true; $('toast').hidden = true; $('hud').hidden = false; $('routeHud').hidden = false; $('pauseBtn').hidden = !!rc; $('pauseBtn').textContent = 'II'; $('sprintBar').hidden = !rc;
   if (actx) nextNote = actx.currentTime + 0.05; step = 0; zoneNow = zoneAt(startM); showBanner(zoneNow); wakeOn(); hudCache.fill(null);
   document.activeElement && document.activeElement.blur && document.activeElement.blur();
 }
 let lastOver = null;
 function fillOver() {
   if (!lastOver) return; const { why, m, nb } = lastOver;
-  $('overQuote').textContent = T(why === 'fell' ? 's_fell' : 's_got');
-  $('overTitle').textContent = T(why === 'fell' ? 'fellT' : 'caughtT');
-  $('overMsg').textContent = nb ? T('newBest') : T('beat', M.bestDist());
+  const fin = why === 'finish';
+  $('overQuote').textContent = T(fin ? 's_fin' : why === 'fell' ? 's_fell' : 's_got');
+  $('overTitle').textContent = fin ? T('sp_finT', fmtTm(lastOver.tm || 0)) : T(why === 'fell' ? 'fellT' : 'caughtT');
+  $('overMsg').textContent = fin ? T('sp_course', T('zn_' + M.AREAS[race ? race.area : 0].id), SPRINT_M) : nb ? T('newBest') : T('beat', M.bestDist());
   $('sDist').textContent = m; $('sBest').textContent = M.bestDist(); $('sClose').textContent = closeCalls;
   $('avNameOver').textContent = kname();
   // where Abood got to on the route, and what is next
@@ -468,12 +469,13 @@ function overSpot() {
   return x;
 }
 function gameOver(why) {
-  if (st !== 'play') return; st = 'over'; stT = 0; sfx.lose(); buzz([60, 40, 120]); wakeOff();
-  const res = settleRun(), m = Math.floor(dist);
-  if (race) { race.me = { d: m, s: candies, why }; race.final = false; N.send({ t: 'out', d: m, s: candies, why }); }
-  dad.say = T(why === 'fell' ? 's_fell' : 's_got'); dad.sayT = 99; kid.say = T('s_sorry'); kid.sayT = 99;
-  lastOver = { why, m, nb: res && res.newBest }; swap = null; fillOver(); showBest(); overX = overSpot();
-  $('hud').hidden = true; $('routeHud').hidden = true; $('pauseBtn').hidden = true; $('powers').textContent = ''; lastHud = '';
+  if (st !== 'play') return; st = 'over'; stT = 0; wakeOff();
+  const fin = why === 'finish'; if (fin) { sfx.zone(); play('power', 1.2, 0.8); buzz(40); } else { sfx.lose(); buzz([60, 40, 120]); }
+  const res = settleRun(), m = Math.floor(dist), tm = fin && race ? +race.myTm.toFixed(2) : null;
+  if (race) { race.me = { d: m, s: candies, why, tm }; race.final = false; N.send({ t: 'out', d: m, s: candies, why, tm }); }
+  dad.say = T(fin ? 's_fin' : why === 'fell' ? 's_fell' : 's_got'); dad.sayT = 99; kid.say = T(fin ? 's_finKid' : 's_sorry'); kid.sayT = 99;
+  lastOver = { why, m, tm, nb: res && res.newBest }; swap = null; fillOver(); showBest(); overX = overSpot();
+  $('hud').hidden = true; $('routeHud').hidden = true; $('sprintBar').hidden = true; $('pauseBtn').hidden = true; $('powers').textContent = ''; lastHud = '';
   const showOver = () => { if (st === 'over') { $('over').hidden = false; startSwap(); maybeToast(); } };
   setTimeout(() => {
     // Ads hook: set window.aboodAfterRun = async ({ distance, sweets }) => { ...show an ad... }.
@@ -501,11 +503,18 @@ $('reviveBtn').onclick = () => { unlockAudio(); revive(); };
 // the same seed and start area, so the course is identical, and the difficulty director is fixed. Each player runs
 // their own game and they swap positions 20 times a second; the friend shows as a see-through ghost that plays a
 // tenth of a second behind, gliding between the positions it received.
+// A race is a sprint: the first to the finish line SPRINT_M metres on wins the round. Falling in a hole or being caught
+// by Baba costs time, never the race. A match is the best of 3 rounds; the loser of each round picks the next course
+// (any of the 11 areas, reached or not), and the loser of a match picks the first course of the next one.
 // Dropped connections: the race goes on, the friend's last record stays, and the joining side keeps reconnecting.
 // When the same player comes back (same player id), both sides swap where they are and the result is worked out
 // again. After a minute without them, their last record counts.
 const num = v => (Number.isFinite(+v) ? +v : 0);
 const GHOST_DELAY = 110, LOST_GIVEUP = 60000;
+const SPRINT_M = 600, SPRINT_HARD = 2000, ROUNDS = 3, TO_WIN = 2; // course length; the obstacle mix of a run 2 km in; best of 3
+const fmtTm = sec => { const m = Math.floor(sec / 60), r = sec - m * 60; return m + ':' + (r < 10 ? '0' : '') + r.toFixed(1); };
+const finTm = d => (d && d.why === 'finish' && Number.isFinite(+d.tm) ? clamp(+d.tm, 0, 3600) : null);
+const newMatch = () => ({ rd: 0, me: 0, opp: 0, last: 0, over: false });
 const mp = () => { const d = M.data(); if (!d.mp) d.mp = {}; if (!d.mp.pid) { d.mp.pid = Array.from(crypto.getRandomValues(new Uint8Array(8)), b => b.toString(16).padStart(2, '0')).join(''); M.save(); } return d.mp; };
 // Race names are typed by the player: letters only, in the game's language (Arabic letters in Arabic, English
 // letters in English), 2 to 12, single spaces; no numbers or symbols. Only the friend you race sees it.
@@ -513,13 +522,13 @@ const NAME_AR = /^[ء-غف-ي]+( [ء-غف-ي]+)*$/, NAME_EN = /^[A-Za-z]+( [A-Za
 const nameOk = n => typeof n === 'string' && n.length <= 12 && n.replace(/ /g, '').length >= 2 && (NAME_AR.test(n) || NAME_EN.test(n));
 const nameFilter = v => (getLang() === 'ar' ? v.replace(/[^ء-غف-ي ]/g, '') : v.replace(/[^A-Za-z ]/g, '')).replace(/^ +/, '').replace(/ {2,}/g, ' ').slice(0, 12);
 const myName = () => (nameOk(mp().name) ? mp().name : kname());
-const newOpp = () => ({ here: false, pid: '', name: '', ch: 'abood', robe: '', head: '', round: 0, d: 0, s: 0, out: false, run: false, gone: false, lost: false, lostAt: 0, buf: [], off: null });
+const newOpp = () => ({ here: false, pid: '', name: '', ch: 'abood', robe: '', head: '', round: 0, d: 0, s: 0, tm: null, out: false, run: false, gone: false, lost: false, lostAt: 0, buf: [], off: null });
 const oppGirl = () => race.opp.ch === 'mozah';
 const oppName = () => race.opp.name || T('ch_' + race.opp.ch);
 const oppLook = () => lookOf(race.opp.robe, race.opp.head, oppGirl());
 function openFriend(mode, c) {
   if (race) leaveRace(true);
-  race = { role: mode === 'choose' ? null : mode, fs: mode === 'choose' ? 'choose' : 'connecting', err: '', code: '', seed: 0, area: 0, hold: 0, goT: 0, sendT: 0, me: null, final: false, opp: newOpp() };
+  race = { role: mode === 'choose' ? null : mode, fs: mode === 'choose' ? 'choose' : 'connecting', err: '', code: '', seed: 0, area: 0, hold: 0, goT: 0, sendT: 0, me: null, final: false, opp: newOpp(), match: newMatch(), scored: 0, picked: false };
   if (race.fs === 'connecting') setConnecting();
   $('menu').hidden = true; $('friend').hidden = false;
   if (!mp().ok) { race.fs = 'gate'; race.after = { mode, c }; newGateQ(); renderFriend(); setTimeout(() => $('fGateA').focus(), 50); return; } // a grown-up agrees once, before the first race
@@ -599,7 +608,7 @@ function goJoin(code) {
   race.role = 'guest'; setConnecting(); renderFriend(); N.join(c, mp().pid);
 }
 function leaveRace(quiet) {
-  N.leave(); race = null; crand = Math.random;
+  N.leave(); race = null; crand = Math.random; $('cPick').hidden = true; $('sprintBar').hidden = true;
   $('raceBox').hidden = true; $('over').classList.remove('racing'); $('againBtn').hidden = false; $('againBtn').disabled = false;
   $('againBtn').textContent = T('again'); $('againHint').textContent = T('againHint'); $('overMenuBtn').textContent = T('b_menu');
   if (!$('friend').hidden) { $('friend').hidden = true; if (!quiet) showMenu(); }
@@ -646,18 +655,22 @@ N.on('data', d => {
       const wasLost = o.lost; o.lost = false; o.buf = []; o.off = null;
       if (race.seed && o.round === race.seed) {
         if ((num(d.seed) >>> 0) === race.seed) { // the same race: catch up with where they are now
-          if (d.me) { o.out = true; o.run = false; o.d = Math.max(0, num(d.me.d) | 0); } else { o.d = Math.max(o.d, num(d.d) | 0); o.run = !!d.live; }
+          if (d.me) { o.out = true; o.run = false; o.d = Math.max(0, num(d.me.d) | 0); o.tm = finTm(d.me); } else { o.d = Math.max(o.d, num(d.d) | 0); o.run = !!d.live; }
         } else if (!o.out) { o.out = true; o.run = false; } // their page restarted mid-race: their last record counts
       }
       if (wasLost) { if (st === 'play' || st === 'pause') floatText(T('mp_back', oppName(), oppGirl()), worldX + 80, 120, '#7ee0b0'); else note(T('mp_back', oppName(), oppGirl())); }
     }
     renderFriend(); if (st === 'over') fillRace();
   } else if (d.t === 'go' && race.role === 'guest') {
-    race.seed = num(d.seed) >>> 0; race.area = clamp(num(d.area) | 0, 0, M.AREAS.length - 1); beginRace();
+    race.seed = num(d.seed) >>> 0; race.area = clamp(num(d.area) | 0, 0, M.AREAS.length - 1);
+    Object.assign(race.match, { rd: clamp(num(d.rd) | 0, 1, ROUNDS), me: clamp(num(d.gw) | 0, 0, TO_WIN), opp: clamp(num(d.hw) | 0, 0, TO_WIN), over: false }); // the host keeps the score
+    $('cPick').hidden = true; beginRace();
+  } else if (d.t === 'pick' && race.role === 'host') {
+    if (nextPicker() === 'guest') hostGo(num(d.area) | 0); // the friend lost the last round, so they chose the course
   } else if (d.t === 'out') {
     if (o.round !== race.seed) return;
-    o.out = true; o.run = false; o.d = Math.max(0, num(d.d) | 0); o.s = num(d.s) | 0;
-    if (st === 'play' || st === 'pause') floatText(T('mp_oppOut', oppName(), o.d), worldX + 80, 120, '#ffe066');
+    o.out = true; o.run = false; o.d = Math.max(0, num(d.d) | 0); o.s = num(d.s) | 0; o.tm = finTm(d);
+    if (st === 'play' || st === 'pause') floatText(o.tm != null ? T('sp_oppFin', oppName(), oppGirl(), fmtTm(o.tm)) : T('mp_oppOut', oppName(), o.d), worldX + 80, 120, '#ffe066');
     fillRace();
   } else if (d.t === 'bye') oppGone();
   else if (d.t === 'full') { note(T('mp_full'), 3500); leaveRace(); }
@@ -673,19 +686,73 @@ function oppGone() { // the friend left on purpose
   }
   renderFriend(); if (st === 'over') fillRace();
 }
-function hostGo() {
-  if (!race || race.role !== 'host' || !N.isOpen() || !race.opp.here || race.opp.lost || st === 'play' || st === 'pause') return;
-  const o = race.opp; if (race.me && o.round === race.seed && !o.out) return; // the next race starts once both have finished
-  race.seed = crypto.getRandomValues(new Uint32Array(1))[0] || 1; race.area = M.startArea();
-  N.send({ t: 'go', seed: race.seed, area: race.area }); beginRace();
+const pickReady = () => race && N.isOpen() && race.opp.here && !race.opp.lost && st !== 'play' && st !== 'pause' &&
+  !(race.me && race.opp.round === race.seed && !race.opp.out); // the next round starts once both have finished
+function hostGo(area) {
+  if (!race || race.role !== 'host' || !pickReady()) return;
+  const m = race.match; if (!m.rd || m.over) Object.assign(m, newMatch(), { rd: 1 }); else m.rd++;
+  race.seed = crypto.getRandomValues(new Uint32Array(1))[0] || 1; race.area = clamp(area | 0, 0, M.AREAS.length - 1);
+  N.send({ t: 'go', seed: race.seed, area: race.area, rd: m.rd, hw: m.me, gw: m.opp }); $('cPick').hidden = true; beginRace();
+}
+// who picks the next course: the loser of the last round, or of the match once it is over; the host on a tie
+function nextPicker() {
+  const m = race.match; if (!m.rd) return 'host';
+  const r = m.over ? Math.sign(m.me - m.opp) : m.last, other = race.role === 'host' ? 'guest' : 'host';
+  return r > 0 ? other : r < 0 ? race.role : 'host';
+}
+const iPick = () => !!race && !!race.role && nextPicker() === race.role;
+// the course picker: every area, as picture cards
+function openPick() {
+  if (!race || !iPick() || !pickReady()) return;
+  const m = race.match, fresh = !m.rd || m.over, row = $('cpRow'); row.innerHTML = ''; dragScroll(row);
+  $('cpRound').textContent = T('sp_round', fresh ? 1 : m.rd + 1, ROUNDS);
+  $('cpHint').textContent = T(!m.rd ? 'sp_pickFirst' : m.over ? 'sp_pickMatch' : 'sp_pickLost');
+  M.AREAS.forEach((a, i) => {
+    const b = el('button', 'area-card'); b.type = 'button'; b.setAttribute('aria-label', T('zn_' + a.id));
+    const pic = mk(TH_W, TH_H); pic.setAttribute('aria-hidden', 'true'); b.appendChild(pic);
+    setTimeout(() => pic.getContext('2d').drawImage(areaThumb(i), 0, 0), 20 + i * 30);
+    b.appendChild(el('b', null, T('zn_' + a.id))); b.appendChild(el('small', null, T('sp_len', SPRINT_M)));
+    b.onclick = () => { if (row.moved) return; unlockAudio(); pickCourse(i); };
+    row.appendChild(b);
+  });
+  $('cPick').hidden = false;
+}
+function pickCourse(i) {
+  $('cPick').hidden = true;
+  if (race.role === 'host') { hostGo(i); return; }
+  race.picked = true; N.send({ t: 'pick', area: i }); fillRace(); renderFriend();
+}
+$('cpCancel').onclick = () => { unlockAudio(); $('cPick').hidden = true; };
+// a race doesn't end on a fall or on Baba: both cost time
+function finishSprint(dt) {
+  const over = (dist - SPRINT_M) / Math.max(1, speed / 40); // how long ago this frame crossed the line
+  race.myTm = Math.max(0, race.runT + dt - over);
+  worldX = SPRINT_M * 40; dist = SPRINT_M; routeM = startM + dist; gameOver('finish');
+}
+function sprintFell() { // out on the far side of the hole after a short stop: it costs time, and nobody gets stuck on a jump
+  let x1 = worldX; for (const g of gaps) if (g.x0 < worldX + 20 && g.x1 > worldX - 260) x1 = Math.max(x1, g.x1);
+  worldX = x1 + 30; dist = worldX / 40; routeM = startM + dist;
+  Object.assign(kid, { y: GROUND, vy: 0, on: true, jumps: 0, spin: 0, inv: 1.8, held: 1.5 }); focusT = 0; focusLv = 0;
+  shake = 0.25; sfx.hit(); buzz(50); shout(T('s_fell')); floatText(T('sp_fell'), worldX + 40, GROUND - 100, '#ffb3b3');
+}
+function sprintCaught() { // Baba grabs you, tells you off, and lets go
+  lead = 0.45; Object.assign(kid, { held: 1, inv: 1.6, stumble: 0 }); focusT = 0; focusLv = 0;
+  shake = 0.3; sfx.hit(); buzz([40, 30, 40]); shout(T('s_got')); kidSay(T('s_sorry'), 1); floatText(T('sp_caught'), worldX + 40, kid.y - 100, '#ffb3b3');
+}
+// 1: I won the round, -1: the friend did, 0: a tie. The faster finish wins; a finish beats no finish (a friend who left).
+function roundRes() {
+  const mt = race.me.tm, o = race.opp, ot = o.out ? o.tm : null;
+  if (mt != null && ot != null) return Math.abs(mt - ot) < 0.05 ? 0 : mt < ot ? 1 : -1;
+  if (mt != null) return 1; if (ot != null) return -1;
+  return Math.sign(race.me.d - o.d);
 }
 function beginRace() {
   if (!race) return;
-  $('friend').hidden = true; $('menu').hidden = true; $('over').hidden = true; $('sheet').hidden = true;
+  $('friend').hidden = true; $('menu').hidden = true; $('over').hidden = true; $('sheet').hidden = true; $('loginPop').hidden = true; $('cPick').hidden = true;
   if (swap && !swap.done) endSwap(); swap = null;
-  Object.assign(race.opp, { round: race.seed, d: 0, s: 0, out: false, run: false, buf: [], off: null });
-  race.me = null; race.final = false;
-  start(race); graceT = 0; race.hold = 3; race.goT = 0; race.sendT = 0; race.runT = 0; race.faster = 0; play('tek', 1.2, 0.9); // classic: Baba chases at full pace from the start
+  Object.assign(race.opp, { round: race.seed, d: 0, s: 0, tm: null, out: false, run: false, buf: [], off: null });
+  race.me = null; race.final = false; race.picked = false;
+  sbCache.fill(null); start(race); graceT = 0; race.hold = 3; race.goT = 0; race.sendT = 0; race.runT = 0; race.myTm = 0; play('tek', 1.2, 0.9); // no 2-minute grace: Baba chases at full pace from the start
 }
 function raceHold(dt) {
   const k = Math.ceil(race.hold); race.hold -= dt;
@@ -693,13 +760,9 @@ function raceHold(dt) {
   else if (Math.ceil(race.hold) !== k) play('tek', 1.2, 0.9);
   raceTick(dt); hud();
 }
-const RACE_SQUEEZE = 0.03; // extra closing speed per minute of racing: about +0.03/s at 1 min, +0.06 at 2, +0.09 at 3
 function raceTick(dt) {
   race.goT = Math.max(0, race.goT - dt);
-  if (race.hold <= 0 && st === 'play') {
-    race.runT += dt; const m = Math.floor(race.runT / 60);
-    if (m > race.faster) { race.faster = m; floatText(T('mp_faster'), worldX + 90, 110, '#ffb3b3'); play('power', 0.8, 0.7); buzz(30); }
-  }
+  if (race.hold <= 0 && st === 'play') race.runT += dt; // the race clock: game time, so a slow phone isn't penalised
   race.sendT -= dt; if (race.sendT > 0) return; race.sendT = 0.05;
   N.send({ t: 'p', ts: Math.round(performance.now()), x: Math.round(worldX), y: Math.round(kid.y), d: Math.floor(dist), s: candies, a: kid.on ? 0 : 1, sc: kid.scoot > 0 ? 1 : 0 });
 }
@@ -739,6 +802,18 @@ function drawGhost(c) {
     tag(c, T(ahead ? 'mp_ahead' : 'mp_behind', name, m), ahead ? W - 80 : 80, 150);
   }
 }
+// the finish line: a checkered strip on the ground and a banner on two poles
+function drawFinish(c, x) {
+  if (x < -90 || x > W + 90) return;
+  const top = GROUND - 150, sq = 8;
+  c.save(); c.lineWidth = 2; c.strokeStyle = INK;
+  for (let i = 0; i < 2; i++) for (let j = 0; j < 3; j++) { c.fillStyle = (i + j) % 2 ? INK : '#fffaf0'; c.fillRect(x - sq + i * sq, GROUND + j * 4, sq, 4); }
+  for (const px of [x - 66, x + 66]) { c.fillStyle = '#d9b57f'; c.fillRect(px - 3, top, 6, GROUND - top); c.strokeRect(px - 3, top, 6, GROUND - top); }
+  c.fillStyle = '#fffaf0'; c.beginPath(); c.roundRect(x - 74, top - 4, 148, 30, 6); c.fill(); c.stroke();
+  for (let i = 0; i < 18; i++) { c.fillStyle = i % 2 ? INK : '#fffaf0'; c.fillRect(x - 72 + i * 8, top + 20, 8, 4); }
+  c.font = '800 16px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.direction = getLang() === 'ar' ? 'rtl' : 'ltr';
+  c.fillStyle = '#c8202b'; c.fillText(T('sp_finish'), x, top + 9); c.restore();
+}
 function drawCountdown(c) {
   if (race.hold <= 0 && race.goT <= 0) return;
   const go = race.hold <= 0, txt = go ? T('mp_go') : String(Math.ceil(race.hold)), f = go ? race.goT / 0.8 : race.hold % 1, s = REDUCED ? 1 : 1 + 0.25 * f;
@@ -750,18 +825,26 @@ function fillRace() {
   const box = $('raceBox');
   if (!race) { box.hidden = true; $('over').classList.remove('racing'); return; }
   const o = race.opp, on = !!race.me && !!race.seed && o.round === race.seed, done = o.out || o.gone || !o.here;
-  const host = race.role === 'host', live = N.isOpen() && o.here && !o.gone && !o.lost;
+  const live = N.isOpen() && o.here && !o.gone && !o.lost, m = race.match, name = oppName(), g = oppGirl();
+  if (on && done && race.scored !== race.seed) { // count the round once, the moment both results are in
+    race.scored = race.seed; const r = roundRes(); m.last = r; if (r > 0) m.me++; else if (r < 0) m.opp++;
+    m.over = m.me >= TO_WIN || m.opp >= TO_WIN || m.rd >= ROUNDS;
+  }
+  const scored = on && race.scored === race.seed, mine = scored && live && iPick();
   $('over').classList.toggle('racing', on);
-  $('againBtn').hidden = !(host && live); $('againBtn').disabled = on && !done; $('againBtn').textContent = T('mp_rematch');
-  $('againHint').textContent = live && !host ? T('mp_hint') : ''; $('overMenuBtn').textContent = T('mp_leave');
+  $('againBtn').hidden = !mine; $('againBtn').disabled = false; $('againBtn').textContent = T(m.over ? 'sp_newMatch' : 'sp_next');
+  $('againHint').textContent = !scored || !live ? '' : race.picked ? T('sp_starting') : mine ? '' : T('sp_theyPick', name, g); $('overMenuBtn').textContent = T('mp_leave');
   if (!on) { box.hidden = true; return; }
-  const me = race.me, name = oppName(), g = oppGirl(), byRecord = o.out;
-  const iWin = done && (byRecord ? me.d > o.d : true), theyWin = done && byRecord && o.d > me.d;
+  const me = race.me, r = scored ? m.last : 0, left = done && !o.out; // left: the friend quit this round without a record
   box.hidden = false;
-  $('raceMe').textContent = me.d; $('raceOpp').textContent = o.d; $('raceMeName').textContent = myName(); $('raceOppName').textContent = name;
-  $('raceHead').textContent = !done ? (o.lost ? T('mp_lostWait', name, g, o.d) : T('mp_wait', name, g)) : !byRecord ? T('mp_winLeft') : iWin ? T('mp_win') : theyWin ? T('mp_lose', name, g) : T('mp_tie');
-  box.querySelector('.race-me').classList.toggle('win', iWin); box.querySelector('.race-opp').classList.toggle('win', theyWin);
-  if (done && !race.final) { race.final = true; if (iWin) { play('power', 1.4, 0.8); buzz(30); } }
+  $('raceMe').textContent = me.tm != null ? fmtTm(me.tm) : T('sp_m', me.d);
+  $('raceOpp').textContent = o.out ? (o.tm != null ? fmtTm(o.tm) : T('sp_m', o.d)) : left ? '–' : T('sp_m', o.d);
+  $('raceMeName').textContent = myName(); $('raceOppName').textContent = name;
+  $('raceHead').textContent = !done ? (o.lost ? T('mp_lostWait', name, g, o.d) : T('mp_wait', name, g)) : left ? T('mp_winLeft')
+    : r === 0 ? T('mp_tie') : m.over ? T(r > 0 ? 'sp_matchWin' : 'sp_matchLose', name, g) : T(r > 0 ? 'sp_rdWin' : 'sp_rdLose', name, g, m.rd);
+  $('raceScore').textContent = T('sp_score', m.rd, ROUNDS) + ' · ' + myName() + ' ' + m.me + ' – ' + m.opp + ' ' + name;
+  box.querySelector('.race-me').classList.toggle('win', scored && r > 0); box.querySelector('.race-opp').classList.toggle('win', scored && r < 0);
+  if (scored && !race.final) { race.final = true; if (r > 0) { play('power', 1.4, 0.8); buzz(30); } }
 }
 function renderFriend() {
   if (!race || $('friend').hidden) return;
@@ -776,7 +859,7 @@ function renderFriend() {
   else if (fs === 'waiting' || !o.here) msg = host ? T('mp_send') : T('mp_hello');
   else {
     $('fVs').hidden = false; $('fMeName').textContent = myName(); $('fOppName').textContent = oppName();
-    msg = host ? T('mp_joined', oppName(), oppGirl()) : T('mp_waitHost'); if (host) go = 'mp_start';
+    msg = host ? T('mp_joined', oppName(), oppGirl()) : T('sp_waitPick', oppName(), oppGirl()); if (host) go = 'mp_start';
   }
   $('fStatus').textContent = msg; $('fGo').hidden = !go; if (go) { $('fGo').textContent = T(go); $('fGo').dataset.act = go; }
 }
@@ -785,12 +868,12 @@ $('fLeave').onclick = () => { unlockAudio(); leaveRace(); };
 $('fJoin').onclick = () => { unlockAudio(); openPop('code'); };
 $('fGo').onclick = () => {
   unlockAudio(); const a = $('fGo').dataset.act;
-  if (a === 'mp_start') hostGo();
+  if (a === 'mp_start') openPick(); // the host picks the first course
   else if (a === 'mp_gateOk') gateOk();
   else if (a === 'mp_host') goHost();
 };
 $('overMenuBtn').onclick = () => { if (race) leaveRace(); if (swap && !swap.done) endSwap(); swap = null; st = 'menu'; $('over').hidden = true; startM = M.AREAS[M.startArea()].at; reset(); worldX = 0; showMenu(); };
-onLang(() => { renderFriend(); if (swap && !swap.done) endSwap(); if (st === 'over' && lastOver) { dad.say = T(lastOver.why === 'fell' ? 's_fell' : 's_got'); kid.say = T('s_sorry'); } else { dad.sayT = 0; kid.sayT = 0; } fillOver(); showBest(); renderMenu(); if (!$('sheet').hidden) openSheet(sheetKind); hudCache.fill(null); lastHud = ''; });
+onLang(() => { renderFriend(); if (swap && !swap.done) endSwap(); if (st === 'over' && lastOver) { const fin = lastOver.why === 'finish'; dad.say = T(fin ? 's_fin' : lastOver.why === 'fell' ? 's_fell' : 's_got'); kid.say = T(fin ? 's_finKid' : 's_sorry'); } else { dad.sayT = 0; kid.sayT = 0; } fillOver(); showBest(); renderMenu(); if (!$('sheet').hidden) openSheet(sheetKind); hudCache.fill(null); lastHud = ''; });
 const fmt = s => s.replace('{n}', kname());
 function shout(s, d = 1.8) { dad.say = fmt(s); dad.sayT = d; }
 function kidSay(s, d = 1.6) { kid.say = fmt(s); kid.sayT = d; }
@@ -816,8 +899,9 @@ function update(dt) {
   playT += dt; // stops while paused or on the results card, so moving obstacles and the mercy window don't jump
 
   const base = runSpeed(dist);
-  speed = base * Math.max(boost > 0 ? 1.3 : 1, kid.scoot > 0 ? 1.42 : 1) * (kid.stumble > 0 ? 0.65 : 1);
+  speed = base * Math.max(boost > 0 ? 1.3 : 1, kid.scoot > 0 ? 1.42 : 1) * (kid.stumble > 0 ? 0.65 : 1) * (kid.held > 0 ? 0 : 1);
   worldX += speed * dt; dist = worldX / 40; routeM = startM + dist;
+  if (race && dist >= SPRINT_M) { finishSprint(dt); return; }
   const z = zoneAt(routeM); if (z !== zoneNow) { zoneNow = z; showBanner(z); sfx.zone(); lead = Math.min(1, lead + 0.05); M.track('zone', z); if (z === 0) floatText(T('loopBack'), worldX + 60, 150, '#9ff0ff'); }
   if (run) run.zoneMax = Math.max(run.zoneMax, z);
   while (routeM >= nextStop.abs - 20) { passStop(M.STOPS[nextStop.i]); prevStopAt = nextStop.abs; nextStop = stopAfter(nextStop.abs); }
@@ -830,14 +914,14 @@ function update(dt) {
   if (fl > focusLv) { focusLv = fl; maxFocus = Math.max(maxFocus, fl); floatText(T('f_focus', fl), worldX + 40, kid.y - 90, '#9ff0ff'); sfx.close(); }
   let dl = -(0.03 + Math.min(0.11, dist * 0.000016)) * (race ? 1 : M.robeOf().slow || 1) * (1 - 0.1 * focusLv) * assist; // Baba closes in steadily: 0.046/s at 1 km, 0.078/s at 3 km, 0.11/s at 5 km, 0.14/s from ~7 km. Gold kandura 0.6, kits 0.8
   if (graceT > 0) { graceT = Math.max(0, graceT - dt); dl *= graceK(); }
-  if (race) dl -= RACE_SQUEEZE * race.runT / 60; // a race: Baba closes in faster every minute, so nobody runs forever
   if (dad.freeze > 0) dl = 0.12; else if (dad.slow > 0) dl = 0.065;
   if (boost > 0) dl += 0.09; if (kid.scoot > 0) dl += 0.1;
+  if (kid.held > 0) dl = 0; // Baba has just let go of you
   lead = clamp(lead + dl * dt, 0, 1);
 
   boost = Math.max(0, boost - dt); dad.slow = Math.max(0, dad.slow - dt); dad.freeze = Math.max(0, dad.freeze - dt);
   kid.scoot = Math.max(0, kid.scoot - dt); kid.mag = Math.max(0, kid.mag - dt);
-  kid.inv = Math.max(0, kid.inv - dt); kid.stumble = Math.max(0, kid.stumble - dt); shake = Math.max(0, shake - dt);
+  kid.inv = Math.max(0, kid.inv - dt); kid.stumble = Math.max(0, kid.stumble - dt); kid.held = Math.max(0, kid.held - dt); shake = Math.max(0, shake - dt);
   comboT -= dt; if (comboT < 0) combo = 0;
 
   // kid physics (coyote time + jump buffer + variable jump height)
@@ -854,7 +938,7 @@ function update(dt) {
   }
   if (kid.spin > 0) { kid.spin += dt * TAU / 0.42; if (kid.spin >= TAU || kid.on) kid.spin = 0; }
   if (kid.on) { kid.coyote = 0.1; kid.ph += dt * speed * 0.034; if (Math.random() < dt * (kid.scoot > 0 ? 30 : 8)) puff(worldX - 8, kid.y, 1, kid.scoot > 0 ? '#fff4c2' : '#e7cfa3', 20); }
-  if (kid.y > H + 40) { gameOver('fell'); return; }
+  if (kid.y > H + 40) { if (race) sprintFell(); else { gameOver('fell'); return; } } // a race: a fall costs time, not the race
 
   // obstacles
   for (const o of obs) {
@@ -890,7 +974,7 @@ function update(dt) {
     const dx = it.x - worldX, dy = it.y - (kid.y - 30);
     if (dx * dx + dy * dy < 32 * 32) { it.got = true; grab(it); }
   }
-  if (lead <= 0) { lead = 0; gameOver('caught'); return; }
+  if (lead <= 0) { if (race) sprintCaught(); else { lead = 0; gameOver('caught'); return; } }
 
   // dad
   dad.wx = worldX - (ABX - dadScreenX());
@@ -931,7 +1015,7 @@ function hitKid(x, y, after) {
 }
 function syncRun() {
   if (!run) return;
-  run.dist = dist; run.sweets = candies; run.close = closeCalls; run.route = routeM;
+  run.dist = dist; run.sweets = candies; run.close = closeCalls; run.route = race ? 0 : routeM; // a race on a course you haven't reached doesn't unlock it
   run.noHit = Math.max(run.noHit, dist - runHit); run.comboMax = Math.max(run.comboMax, comboMax); run.focusMax = Math.max(run.focusMax, maxFocus); run.powers = runPow;
 }
 const missionText = d => T('ms_' + d.kind, d.goal);
@@ -942,7 +1026,7 @@ function missionPops() {
   }
 }
 function passStop(s) {
-  const got = M.reachStop(s.id); if (run) run.stops++; lastStop = s;
+  const got = race ? 0 : M.reachStop(s.id); // landmarks pay out on your own journey, not in a race if (run) run.stops++; lastStop = s;
   stopBanner = { id: s.id, t: 0, got }; sfx.close(); if (got) { play('zone', 1.2); buzz(20); }
 }
 function closeCall(x, y) { closeCalls++; M.track('close'); focusT += 3; lead = Math.min(1, lead + 0.02); sfx.close(); floatText(T('f_close'), x, y, '#9ff0ff'); }
@@ -988,6 +1072,17 @@ function updAmbient(dt) {
   compact(fish, f => f.x > -160 && f.x < W + 160);
 }
 
+// the race bar under the HUD: both runners on the way to the flag, your place and the metres left
+const sbCache = [null, null, null, null];
+function sprintHud() {
+  const o = race.opp, with2 = o.here && !o.gone && o.round === race.seed, od = o.out && o.tm != null ? SPRINT_M : o.d;
+  const pm = Math.round(clamp(dist / SPRINT_M, 0, 1) * 400) / 4, po = with2 ? Math.round(clamp(od / SPRINT_M, 0, 1) * 400) / 4 : -1;
+  const place = !with2 ? 0 : (o.out && o.tm != null) || od > dist ? 2 : 1, left = Math.max(0, Math.ceil(SPRINT_M - dist));
+  if (sbCache[0] !== pm) { sbCache[0] = pm; $('sbMe').style.left = pm + '%'; }
+  if (sbCache[1] !== po) { sbCache[1] = po; $('sbOpp').hidden = po < 0; if (po >= 0) $('sbOpp').style.left = po + '%'; }
+  if (sbCache[2] !== place) { sbCache[2] = place; $('sbPlace').hidden = !place; $('sbPlace').textContent = place ? T(place === 1 ? 'sp_1st' : 'sp_2nd') : ''; $('sbPlace').classList.toggle('first', place === 1); }
+  if (sbCache[3] !== left) { sbCache[3] = left; $('sbLeft').textContent = T('sp_m', left); }
+}
 // HUD: write to the DOM only when a value changes
 const hudCache = [null, null, null, null, null];
 let lastHud = '';
@@ -1001,6 +1096,7 @@ function hud() {
   if (hudCache[4] !== rk) { hudCache[4] = rk;
     $('routeTxt').textContent = T('next', T('st_' + ns.id), kmTxt(Math.max(0, nextStop.abs - routeM)));
     $('routeFill').style.transform = 'scaleX(' + clamp((routeM - prevStopAt) / Math.max(1, nextStop.abs - prevStopAt), 0, 1).toFixed(3) + ')'; }
+  if (race && race.seed) sprintHud();
   const chips = []; const ch = (k, v, m) => chips.push([T(k) + ' ' + v.toFixed(1) + T('sec'), v / m]);
   if (boost > 0) ch('c_vimto', boost, pT('vimto')); if (kid.scoot > 0) ch('c_scooter', kid.scoot, pT('scooter')); if (kid.mag > 0) ch('c_magnet', kid.mag, pT('magnet'));
   chips.push([T('c_focus', focusLv), focusLv >= FOCUS_MAX ? 1 : (focusT % FOCUS_STEP) / FOCUS_STEP]);
@@ -2828,6 +2924,7 @@ function render() {
   for (const o of obs) { const x = o.x - worldX + ABX; if (x > -120 && x < W + 80) {
     if (!o.hit) { ctx.fillStyle = 'rgba(20,12,8,.32)'; ctx.beginPath(); ctx.ellipse(x + o.w / 2, GROUND + 1.5, o.w * 0.62 * (1 - Math.min(0.5, o.lift / 90)), 4.5, 0, 0, TAU); ctx.fill(); }
     drawObstacle(ctx, o, x); } }
+  if (race && race.seed && st !== 'menu') drawFinish(ctx, SPRINT_M * 40 - worldX + ABX);
   for (const s of sandals) { ctx.save(); ctx.translate(s.sx, s.y); ctx.rotate(s.rot); ctx.translate(0, -7); sandalShape(ctx); ctx.restore(); }
   const fx = dadScreenX();
   ctx.fillStyle = 'rgba(0,0,0,.18)';
@@ -3202,8 +3299,11 @@ async function boot() {
   setLoad(0.96, 'ld_cache'); registerSW(); await sleep(120);
   setLoad(1, 'ready'); await sleep(280);
   clearInterval(tipTimer); ldRun = false; $('loader').classList.add('done'); setTimeout(() => { $('loader').hidden = true; }, 500);
-  startM = M.AREAS[M.startArea()].at; reset(); st = 'menu'; t = 0; $('mute').hidden = false;
-  if (hasStoredLang()) showMenu(); else $('langPick').hidden = false;
+  $('mute').hidden = false;
+  if (!(race && (st === 'play' || st === 'over'))) { // a race that started while the game was still loading keeps going
+    startM = M.AREAS[M.startArea()].at; reset(); st = 'menu'; t = 0;
+    if (hasStoredLang()) showMenu(); else $('langPick').hidden = false;
+  }
   if (!running) { running = true; requestAnimationFrame(loop); }
 }
 
@@ -3221,7 +3321,8 @@ window.__abood = {
   // the course ahead, to check that both players in a race get the same one
   get course() { return { obs: obs.map(o => o.kind + '@' + Math.round(o.x0)), gaps: gaps.map(g => Math.round(g.x0)), plats: plats.map(p => Math.round(p.x)), items: items.filter(i => i.kind !== 'candy').map(i => i.kind + '@' + Math.round(i.x)) }; },
   ghost: (m = 3, air = false) => { if (!race) return; const t0 = performance.now() - 400; Object.assign(race.opp, { here: true, run: true, out: false, gone: false, lost: false, round: race.seed, buf: [0, 1].map(i => ({ t: t0 + i * 300, x: worldX + m * 40 + i * 4, y: air ? GROUND - 80 : GROUND, a: air, sc: false })) }); }, // put the friend's ghost m metres ahead
-  raceTime: sec => { if (race) race.runT = sec; }, // testing: jump the race clock (Baba speeds up every minute)
+  raceTime: sec => { if (race) race.runT = sec; }, // testing: jump the race clock
+  tick: (sec, dt = 1 / 30) => { for (let i = 0; i < Math.round(sec / dt); i++) update(dt); }, // testing: run the game without frames (a hidden tab gets none)
   dropNet: () => N.testDrop(), // testing: cut the race connection as if the network failed
   get race() { return race && { role: race.role, fs: race.fs, seed: race.seed, area: race.area, hold: race.hold, me: race.me, opp: Object.assign({}, race.opp) }; },
   quality: q => { qLevel = clamp(q, 0, QDPR.length - 1); resize(); },
