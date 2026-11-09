@@ -30,6 +30,7 @@
 </div>
 <div id="powers"></div>
 <div id="routeHud" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z" fill="#c8202b" stroke="#2b1a12" stroke-width="2"/><circle cx="12" cy="10" r="2.2" fill="#fffaf0"/></svg><span id="routeTxt"></span><i class="rbar"><i id="routeFill"></i></i></div>
+<div id="sprintBar" hidden><span class="sb-place" id="sbPlace" hidden></span><div class="sb-track" aria-hidden="true"><i class="sb-dot sb-opp" id="sbOpp" hidden></i><i class="sb-dot sb-me" id="sbMe"></i><b class="sb-flag"></b></div><span class="sb-left" id="sbLeft"></span></div>
 <button class="corner" id="pauseBtn" data-i18n-aria="pause" aria-label="إيقاف مؤقت" hidden>II</button>
 <button class="corner" id="mute" data-i18n-aria="sound" aria-label="الصوت والموسيقى" hidden>♪</button>
 
@@ -72,6 +73,7 @@
       <div class="menu-text">
         <div class="race-box" id="raceBox" hidden>
           <p class="race-head" id="raceHead"></p>
+          <p class="race-score" id="raceScore"></p>
           <div class="race-row"><span class="race-me"><b id="raceMe" dir="ltr">0</b><small id="raceMeName"></small></span><em data-i18n="mp_vs"></em><span class="race-opp"><b id="raceOpp" dir="ltr">0</b><small id="raceOppName"></small></span></div>
         </div>
         <h2 id="overTitle"></h2>
@@ -138,6 +140,16 @@
     <div class="f-load" id="fLoad" hidden><div class="ld-bar f-bar" aria-hidden="true"><i id="fLoadFill"></i></div><p class="f-load-hint" id="fLoadHint"></p></div>
     <p class="hint" data-i18n="mp_rules"></p>
     <div class="f-actions"><button class="btn" id="fGo" type="button" hidden></button><button class="btn alt" id="fJoin" type="button" data-i18n="mp_join" hidden></button><button class="ghost" id="fLeave" type="button" data-i18n="mp_leave"></button></div>
+  </div>
+</div>
+
+<div class="overlay" id="cPick" hidden>
+  <div class="panel pick cpick" role="dialog" aria-modal="true" aria-labelledby="cpTitle">
+    <p class="kicker" id="cpRound"></p>
+    <h2 id="cpTitle" data-i18n="sp_pickTitle"></h2>
+    <p class="f-pop-hint" id="cpHint"></p>
+    <div class="area-strip" id="cpRow" role="group" data-i18n-aria="sp_pickTitle"></div>
+    <div class="f-actions"><button class="ghost" id="cpCancel" type="button" data-i18n="mp_cancel"></button></div>
   </div>
 </div>
 

@@ -342,7 +342,9 @@ export function endRun(run) {
   runTick(run);
   // remember recent run distances so the game can pace itself to this player
   const rec = S.stats.recent || (S.stats.recent = []);
+  if (!run.race) { // a race is a short sprint, so it would drag down the pace target for solo runs
   if (!run.logged) { rec.push(Math.floor(run.dist)); run.logged = true; if (rec.length > 8) rec.shift(); } else rec[rec.length - 1] = Math.max(rec[rec.length - 1], Math.floor(run.dist));
+  }
   S.stats.totalDist = (S.stats.totalDist || 0) + Math.max(0, Math.floor(run.dist - (run.distLogged || 0))); run.distLogged = Math.floor(run.dist);
   run.mult = run.mult || mult();
   const ex = exchangeOf(run), pay = Math.max(0, ex.total - (run.paid || 0));
