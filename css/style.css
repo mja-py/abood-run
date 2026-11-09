@@ -111,22 +111,45 @@ h2{font-size:36px}
 /* ---------- menu with avatar, sheets, progression ---------- */
 .menu,.over{max-width:760px}
 .menu-main{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:16px;align-items:start}
-.avatar-box{display:flex;flex-direction:column;align-items:center;gap:6px;background:radial-gradient(circle at 50% 40%,#fff6df,#f0d9a8);border:2px solid var(--sand-d);border-radius:18px;padding:8px}
-.avatar-box canvas{width:100%;max-width:220px;height:auto;aspect-ratio:1/1;display:block}
-.av-name{margin:0;font-weight:800;font-size:18px!important}
+/* the avatar card: Abood standing in a little window of Dubai sky, his name tag at the bottom (same frame as Abood to the Moon) */
+.avatar-box{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:6px;border:3px solid var(--ink);border-radius:18px;padding:5px;overflow:hidden;
+  background:radial-gradient(130% 85% at 50% 120%,#f7c070 0%,#f3a565 30%,#f6d6a0 62%,#fbeccd 100%);box-shadow:inset 0 0 0 2px rgba(255,250,240,.55),0 3px 0 var(--ink)}
+.avatar-box canvas{width:100%;height:auto;aspect-ratio:1/1;display:block}
+.av-tag{margin:0;display:flex;flex-direction:column;align-items:center;gap:0;background:var(--cream);border:2px solid var(--ink);border-radius:12px;padding:3px 8px 4px;text-align:center;line-height:1.2!important}
+.av-name{font-weight:800;font-size:17px}
+.av-best{font-size:12px;font-weight:700;opacity:.75;font-variant-numeric:tabular-nums}
 .story{font-size:15px!important}
 .label{margin:0;font-size:13px!important;font-weight:700!important;letter-spacing:.03em;opacity:.75}
 .coinpill{display:inline-flex;align-items:center;gap:6px;background:var(--cream);border:2px solid var(--ink);border-radius:999px;padding:2px 12px 2px 6px;font-weight:800;font-size:16px;box-shadow:0 2px 0 var(--ink);font-variant-numeric:tabular-nums}
 .coin{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe9a0,#e0a72a 60%,#b07a12);border:2px solid var(--ink);display:inline-block;flex:none}
-.boost-wrap{display:flex;flex-direction:column;gap:4px}
-.boost-row{display:flex;flex-wrap:wrap;gap:6px}
-.boost{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--ink);border-radius:999px;background:var(--cream);padding:2px 10px 2px 4px;font:700 13px var(--display);color:var(--ink);cursor:pointer;min-height:34px}
+.strip-wrap{display:flex;flex-direction:column;gap:4px;min-width:0}
+/* start row: this run's boosters on one side, the big start button on the other (Abood to the Moon's legs + launch) */
+.launch-row{display:flex;gap:10px;align-items:stretch;min-width:0}
+.boost-row{flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.boost-none{flex:1;min-height:48px;display:flex;align-items:center;justify-content:center;text-align:center;font:700 13px/1.2 var(--display);color:var(--ink);
+  background:rgba(255,250,240,.6);border:2px dashed var(--sand-d);border-radius:12px;padding:3px 10px;cursor:pointer;opacity:.85}
+.boost-none:active{transform:translateY(2px)}
+.launch{display:flex;align-items:center;justify-content:center;gap:8px;flex:0 0 auto;min-width:170px;padding:4px 20px}
+.btn svg,.tile svg,.iconbtn svg{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn svg{width:24px;height:24px}
+[dir="rtl"] .launch svg{transform:scaleX(-1)}
+.tools{display:flex;align-items:center;gap:6px}
+.iconbtn{display:grid;place-items:center;width:38px;height:38px;padding:0;border-radius:50%;border:2px solid var(--ink);background:var(--cream);color:var(--ink);box-shadow:0 2px 0 var(--ink);cursor:pointer;flex:none}
+.iconbtn svg{width:20px;height:20px}
+.iconbtn:active{transform:translateY(2px);box-shadow:0 0 0 var(--ink)}
+.iconbtn[aria-pressed="true"]{background:var(--sand-d);opacity:.85}
+.iconbtn:focus-visible,.boost-none:focus-visible{outline:3px solid var(--teal);outline-offset:3px}
+body:has(#menu:not([hidden])) #mute{display:none} /* the menu has its own sound button */
+.boost{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--ink);border-radius:999px;background:var(--cream);padding:2px 10px 2px 4px;font:700 13px var(--display);color:var(--ink);cursor:pointer;min-height:34px;box-shadow:0 2px 0 var(--ink)}
+.boost:active{transform:translateY(2px);box-shadow:0 0 0 var(--ink)}
 .boost canvas{width:26px;height:26px}
-.boost[aria-pressed="true"]{background:#ffe7a0;box-shadow:inset 0 0 0 2px var(--shemagh)}
+.boost[aria-pressed="true"]{background:#ffe7a0;box-shadow:inset 0 0 0 2px var(--shemagh),0 2px 0 var(--ink)}
 .boost small{opacity:.7}
-.menu-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
-.tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--cream);border:2px solid var(--ink);border-radius:14px;box-shadow:0 3px 0 var(--ink);padding:6px 4px;cursor:pointer;font:700 12.5px var(--display);color:var(--ink);min-height:58px;min-width:0}
-.tile svg{width:24px;height:24px}
+.menu-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:var(--cream);border:2px solid var(--ink);border-radius:14px;box-shadow:0 3px 0 var(--ink);padding:6px 4px;cursor:pointer;font:700 12.5px/1.15 var(--display);color:var(--ink);min-height:58px;min-width:0}
+.tile span{max-width:100%;overflow:hidden;text-align:center;line-height:1.08;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.tile svg{width:24px;height:24px;stroke-width:2}
+.tile.race{background:var(--teal);color:var(--cream)}
 .tile:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
 .tile:focus-visible,.boost:focus-visible,.card button:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 .dot{position:absolute;top:-5px;inset-inline-end:-5px;width:14px;height:14px;border-radius:50%;background:var(--shemagh);border:2px solid var(--cream)}
@@ -168,8 +191,17 @@ h2{font-size:36px}
 .login-days div.done{background:#d8efd0;border-color:#4f8a3a}
 .login-days div.today{border-color:var(--shemagh);box-shadow:inset 0 0 0 2px var(--shemagh)}
 #note{position:fixed;left:50%;transform:translateX(-50%);top:calc(16px + env(safe-area-inset-top,0px));z-index:60;background:var(--ink);color:var(--cream);border-radius:12px;padding:6px 14px;font-weight:700;font-size:15px;max-width:calc(100% - 32px)}
-@media (max-width:640px){ .menu-main{grid-template-columns:1fr} .avatar-box{flex-direction:row;justify-content:center} .avatar-box canvas{max-width:120px} .menu-grid{grid-template-columns:repeat(3,minmax(0,1fr))}  }
-@media (max-height:440px){ .menu-main{grid-template-columns:minmax(0,170px) minmax(0,1fr);gap:12px} .avatar-box canvas{max-width:150px} .story{display:none} .menu-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px} .tile{min-height:48px;padding:4px 2px;font-size:11.5px} .tile svg{width:20px;height:20px} .score b{font-size:20px!important} .sheet-top h2{font-size:22px} .card canvas{width:70px;height:70px} }
+@media (max-width:640px){ .menu-main{grid-template-columns:1fr} .avatar-box{flex-direction:row;align-items:center} .avatar-box canvas{max-width:120px} .av-tag{flex:1}
+  .menu-grid{grid-template-columns:repeat(3,minmax(0,1fr))} .launch-row{flex-wrap:wrap} .launch{flex:1 1 100%} }
+/* narrow landscape phones (667, 568): the same column widths as Abood to the Moon */
+@media (max-width:720px) and (orientation:landscape){ .menu-main{grid-template-columns:minmax(0,148px) minmax(0,1fr)} .launch{min-width:0;padding:4px 14px} .launch svg{display:none} .tile{font-size:11px} }
+@media (max-height:440px){ .menu-main{grid-template-columns:minmax(0,168px) minmax(0,1fr);gap:12px} .story{display:none} .strip-wrap .label{display:none} .menu-text{gap:7px}
+  .iconbtn{width:34px;height:34px} .lang button{height:26px;width:40px} .coinpill{font-size:15px} .av-name{font-size:15px} .av-tag{padding:2px 6px 3px}
+  .boost-none{min-height:44px;font-size:12px} .boost{min-height:30px;padding:1px 8px 1px 2px;font-size:12px;gap:4px} .boost canvas{width:22px;height:22px} .boost-row{gap:5px} .launch{min-width:140px} .launch svg{width:20px;height:20px}
+  .menu-grid{gap:6px} .tile{min-height:46px;padding:3px 2px;font-size:11.5px} .tile svg{width:20px;height:20px}
+  .score b{font-size:20px!important} .sheet-top h2{font-size:22px} .card canvas{width:70px;height:70px} }
+@media (max-height:390px){ .menu .kicker{display:none} }
+@media (max-width:440px){ .menu{padding-inline:14px} .menu .pills{flex-wrap:nowrap} .menu .tools{gap:4px} .menu .iconbtn{width:34px;height:34px} .menu .lang button{width:36px;height:28px} .menu .lang svg{width:24px;height:16px} }
 #ldCv{height:auto!important;aspect-ratio:8/5}
 .card .prog{height:9px;border:2px solid var(--ink);border-radius:6px;background:#eadcc2;overflow:hidden}
 .card .prog i{display:block;height:100%;background:linear-gradient(90deg,#f6b73c,#7fc96b)}
@@ -191,7 +223,8 @@ h2{font-size:36px}
 .area-card.on::after{content:"✓";position:absolute;top:5px;inset-inline-end:5px;width:20px;height:20px;border-radius:50%;background:var(--shemagh);color:#fff;font:800 12px/20px var(--display);text-align:center}
 .area-card.shut{cursor:default;background:#eadcc2}
 .area-card.shut canvas{filter:grayscale(.9) brightness(.8)}
-.area-card .lock{position:absolute;top:22px;left:50%;transform:translateX(-50%);font-size:20px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+.area-card .lock{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:26px;height:26px;padding:4px;border-radius:50%;background:var(--ink);color:var(--cream)}
+.area-card .lock svg{display:block;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round}
 .area-card:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 .journey{text-align:start!important;opacity:.8}
 #routeHud{position:fixed;left:max(14px, env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:6px;background:var(--cream);border:2px solid var(--ink);border-radius:999px;
@@ -236,9 +269,6 @@ h2{font-size:36px}
   .area-card{flex-basis:100px} .area-card b{font-size:11.5px} .area-card small{font-size:10px} }
 
 /* ---- race a friend ---- */
-.start-row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:8px}
-.start-row>.btn{width:100%;min-width:0;margin:0}
-#friendBtn{font-size:18px;padding:4px 10px}
 .friend{gap:8px}
 .friend h2{margin:0}
 .f-status{font-weight:700!important;font-size:17px!important;min-height:1.45em}
@@ -255,7 +285,7 @@ h2{font-size:36px}
 .race-row b{font-size:26px;font-variant-numeric:tabular-nums;line-height:1.05}
 .race-row small{font-size:12px;opacity:.75}
 .race-row .win b{color:var(--shemagh)}
-@media (max-height:440px){ .f-vs canvas{width:64px;height:64px} .friend .hint{display:none} .race-row b{font-size:20px} .race-head{font-size:17px!important} #friendBtn{font-size:16px} }
+@media (max-height:440px){ .f-vs canvas{width:64px;height:64px} .friend .hint{display:none} .race-row b{font-size:20px} .race-head{font-size:17px!important} }
 .over-actions>button[disabled],.f-actions>button[disabled]{background:#d9cfbd;color:#6b5a48;box-shadow:0 2px 0 var(--ink);cursor:default;transform:none}
 @media (max-height:440px){ .racing .score,.racing #overMsg,.racing .route-line{display:none} .racing .race-box{flex-direction:row;align-items:center;justify-content:space-between;gap:10px;padding:4px 12px} }
 .f-choose{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;text-align:start}
