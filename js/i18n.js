@@ -104,7 +104,9 @@ const STR = {
     mp_making: 'نسوّي غرفة السباق…', mp_joining: 'ندخلك سباق ربعك…', mp_joiningG: 'ندخلج سباق ربعج…',
     mp_send: 'عط ربعك هالرمز. يكتبه في «ادخل الغرفة» من أي مكان.', mp_sendG: 'عطي ربعج هالرمز. تكتبه في «ادخلي الغرفة» من أي مكان.',
     mp_hello: 'وصلنا! لحظة…', mp_joined: (n, g) => g ? `${n} دخلت السباق!` : `${n} دخل السباق!`, mp_waitHost: 'ننتظر صاحب الغرفة يبدأ السباق…',
-    mp_start: 'يلا نتسابق!', mp_rules: 'نفس الطريق لكم الثنين وبدون معززات. أول واحد يوصل خط النهاية يفوز بالجولة. الطيحة ومسكة بابا تأخرك بس ما تطلعك. أحسن من ثلاث جولات، واللي يخسر جولة يختار الطريق الجاي.',
+    mp_start: 'يلا نتسابق!', mp_rules: 'بابا ما يلحقكم في السباق: سرعة بينكم بس، على نفس الطريق. البسوا اللي تبونه، الملابس والمعززات ما تعطي أي ميزة. في الطريق صناديق حظ، واللي ورا حظه أحسن عشان يلحق. أول واحد يوصل خط النهاية يفوز بالجولة. أحسن من ثلاث جولات، واللي يخسر جولة يختار الطريق الجاي.',
+    f_shieldGet: 'درع!', f_slipMe: 'تزحلقت!', f_slipMeG: 'تزحلقتي!', f_mbSent: (n, g) => `كرات على ${n}!`,
+    f_mbIn: (n, g) => g ? `${n} رمت عليك كرات! نط!` : `${n} رمى عليك كرات! نط!`, f_mbInG: (n, g) => g ? `${n} رمت عليج كرات! نطي!` : `${n} رمى عليج كرات! نطي!`,
     mp_leave: 'اطلع', mp_leaveG: 'اطلعي', mp_left: (n, g) => g ? `${n} طلعت من السباق` : `${n} طلع من السباق`,
     mp_err_offline: 'ما قدرنا نوصل. تأكد من النت وجرّب مرة ثانية.', mp_err_offlineG: 'ما قدرنا نوصل. تأكدي من النت وجرّبي مرة ثانية.',
     mp_err_noroom: 'ما لقينا غرفة بهالرمز. تأكد منه أو اطلب رمز جديد.', mp_err_noroomG: 'ما لقينا غرفة بهالرمز. تأكدي منه أو اطلبي رمز جديد.',
@@ -151,6 +153,10 @@ const STR = {
     sp_rdWin: (n, g, r) => `فزت بالجولة ${r}!`, sp_rdWinG: (n, g, r) => `فزتي بالجولة ${r}!`,
     sp_rdLose: (n, g, r) => g ? `${n} فازت بالجولة ${r}` : `${n} فاز بالجولة ${r}`,
     sp_matchWin: 'فزت بالمباراة!', sp_matchWinG: 'فزتي بالمباراة!', sp_matchLose: (n, g) => g ? `${n} فازت بالمباراة` : `${n} فاز بالمباراة`,
+    sp_matchTie: 'المباراة تعادل!', sp_bonus: n => `+${n} درهم جايزة الفوز بالمباراة!`,
+    sp_waitT: (n, g, s) => g ? `${n} بعدها تركض… باقي لها ${s} ث` : `${n} بعده يركض… باقي له ${s} ث`,
+    sp_lateT: 'خلص الوقت!', sp_lateQ: 'ربعك وصل قبلك بـ٣٠ ثانية. المرة الجاية أسرع!', sp_lateQG: 'ربعج وصل قبلج بـ٣٠ ثانية. المرة الجاية أسرع!',
+    c_late: s => `بسرعة! ${s} ث`, sw_cap: 'خلصت فلوس السباقات اليوم',
   },
   en: {
     title: 'Run, Abood!',
@@ -256,7 +262,8 @@ const STR = {
     mp_send: "Tell your friend this code. They type it under 'Join room', from any network.",
    
     mp_hello: 'Connected! One moment…', mp_joined: n => `${n} joined the race!`, mp_waitHost: 'Waiting for the host to start the race…',
-    mp_start: "Let's race!", mp_rules: 'The same course for both of you, no boosters. First to the finish line wins the round. A fall or Baba grabbing you costs time, not the race. Best of 3, and whoever loses a round picks the next course.',
+    mp_start: "Let's race!", mp_rules: "No Baba in a race: it's pure speed between you two, on the same course. Wear any outfit you like; outfits and boosters give no advantage. Luck boxes on the way give power-ups, and whoever is behind gets better luck to catch up. First to the finish line wins the round. Best of 3, and whoever loses a round picks the next course.",
+    f_shieldGet: 'Shield!', f_slipMe: 'You slipped!', f_mbSent: n => `Marbles for ${n}!`, f_mbIn: n => `${n} rolled marbles at you! Jump!`,
     mp_leave: 'Leave', mp_left: n => `${n} left the race`,
     mp_err_offline: "Couldn't connect. Check the internet and try again.",
     mp_err_noroom: 'No room has this code. Check it or ask for a new one.',
@@ -293,6 +300,10 @@ const STR = {
     sp_theyPick: n => `${n} picks the next course`, sp_waitPick: n => `Waiting for ${n} to pick the course…`,
     sp_rdWin: (n, g, r) => `You won round ${r}!`, sp_rdLose: (n, g, r) => `${n} won round ${r}`,
     sp_matchWin: 'You won the match!', sp_matchLose: n => `${n} won the match`,
+    sp_matchTie: 'The match is a tie!', sp_bonus: n => `+AED ${n} for winning the match!`,
+    sp_waitT: (n, g, s) => `${n} is still running… ${s}s left`,
+    sp_lateT: "Time's up!", sp_lateQ: 'Your friend finished 30 seconds ago. Faster next time!',
+    c_late: s => `Hurry! ${s}s`, sw_cap: "Today's race coins are used up",
   },
 };
 
