@@ -33,6 +33,7 @@ button{font-family:var(--display);-webkit-user-select:none;user-select:none;touc
 .stat small{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;opacity:.75}
 .stat.pop{animation:pop .25s ease-out}
 @keyframes pop{50%{transform:scale(1.15)}}
+.hud.race .chase{visibility:hidden} /* no Baba in a race */
 .chase{direction:ltr;flex:1;max-width:360px;display:flex;align-items:center;gap:8px;color:var(--cream);font-weight:700;font-size:13px;letter-spacing:.04em;text-shadow:0 1px 0 var(--ink)}
 .bar{flex:1;height:14px;border:2px solid var(--ink);border-radius:8px;background:#5b2a2a;overflow:hidden;box-shadow:0 3px 0 var(--ink)}
 .bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#f6b73c,#7fc96b);transform-origin:left center;transform:scaleX(.6);will-change:transform}

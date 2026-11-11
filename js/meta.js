@@ -337,6 +337,11 @@ export function exchangeOf(run) {
   const mu = run.mult || mult(), s = Math.floor(run.sweets / SWEETS_PER_AED), d = Math.floor(run.dist / M_PER_AED);
   return { sweets: run.sweets, dist: Math.floor(run.dist), s, d, mult: mu, total: Math.floor(Math.round((s + d) * mu * 100) / 100) };
 }
+// Races with a friend pay like a run, but only up to RACE_DAY_CAP a day (match-win bonuses included), so racing your own
+// second phone over and over isn't the easy way to get rich. Winning a match pays MATCH_BONUS on top, within the cap.
+export const RACE_DAY_CAP = 100, MATCH_BONUS = 10;
+function raceLeft() { const d = today(); if (!S.raceDay || S.raceDay.date !== d) S.raceDay = { date: d, paid: 0 }; return Math.max(0, RACE_DAY_CAP - S.raceDay.paid); }
+export function raceBonus() { const b = Math.min(MATCH_BONUS, raceLeft()); if (b) { S.raceDay.paid += b; S.coins += b; save(); } return b; }
 // Called when a run ends (and again if the player revives and ends later): pays only what has not been paid yet.
 export function endRun(run) {
   runTick(run);
@@ -347,8 +352,10 @@ export function endRun(run) {
   }
   S.stats.totalDist = (S.stats.totalDist || 0) + Math.max(0, Math.floor(run.dist - (run.distLogged || 0))); run.distLogged = Math.floor(run.dist);
   run.mult = run.mult || mult();
-  const ex = exchangeOf(run), pay = Math.max(0, ex.total - (run.paid || 0));
+  const ex = exchangeOf(run); let pay = Math.max(0, ex.total - (run.paid || 0));
+  if (run.race) { const room = raceLeft(); if (pay > room) { pay = room; ex.cap = 1; } S.raceDay.paid += pay; }
   run.paid = (run.paid || 0) + pay; S.coins += pay;
+  if (ex.cap) ex.total = run.paid; // the results card shows what was really paid
   const nb = Math.floor(run.dist) > S.stats.best; if (nb) S.stats.best = Math.floor(run.dist);
   const levelUp = ladderUp();
   const badges = checkBadges(run);
