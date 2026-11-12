@@ -106,6 +106,8 @@ const STR = {
     mp_hello: 'وصلنا! لحظة…', mp_joined: (n, g) => g ? `${n} دخلت السباق!` : `${n} دخل السباق!`, mp_waitHost: 'ننتظر صاحب الغرفة يبدأ السباق…',
     mp_start: 'يلا نتسابق!', mp_rules: 'بابا ما يلحقكم في السباق: سرعة بينكم بس، على نفس الطريق. البسوا اللي تبونه، الملابس والمعززات ما تعطي أي ميزة. في الطريق صناديق حظ، واللي ورا حظه أحسن عشان يلحق. أول واحد يوصل خط النهاية يفوز بالجولة. أحسن من ثلاث جولات، واللي يخسر جولة يختار الطريق الجاي.',
     f_shieldGet: 'درع!', f_slipMe: 'تزحلقت!', f_slipMeG: 'تزحلقتي!', f_mbSent: (n, g) => `كرات على ${n}!`,
+    f_mbHit: (n, g) => g ? `صادت! ${n} تزحلقت` : `صادت! ${n} تزحلق`, f_mbBlock: (n, g) => g ? `${n} صدّت الكرات` : `${n} صدّ الكرات`, f_mbMiss: (n, g) => g ? `${n} فلتت من الكرات!` : `${n} فلت من الكرات!`,
+    sp_draft: 'هوا ربعك يسحبك! لحّق عليه', sp_draftG: 'هوا ربعج يسحبج! لحّقي عليه',
     f_mbIn: (n, g) => g ? `${n} رمت عليك كرات! نط!` : `${n} رمى عليك كرات! نط!`, f_mbInG: (n, g) => g ? `${n} رمت عليج كرات! نطي!` : `${n} رمى عليج كرات! نطي!`,
     mp_leave: 'اطلع', mp_leaveG: 'اطلعي', mp_left: (n, g) => g ? `${n} طلعت من السباق` : `${n} طلع من السباق`,
     mp_err_offline: 'ما قدرنا نوصل. تأكد من النت وجرّب مرة ثانية.', mp_err_offlineG: 'ما قدرنا نوصل. تأكدي من النت وجرّبي مرة ثانية.',
@@ -263,7 +265,8 @@ const STR = {
    
     mp_hello: 'Connected! One moment…', mp_joined: n => `${n} joined the race!`, mp_waitHost: 'Waiting for the host to start the race…',
     mp_start: "Let's race!", mp_rules: "No Baba in a race: it's pure speed between you two, on the same course. Wear any outfit you like; outfits and boosters give no advantage. Luck boxes on the way give power-ups, and whoever is behind gets better luck to catch up. First to the finish line wins the round. Best of 3, and whoever loses a round picks the next course.",
-    f_shieldGet: 'Shield!', f_slipMe: 'You slipped!', f_mbSent: n => `Marbles for ${n}!`, f_mbIn: n => `${n} rolled marbles at you! Jump!`,
+    f_shieldGet: 'Shield!', f_slipMe: 'You slipped!', f_mbSent: n => `Marbles for ${n}!`,
+    f_mbHit: n => `Got ${n}! Slipped`, f_mbBlock: n => `${n} blocked your marbles`, f_mbMiss: n => `${n} dodged your marbles!`, sp_draft: 'Slipstream! Catch up', f_mbIn: n => `${n} rolled marbles at you! Jump!`,
     mp_leave: 'Leave', mp_left: n => `${n} left the race`,
     mp_err_offline: "Couldn't connect. Check the internet and try again.",
     mp_err_noroom: 'No room has this code. Check it or ask for a new one.',

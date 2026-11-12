@@ -1,0 +1,3 @@
+const rows=JSON.parse(require("fs").readFileSync(process.argv[2]));
+console.log("cfg      pair           betW  match  tBet  tWor margin <1s%  chg  cb15          cb30          mb/r mbHit% shld obsH");
+for(const r of rows) console.log(r.cfg.padEnd(8), r.pair.padEnd(14), String(r.betterWins).padStart(5), String(r.match).padStart(5), String(r.tBetter).padStart(5), String(r.tWorse).padStart(5), String(r.margin).padStart(5), String(r.under1s).padStart(5), String(r.leadChanges).padStart(5), String(r.comeback15).padEnd(13), String(r.comeback30).padEnd(13), String(r.mbPerRace).padStart(4), String(r.mbHitPct).padStart(6), String(r.shieldSaves).padStart(4), r.obsHits);
