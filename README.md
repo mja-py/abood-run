@@ -111,12 +111,14 @@ Two players race on the same course, each on their own phone, from anywhere.
 
   | Your place | Shield | Vimto | Marbles | Scooter |
   |---|---|---|---|---|
-  | 15 m or more ahead | 55% | 45% | | |
-  | Within 15 m | 25% | 40% | 35% | |
-  | 15–60 m behind | | 30% | 35% | 35% |
-  | 60 m or more behind | | 15% | 25% | 60% |
+  | 6 m or more ahead | 60% | 40% | | |
+  | Within 6 m | 15% | 45% | 40% | |
+  | 6–25 m behind | | 30% | 25% | 45% |
+  | 25 m or more behind | | 25% | 10% | 65% |
 
-  Far behind, Vimto and the scooter also last 40% longer. The shield takes one hit and is never rolled while you already have one. **Marbles** roll at your friend: after a 0.9-second "!" warning at the back of their screen they roll in from behind, and your friend has to jump them or slip (a scooter smashes them and a shield blocks them). Marbles only come up when your friend is level with you or ahead and still running.
+  Far behind, Vimto and the scooter also last 40% longer. The shield takes one hit and is never rolled while you already have one. **Marbles** roll at your friend: after a 0.6-second "!" warning at the back of their screen, three sets roll in from behind 0.2 s apart, so one late hop won't clear them all. Slipping on marbles costs 1.5 s at half speed (a scooter smashes them and a shield blocks them). Marbles only come up when your friend is level with you or ahead and still running. The thrower sees whether they hit, were blocked or were dodged.
+- **Slipstream:** running behind your friend pulls you along. From 4 m back you run a little faster, up to 8% faster at 30 m or more back, with faint wind lines and a "Slipstream!" note the first time in a round. It stops when you draw level or your friend finishes.
+- **Why these numbers:** they come from a simulator that plays thousands of races between bots of different skill on the real course code. Before this tuning, a player 15 m behind at 400 m almost never won (2–5%), races had under one lead change, and marbles hit 1–4% of the time. Now, between equal players about 1 race in 5 is won from 15 m behind at 400 m, more than half finish within a second, and marbles land about 1 time in 5; a clearly better player still wins about 4 rounds in 5. The simulator is in `tools/race-sim` (not deployed).
 - **Best of 3, and the loser picks:** a match is the best of 3 rounds. Whoever loses a round picks the next course from all 11 areas, reached or not (the host on a tie), and whoever loses the match picks the first course of the next one. The faster finish time wins a round. A match that ends level (a tied round in it) says so. The host keeps the score and sends it with every round, so both games always agree.
 - **Real-time clock, 30 seconds to finish:** the race clock is real time from "Go". On a slow phone the game runs extra steps per frame instead of slowing down, so nobody gets slow motion. Short freezes while the game is on screen are forgiven, up to 2 seconds a round; time with the app in the background counts, so leaving the app is not a free pause. Once one player finishes, the other has 30 seconds (a "Hurry!" countdown) or their distance counts and the round is over, so nobody can hold a match up.
 - **Checks on the friend's game:** a finish time is never accepted faster than 48 s (600 m on a scooter the whole way is about 50 s), nor more than 8 s faster than the time that really went by (when this game saw the whole round on screen and without a drop). Marbles count only from a real luck box on that course, each box once, at most one a second; sets that arrive close together queue up instead of cancelling. The testing hooks (`window.__abood`) exist only on a local server.
