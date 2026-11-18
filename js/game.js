@@ -215,9 +215,10 @@ function buzz(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e
 let race = null; // set while racing a friend online (see the race section)
 let st = 'boot', t = 0, stT = 0, worldX = 0, speed = 320, lead = 0.6, dist = 0, candies = 0, candyCount = 0, boost = 0, shake = 0, graceT = 0;
 let combo = 0, comboT = 0, closeCalls = 0, zoneNow = 0, banner = null;
-let gaps = [], plats = [], obs = [], items = [], parts = [], sandals = [], birds = [], fish = [], genX = 0, holding = false;
+let gaps = [], plats = [], obs = [], items = [], parts = [], sandals = [], birds = [], fish = [], forks = [], genX = 0, nextFork = Infinity, holding = false;
 // route progress and per-run mission counters
 let nextStop = null, prevStopAt = 0, lastStop = null, stopBanner = null, runHit = 0, runPow = 0, maxFocus = 0, comboMax = 0, runDone = [];
+const KID_H = 54; // how tall Abood is for a hit or a head bump
 const kid = { y: GROUND, vy: 0, on: true, jumps: 0, coyote: 0, buf: 0, inv: 0, stumble: 0, ph: 0, sx: 1, sy: 1, spin: 0, scoot: 0, mag: 0, say: '', sayT: 0, next: 5 };
 const dad = { y: GROUND, vy: 0, on: true, ph: 0, slow: 0, freeze: 0, say: '', sayT: 0, next: 1.5, wx: 0, anger: 0, windup: 0, cd: 8, has: true, regrab: 0 };
 try { muted = localStorage.getItem('abood-muted') === '1'; } catch (e) {}
@@ -249,7 +250,7 @@ const runSpeed = d => 310 + Math.min(260, d * 0.05); // grows steadily: 360 at 1
 function reset() {
   focusT = 0; focusLv = 0; paceT = M.paceTarget(); assist = 1; spawnBoost = 1; sandalMul = 1; mercyT = 0; hitTimes = [];
   t = 0; worldX = 0; lead = 0.7; dist = 0; routeM = startM; nextStop = stopAfter(startM + 25); prevStopAt = startM; lastStop = null; stopBanner = null; fish = []; runHit = 0; runPow = 0; maxFocus = 0; comboMax = 0; runDone = []; candies = 0; candyCount = 0; boost = 0; shake = 0; graceT = GRACE; combo = 0; comboT = 0; closeCalls = 0; zoneNow = 0; banner = null;
-  gaps = []; plats = []; obs = []; items = []; parts = []; sandals = []; genX = 900;
+  gaps = []; plats = []; obs = []; items = []; parts = []; sandals = []; forks = []; genX = 900; nextFork = genX + crnd(FORK_FIRST[0], FORK_FIRST[1]);
   Object.assign(kid, { y: GROUND, vy: 0, on: true, jumps: 0, coyote: 0, buf: 0, inv: 0, stumble: 0, sx: 1, sy: 1, spin: 0, scoot: 0, mag: 0, shield: 0, held: 0, say: '', sayT: 0, next: 6 });
   Object.assign(dad, { y: GROUND, vy: 0, on: true, slow: 0, freeze: 0, say: T('s_come'), sayT: 2, next: 3, anger: 0, windup: 0, cd: 9, has: true, regrab: 0 });
 }
@@ -259,12 +260,36 @@ const OB = { box: { w: 34, h: 32 }, bin: { w: 30, h: 46 }, cat: { w: 34, h: 30 }
   sack: { w: 30, h: 36 }, carpet: { w: 58, h: 20 }, crab: { w: 30, h: 18, side: 1 }, cooler: { w: 40, h: 30 }, rock: { w: 42, h: 28 }, bush: { w: 38, h: 30 }, lizard: { w: 46, h: 14, vx: -110 },
   bike: { w: 44, h: 30 }, gas: { w: 22, h: 36 }, dbag: { w: 32, h: 30 }, dbike: { w: 60, h: 54, vx: -170 }, crate: { w: 32, h: 40 }, chairs: { w: 30, h: 46 },
   castle: { w: 40, h: 28 }, mandoos: { w: 36, h: 32 }, ring: { w: 30, h: 30, vx: -40 }, gbag: { w: 22, h: 40 }, cart: { w: 50, h: 40, vx: -120 }, escooter: { w: 40, h: 38 }, basket: { w: 32, h: 24 }, flower: { w: 30, h: 32 }, dallah: { w: 28, h: 34 }, wood: { w: 44, h: 20 }, buggy: { w: 58, h: 38, vx: -150 } };
-function addObs(x, k) { obs.push({ x, x0: x, kind: k, w: OB[k].w, h: OB[k].h, hit: false, hx: 0, hy: 0, rot: 0, ph: 0, lift: 0, clear: 999, passed: false, seed: crand() * 6 }); }
+function addObs(x, k, by = GROUND) { obs.push({ x, x0: x, by, kind: k, w: OB[k].w, h: OB[k].h, hit: false, hx: 0, hy: 0, rot: 0, ph: 0, lift: 0, clear: 999, passed: false, seed: crand() * 6 }); }
 function candyArc(x0, x1, yBase, h) { const n = Math.max(3, Math.round((x1 - x0) / 36)); for (let i = 0; i < n; i++) { const f = i / (n - 1); items.push({ x: x0 + (x1 - x0) * f, y: yBase - Math.sin(f * Math.PI) * h, kind: 'candy', c: i }); } }
 function box(x, y) { const k = power(); items.push({ x, y, kind: k }); if (k === 'luck' && race && race.boxes) race.boxes.add(Math.round(x)); } // a power-up; in a race, its spot is remembered
 function power() { const r = crand(); if (race) return 'luck'; return r < 0.24 ? 'vimto' : r < 0.46 ? 'marbles' : r < 0.62 ? 'phone' : r < 0.82 ? 'magnet' : 'scooter'; }
+// Forks: a bridge over an underpass, so there is a path to choose. The rule never changes, and a sign before each fork
+// shows it. The bridge is the hard road with the prizes: sweets, an obstacle, holes in the deck, and a power-up box
+// (plus a sweets jar) on the last piece; a fall through a hole only drops you onto the underpass. The underpass is the
+// easy road: nothing in the way, a few sweets, no prize. You choose at the step: from below, the whole bridge is a
+// roof (a jump bumps its head), so there is no hopping up through a hole for the prize.
+const FORK_Y = 118, FORK_STEP_Y = 62, DECK_H = 12, FORK_FIRST = [3600, 6600], FORK_EVERY = [7000, 10000], FORK_MAX = 1800, FORK_LOW = 32;
+function genFork() {
+  const x0 = genX, zi = zoneAt(routeOfX(x0)), y = GROUND - FORK_Y, n = crand() < 0.5 ? 3 : 2, hard = n - 2, keep = []; // hard: the piece with the obstacle
+  const low = ZONES[zi].obs.filter(k => !OB[k].vx && !OB[k].bounce && !OB[k].side && OB[k].h <= FORK_LOW), pool = low.length ? low : ['box'];
+  plats.push({ x: x0, y: GROUND - FORK_STEP_Y, w: 100, z: zi }); // the step up
+  let x = x0 + 140; const d0 = x;
+  for (let i = 0; i < n; i++) {
+    const w = i === hard ? crnd(440, 520) : crnd(300, 400), from = items.length;
+    plats.push({ x, y, w, z: zi, deck: 1 });
+    if (i === hard) { const ox = x + w * 0.35; addObs(ox, cpick(pool), y); keep.push([ox - 50, ox + 90]); }
+    if (i === n - 1) { box(x + w * 0.7, y - 34); items.push({ x: x + w * 0.3, y: y - 30, kind: 'jar', c: 0 }); keep.push([x + w * 0.7 - 40, x + w * 0.7 + 40], [x + w * 0.3 - 30, x + w * 0.3 + 30]); }
+    for (let cx = x + 30; cx < x + w - 20; cx += 34) if (!keep.some(([a, b]) => cx > a && cx < b)) items.push({ x: cx, y: y - 26, kind: 'candy', c: cx });
+    x += w + (i < n - 1 ? crnd(95, 125) : 0);
+  }
+  for (let i = 0; i < 4; i++) items.push({ x: x0 + 300 + i * 34, y: GROUND - 26, kind: 'candy', c: i }); // a few sweets below
+  forks.push({ x0, x1: x, d0, y, sign: x0 - 250, z: zi });
+  genX = x + crnd(420, 520); nextFork = x + crnd(FORK_EVERY[0], FORK_EVERY[1]);
+}
 function gen() {
   while (genX < worldX + W + 400) {
+    if (genX >= nextFork) { if (race && genX + FORK_MAX > SPRINT_M * 40 - 600) nextFork = Infinity; else { genFork(); continue; } } // none across a finish line
     const z = ZONES[zoneAt(routeOfX(genX))], r = crand(), gd = race ? Math.max(0, (genX - 900) / 40) + SPRINT_HARD : dist, hard = Math.min(1, gd / 8000), spread = Math.sqrt(runSpeed(gd) / 320); // spacing grows with speed so it stays jumpable
     if (r < 0.34) {
       const k = cpick(z.obs); addObs(genX, k);
@@ -290,7 +315,7 @@ function gen() {
   }
   if (!Number.isFinite(genX)) genX = worldX + W + 100;
   const cut = worldX - ABX - 200;
-  compact(gaps, g => g.x1 > cut); compact(plats, p => p.x + p.w > cut); compact(obs, o => o.x + o.hx + 80 > cut && o.hy < 300); compact(items, i => i.x > cut && !i.got);
+  compact(gaps, g => g.x1 > cut); compact(forks, f => f.x1 > cut); compact(plats, p => p.x + p.w > cut); compact(obs, o => o.x + o.hx + 80 > cut && o.hy < 300); compact(items, i => i.x > cut && !i.got);
 }
 const overGap = (x, m = 5) => { for (const g of gaps) if (x > g.x0 + m && x < g.x1 - m) return true; return false; };
 
@@ -993,7 +1018,7 @@ function update(dt) {
   updAmbient(dt);
   if (banner) { banner.t += dt; if (banner.t > 3.4) banner = null; }
   if (st === 'menu') {
-    worldX += 240 * dt; dist = worldX / 40; routeM = startM + dist; kid.ph += dt * 9; dad.ph += dt * 10; gen(); gaps.length = 0; obs.length = 0; items.length = 0; plats.length = 0;
+    worldX += 240 * dt; dist = worldX / 40; routeM = startM + dist; kid.ph += dt * 9; dad.ph += dt * 10; gen(); gaps.length = 0; obs.length = 0; items.length = 0; plats.length = 0; forks.length = 0;
     dad.sayT -= dt; kid.sayT -= dt; if (dad.sayT < -1.2) shout(pick(T('s_shouts')), 2); if (kid.sayT < -3 && dad.sayT < 0) kidSay(pick(T('s_taunts')), 1.6);
     zoneNow = zoneAt(routeM); return;
   }
@@ -1006,6 +1031,7 @@ function update(dt) {
   speed = base * Math.max(boost > 0 ? 1.3 : 1, kid.scoot > 0 ? 1.42 : 1) * (kid.stumble > 0 ? (race ? RACE_SLIP : 0.65) : 1) * (kid.held > 0 ? 0 : 1);
   worldX += speed * dt; dist = worldX / 40; routeM = startM + dist;
   if (race && dist >= SPRINT_M) { finishSprint(dt); return; }
+  for (const f of forks) if (!f.told && worldX > f.sign - 520) { f.told = 1; const d = M.data(); if ((d.forkTips || 0) < 3) { d.forkTips = (d.forkTips || 0) + 1; M.save(); note(T('fk_tip'), 4200); } } // the first few forks explain themselves
   if (race && !race.draftSaid && draftK() > 1.03) { race.draftSaid = true; floatText(T('sp_draft'), worldX + 60, kid.y - 100, '#9ff0ff'); } // once a round, so the catch-up isn't a mystery
   const z = zoneAt(routeM); if (z !== zoneNow) { zoneNow = z; showBanner(z); sfx.zone(); lead = Math.min(1, lead + 0.05); M.track('zone', z); if (z === 0) floatText(T('loopBack'), worldX + 60, 150, '#9ff0ff'); }
   if (run) run.zoneMax = Math.max(run.zoneMax, z);
@@ -1039,6 +1065,10 @@ function update(dt) {
   }
   kid.vy += 2300 * dt * (!holding && kid.vy < 0 ? 2.2 : 1);
   const py = kid.y; kid.y += kid.vy * dt; kid.on = false;
+  if (kid.vy < 0) for (const f of forks) { // under a bridge (its holes too): a jump bumps its head and comes straight back down
+    if (worldX + 8 <= f.d0 || worldX - 8 >= f.x1) continue;
+    const u = f.y + DECK_H + KID_H; if (py >= u && kid.y < u) { kid.y = u; kid.vy = 0; }
+  }
   if (kid.vy >= 0) {
     for (const p of plats) { if (worldX + 8 > p.x && worldX - 8 < p.x + p.w && py <= p.y + 1 && kid.y >= p.y) { kid.y = p.y; land(); break; } }
     if (!kid.on && !overGap(worldX) && py <= GROUND + 1 && kid.y >= GROUND) { kid.y = GROUND; land(); }
@@ -1055,7 +1085,7 @@ function update(dt) {
     if (d.side) { o.x = o.x0 + Math.sin(playT * 2.4 + o.seed) * 26; o.ph += dt * 8; }
     o.lift = d.bounce ? Math.abs(Math.sin(playT * 4.2 + o.seed)) * 46 : 0;
     if (d.bounce) o.ph -= dt * 6;
-    const top = GROUND - o.lift - o.h, bot = GROUND - o.lift;
+    const top = o.by - o.lift - o.h, bot = o.by - o.lift;
     const ox = worldX + 9 > o.x + 4 && worldX - 9 < o.x + o.w - 4;
     if (ox) o.clear = Math.min(o.clear, top - kid.y);
     if (ox && kid.y > top + 4 && kid.y - 54 < bot) {
@@ -1099,7 +1129,7 @@ function dadTick(dt) {
     dad.ph += dt * speed * (dad.slow > 0 ? 0.04 : 0.03);
     if (dad.on) {
       let ahead = false;
-      for (const o of obs) if (!o.hit && o.x - dad.wx > 18 && o.x - dad.wx < 80) { ahead = true; break; }
+      for (const o of obs) if (!o.hit && o.by === GROUND && o.x - dad.wx > 18 && o.x - dad.wx < 80) { ahead = true; break; }
       if (!ahead) for (const g of gaps) if (g.x0 - dad.wx > 4 && g.x0 - dad.wx < 60) { ahead = true; break; }
       if (ahead) { dad.vy = -740; dad.on = false; }
     }
@@ -1119,7 +1149,7 @@ function dadTick(dt) {
   if (kid.next <= 0) { if (lead > 0.7) { kidSay(pick(T('s_taunts'))); dad.anger = Math.min(1, dad.anger + 0.25); } else if (lead < 0.22) kidSay(pick(T('s_scared'))); kid.next = rnd(4, 7); }
 }
 function land() { kid.vy = 0; kid.on = true; if (kid.jumps) puff(worldX, kid.y, 4, '#e7cfa3', 70); kid.jumps = 0; }
-function knock(o, vx, vy) { o.hit = true; o.hvx = vx; o.hvy = vy; o.spin = rnd(6, 12); puff(o.x + o.w / 2, GROUND - o.h / 2, 10, '#c9a36b', 120); }
+function knock(o, vx, vy) { o.hit = true; o.hvx = vx; o.hvy = vy; o.spin = rnd(6, 12); puff(o.x + o.w / 2, o.by - o.h / 2, 10, '#c9a36b', 120); }
 function hitKid(x, y, after, slip) { // 'shield' if the shield took it, else 'hit'
   if (kid.shield > 0) { kid.shield = 0; kid.inv = 1.2; after && after(); floatText(T('f_shield'), worldX, kid.y - 70, '#9fd8ff'); sfx.smash(); return 'shield'; }
   if (run) run.noHit = Math.max(run.noHit, dist - runHit); runHit = dist;
@@ -1588,7 +1618,7 @@ function drawItem(c, kind, x, y, k = 0, noBob) {
 
 // ---------- drawing: obstacles ----------
 function drawObstacle(c, o, sx) {
-  c.save(); c.translate(sx + o.w / 2 + o.hx, GROUND + o.hy - o.lift); if (o.rot) c.rotate(o.rot);
+  c.save(); c.translate(sx + o.w / 2 + o.hx, o.by + o.hy - o.lift); if (o.rot) c.rotate(o.rot);
   c.strokeStyle = INK; c.lineWidth = 1.8; c.lineJoin = 'round'; c.lineCap = 'round'; const w = o.w, h = o.h, k = o.kind;
   if (k === 'box') { c.fillStyle = '#c68a4e'; c.beginPath(); c.rect(-w / 2, -h, w, h); c.fill(); c.stroke(); c.fillStyle = '#e8c38f'; c.fillRect(-4, -h, 8, h); c.strokeRect(-4, -h, 8, h);
     c.beginPath(); c.moveTo(-w / 2, -h + 6); c.lineTo(-w / 2 + 8, -h + 6); c.stroke(); }
@@ -2924,8 +2954,44 @@ function ground(c) {
     c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.moveTo(x0, GROUND); c.lineTo(x0, H + 20); c.moveTo(x1, GROUND); c.lineTo(x1, H + 20); c.stroke(); }
 }
 const AWN = {};
+const DECK_COL = { plank: '#a8743f', pergola: '#8a5a35', sadu: '#a8262b', stone: '#b98a5c' };
+// a piece of bridge deck: pillars, a shaded underpass with lamps, the slab and a railing behind the runner
+function bridge(c, p, x) {
+  const style = ZONES[p.z].plat, col = Array.isArray(style) ? style[0] : DECK_COL[style] || '#a8743f', u = p.y + DECK_H;
+  c.fillStyle = 'rgba(24,14,10,.2)'; c.fillRect(x, u, p.w, GROUND - u);
+  c.fillStyle = '#8f7a66'; c.strokeStyle = INK; c.lineWidth = 1.6;
+  for (const px of [x + 4, x + p.w - 16]) { c.beginPath(); c.rect(px, u, 12, GROUND - u); c.fill(); c.stroke(); }
+  for (let k = 70; k < p.w - 40; k += 130) { c.strokeStyle = 'rgba(43,26,18,.6)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(x + k, u); c.lineTo(x + k, u + 12); c.stroke();
+    c.fillStyle = 'rgba(255,224,102,.28)'; c.beginPath(); c.arc(x + k, u + 16, 11, 0, TAU); c.fill(); c.fillStyle = '#ffe066'; c.strokeStyle = INK; c.lineWidth = 1.2; c.beginPath(); c.arc(x + k, u + 16, 4.5, 0, TAU); c.fill(); c.stroke(); }
+  c.strokeStyle = 'rgba(43,26,18,.75)'; c.lineWidth = 2; c.beginPath(); c.moveTo(x + 3, p.y - 20); c.lineTo(x + p.w - 3, p.y - 20);
+  for (let k = 3; k <= p.w - 3; k += Math.max(20, (p.w - 6) / Math.round((p.w - 6) / 34))) { c.moveTo(x + k, p.y - 20); c.lineTo(x + k, p.y); } c.stroke();
+  c.fillStyle = col; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.roundRect(x, p.y, p.w, DECK_H, 3); c.fill(); c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.28)'; c.fillRect(x + 3, p.y + 2, p.w - 6, 3); c.fillStyle = 'rgba(0,0,0,.22)'; c.fillRect(x + 2, u - 3, p.w - 4, 3);
+}
+// the bridge frame runs on under the deck holes: two girders, so the holes read as missing planks
+function girders(c, f) {
+  const x0 = f.d0 - worldX + ABX, x1 = f.x1 - worldX + ABX; if (x1 < 0 || x0 > W) return;
+  c.fillStyle = '#6f5d4e'; c.strokeStyle = INK; c.lineWidth = 1.2;
+  for (const gy of [f.y + 2, f.y + DECK_H - 5]) { c.beginPath(); c.rect(x0 + 6, gy, x1 - x0 - 12, 4); c.fill(); c.stroke(); }
+}
+// the sign before a fork: up to the bridge for a gift and sweets (mind the holes), straight on for the safe road
+function forkSign(c, f) {
+  const x = f.sign - worldX + ABX; if (x < -70 || x > W + 70) return;
+  c.save(); c.translate(x, GROUND); c.lineJoin = 'round'; c.strokeStyle = INK; c.lineWidth = 2;
+  c.fillStyle = '#8a5a35'; c.beginPath(); c.rect(-4, -112, 8, 112); c.fill(); c.stroke();
+  const board = (y, col, tip) => { c.fillStyle = col; c.beginPath(); c.moveTo(-36, y - 15); c.lineTo(36, y - 15); c.lineTo(52, y + tip); c.lineTo(36, y + 15); c.lineTo(-36, y + 15); c.closePath(); c.fill(); c.stroke(); };
+  c.save(); c.translate(0, -92); c.rotate(-0.13); c.translate(0, 92); board(-92, '#fff3d6', 0);
+  // up: a gift, a sweet and a hole
+  c.lineWidth = 1.4; c.fillStyle = '#c8202b'; c.beginPath(); c.roundRect(-30, -98, 15, 14, 2); c.fill(); c.stroke(); c.fillStyle = '#ffe066'; c.fillRect(-24, -98, 3, 14); c.fillRect(-30, -93, 15, 3);
+  c.fillStyle = '#ffb400'; c.beginPath(); c.arc(-2, -91, 6, 0, TAU); c.fill(); c.stroke();
+  c.fillStyle = '#a8743f'; c.fillRect(10, -88, 9, 4); c.fillRect(27, -88, 9, 4); c.strokeStyle = '#c8202b'; c.lineWidth = 2.2; c.beginPath(); c.moveTo(23, -100); c.lineTo(23, -84); c.moveTo(19, -89); c.lineTo(23, -84); c.lineTo(27, -89); c.stroke(); c.restore();
+  c.strokeStyle = INK; c.lineWidth = 2; board(-52, '#d8f3dc', 0);
+  // straight on: a tick on a flat road
+  c.strokeStyle = '#2d6a4f'; c.lineWidth = 3; c.beginPath(); c.moveTo(-26, -45); c.lineTo(22, -45); c.stroke(); c.lineWidth = 3.4; c.beginPath(); c.moveTo(-10, -58); c.lineTo(-3, -51); c.lineTo(10, -64); c.stroke();
+  c.restore();
+}
 function platform(c, p) {
-  const x = p.x - worldX + ABX; if (x > W || x + p.w < 0) return; const style = ZONES[p.z].plat;
+  const x = p.x - worldX + ABX; if (x > W || x + p.w < 0) return; if (p.deck) { bridge(c, p, x); return; } const style = ZONES[p.z].plat;
   if (style === 'plank') { c.strokeStyle = '#5a3a22'; c.lineWidth = 5; c.beginPath(); c.moveTo(x + 12, p.y); c.lineTo(x + 12, GROUND + 4); c.moveTo(x + p.w - 12, p.y); c.lineTo(x + p.w - 12, GROUND + 4); c.stroke();
     c.fillStyle = '#a8743f'; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.roundRect(x, p.y, p.w, 12, 3); c.fill(); c.stroke(); c.strokeStyle = 'rgba(43,26,18,.4)'; c.lineWidth = 1; c.beginPath(); for (let k = 20; k < p.w; k += 26) { c.moveTo(x + k, p.y + 2); c.lineTo(x + k, p.y + 10); } c.stroke();
     c.fillStyle = '#e23b4a'; c.strokeStyle = INK; c.lineWidth = 1.4; c.beginPath(); c.arc(x + p.w - 24, p.y + 20, 7, 0, TAU); c.fill(); c.stroke(); c.strokeStyle = '#fff'; c.lineWidth = 2.4; c.beginPath(); c.arc(x + p.w - 24, p.y + 20, 7, 0.3, 1.2); c.stroke(); c.beginPath(); c.arc(x + p.w - 24, p.y + 20, 7, 3.4, 4.3); c.stroke(); return; }
@@ -3045,10 +3111,11 @@ function render() {
   if (SK.n > 0.02) { ctx.fillStyle = `rgba(12,16,48,${SK.n * 0.28})`; ctx.fillRect(-20, GROUND, W + 40, H - GROUND + 20); }
   drawLights(ctx);
   ctx.textBaseline = 'alphabetic';
+  for (const f of forks) { forkSign(ctx, f); girders(ctx, f); }
   for (const p of plats) platform(ctx, p);
   for (const it of items) if (!it.got) { const x = it.x - worldX + ABX; if (x > -30 && x < W + 30) drawItem(ctx, it.kind, x, it.y, it.c || it.x * 0.01, it.mag); }
   for (const o of obs) { const x = o.x - worldX + ABX; if (x > -120 && x < W + 80) {
-    if (!o.hit) { ctx.fillStyle = 'rgba(20,12,8,.32)'; ctx.beginPath(); ctx.ellipse(x + o.w / 2, GROUND + 1.5, o.w * 0.62 * (1 - Math.min(0.5, o.lift / 90)), 4.5, 0, 0, TAU); ctx.fill(); }
+    if (!o.hit) { ctx.fillStyle = 'rgba(20,12,8,.32)'; ctx.beginPath(); ctx.ellipse(x + o.w / 2, o.by + 1.5, o.w * 0.62 * (1 - Math.min(0.5, o.lift / 90)), 4.5, 0, 0, TAU); ctx.fill(); }
     drawObstacle(ctx, o, x); } }
   if (race && race.seed && st !== 'menu') drawFinish(ctx, SPRINT_M * 40 - worldX + ABX);
   for (const s of sandals) { ctx.save(); ctx.translate(s.sx, s.y); ctx.rotate(s.rot); if (s.mb) marbleRoll(ctx); else { ctx.translate(0, -7); sandalShape(ctx); } ctx.restore(); }
@@ -3446,16 +3513,17 @@ async function boot() {
 const DEV = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname); // the testing hooks below exist only on a local server, so they can't be used to cheat in a race
 if (DEV) window.__abood = {
   get say() { return dad.sayT > 0 ? dad.say : ''; },
-  get state() { return { genAhead: Math.round(genX - worldX), obs: obs.length, items: items.length, gaps: gaps.length, paceT, assist: +assist.toFixed(2), mercyT, st, dist, lead, zone: zoneNow, qLevel, res: RES, bakeRes, tiles: TILES.size, sprites: SPR.size, build: BUILD }; },
+  get state() { return { x: Math.round(worldX), y: Math.round(kid.y), on: kid.on, sweets: candies, genAhead: Math.round(genX - worldX), obs: obs.length, items: items.length, gaps: gaps.length, paceT, assist: +assist.toFixed(2), mercyT, st, dist, lead, zone: zoneNow, qLevel, res: RES, bakeRes, tiles: TILES.size, sprites: SPR.size, build: BUILD }; },
   // goto(run metres, route metres?): jump within a run; with a second number, also move along the route
-  goto: (d, r) => { if (r != null) startM = r - d; worldX = d * 40; dist = d; routeM = startM + d; zoneNow = zoneAt(routeM); genX = worldX + 500; gaps = []; obs = []; items = []; plats = []; lead = 0.6;
+  goto: (d, r) => { if (r != null) startM = r - d; worldX = d * 40; dist = d; routeM = startM + d; zoneNow = zoneAt(routeM); genX = worldX + 500; gaps = []; obs = []; items = []; plats = []; forks = []; lead = 0.6;
     nextStop = stopAfter(routeM); prevStopAt = routeM; },
   route: r => { startM = r - dist; routeM = r; },
   set: o => { if (o.sweets != null) candies = o.sweets; if (o.lead != null) lead = o.lead; if (o.hits != null) closeCalls = o.hits; if (o.inv != null) kid.inv = o.inv; },
   spawn: (kind, ahead = 320) => { if (OB[kind]) addObs(worldX + ahead, kind); }, // put an obstacle in front of Abood
   get grace() { return +graceT.toFixed(2); },
   // the course ahead, to check that both players in a race get the same one
-  get course() { return { obs: obs.map(o => o.kind + '@' + Math.round(o.x0)), gaps: gaps.map(g => Math.round(g.x0)), plats: plats.map(p => Math.round(p.x)), items: items.filter(i => i.kind !== 'candy').map(i => i.kind + '@' + Math.round(i.x)) }; },
+  fork: () => { nextFork = genX; }, // testing: the next thing on the course is a fork
+  get course() { return { forks: forks.map(f => Math.round(f.x0) + '-' + Math.round(f.x1)), decks: plats.filter(p => p.deck).map(p => [Math.round(p.x), Math.round(p.w)]), obs: obs.map(o => o.kind + '@' + Math.round(o.x0)), gaps: gaps.map(g => Math.round(g.x0)), plats: plats.map(p => Math.round(p.x)), items: items.filter(i => i.kind !== 'candy').map(i => i.kind + '@' + Math.round(i.x)) }; },
   ghost: (m = 3, air = false) => { if (!race) return; const t0 = performance.now() - 400; Object.assign(race.opp, { here: true, run: true, out: false, gone: false, lost: false, round: race.seed, buf: [0, 1].map(i => ({ t: t0 + i * 300, x: worldX + m * 40 + i * 4, y: air ? GROUND - 80 : GROUND, a: air, sc: false })) }); }, // put the friend's ghost m metres ahead
   raceTime: sec => { if (race) race.runT = sec; }, // testing: jump the race clock
   luck: (n = 1000) => { if (!race) return; const c = {}; for (let i = 0; i < n; i++) { const k = luckRoll().kind; c[k] = (c[k] || 0) + 1; } return { tier: luckTier(), c }; }, // testing: what luck boxes give from here
