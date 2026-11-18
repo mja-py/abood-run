@@ -198,7 +198,7 @@ const MEL = [0, -1, 1, 2, 3, -1, 2, 1, 2, -1, 3, 4, 5, 4, 3, 2, 4, -1, 5, 4, 3, 
 const BASS = [0, 0, 4, 4, 3, 3, 0, 0];
 function music() {
   if (!actx || muted || st !== 'play' || actx.state !== 'running') { if (actx) nextNote = actx.currentTime + 0.05; return; }
-  const SP = 60 / 138 / 2;
+  const SP = 60 / 138 / 2 / (race && race.last100 ? 1.18 : 1); // faster over the last 100 m of a race
   if (nextNote < actx.currentTime) nextNote = actx.currentTime + 0.05;
   while (nextNote < actx.currentTime + 0.12) {
     const s = step % MEL.length, b = step % 8, at = nextNote;
@@ -333,6 +333,7 @@ function release() { holding = false; }
 const isUI = e => e.target && e.target.closest && e.target.closest('button, a, .panel, #toast, #sheet, #loginPop');
 addEventListener('keydown', e => {
   if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return; // typing a name or a race code
+  if (race && st === 'play' && ['KeyX', 'ShiftLeft', 'ShiftRight', 'Enter', 'ArrowDown', 'KeyS'].includes(e.code)) { e.preventDefault(); if (!e.repeat) useItem(); return; } // the item button
   if (['Space', 'ArrowUp', 'KeyW'].includes(e.code)) { e.preventDefault(); if (!e.repeat && !(st !== 'play' && e.target.closest && e.target.closest('button'))) press(); }
   if ((e.code === 'KeyP' || e.code === 'Escape') && !race) { if (st === 'play') setPause(true); else if (st === 'pause') setPause(false); } // no pausing a race: the friend keeps running
 });
@@ -367,6 +368,7 @@ function setMuteBtn() {
   for (const b of [$('mute'), $('menuMute')]) b.setAttribute('aria-pressed', muted ? 'true' : 'false');
 }
 $('mute').onclick = $('menuMute').onclick = e => { unlockAudio(); muted = !muted; if (master) master.gain.value = muted ? 0 : 1; try { localStorage.setItem('abood-muted', muted ? '1' : '0'); } catch (e2) {} setMuteBtn(); e.currentTarget.blur(); };
+$('itemBtn').onclick = () => { unlockAudio(); useItem(); $('itemBtn').blur(); };
 $('pauseBtn').onclick = () => { if (st === 'play') setPause(true); else if (st === 'pause') setPause(false); $('pauseBtn').blur(); };
 function setPause(p) { st = p ? 'pause' : 'play'; $('pauseBtn').textContent = p ? '▶' : 'II'; if (p) wakeOff(); else wakeOn(); }
 
@@ -718,8 +720,15 @@ N.on('data', d => {
     fillRace();
   } else if (d.t === 'mb') {
     if (o.round === race.seed && st === 'play' && race.hold <= 0 && !race.me && mbOk(d)) marblesIn();
-  } else if (d.t === 'mbr') { // how my marbles went
-    if (o.round === race.seed && st === 'play' && race.mbOut > 0) { race.mbOut--; const k = { hit: 'f_mbHit', block: 'f_mbBlock', miss: 'f_mbMiss' }[d.r]; if (k) { floatText(T(k, oppName(), oppGirl()), worldX + 70, kid.y - 120, d.r === 'hit' ? '#7ee0b0' : '#ffe066'); if (d.r === 'hit') { play('power', 1.3, 0.7); buzz(25); } } }
+  } else if (d.t === 'st') {
+    if (o.round === race.seed && st === 'play' && race.hold <= 0 && !race.me && mbOk(d)) stormIn();
+  } else if (d.t === 'em') {
+    emoteIn(d.i);
+  } else if (d.t === 'mbr') { // how my marbles or my sandstorm went
+    if (o.round === race.seed && st === 'play' && race.mbOut > 0) {
+      race.mbOut--; const k = d.k === 'st' ? { hit: 'f_stHit', block: 'f_stBlock' }[d.r] : { hit: 'f_mbHit', block: 'f_mbBlock', miss: 'f_mbMiss' }[d.r];
+      if (k) { floatText(T(k, oppName(), oppGirl()), worldX + 70, kid.y - 120, d.r === 'hit' ? '#7ee0b0' : '#ffe066'); if (d.r === 'hit') { play('power', 1.3, 0.7); buzz(25); emote(0, true); } }
+    }
   } else if (d.t === 'late') {
     if (o.round === race.seed) raceLate();
   } else if (d.t === 'bye') oppGone();
@@ -804,7 +813,7 @@ function mbOk(d) {
   if (!race.boxes || !race.boxes.has(x) || o.mbX.includes(x) || now - o.mbAt < MB_GAP) return false;
   o.mbX.push(x); o.mbAt = now; return true;
 }
-function sprintFell() { // out on the far side of the hole after a short stop: it costs time, and nobody gets stuck on a jump
+function sprintFell() { emote(3, true); // out on the far side of the hole after a short stop: it costs time, and nobody gets stuck on a jump
   let x1 = worldX; for (const g of gaps) if (g.x0 < worldX + 20 && g.x1 > worldX - 260) x1 = Math.max(x1, g.x1);
   worldX = x1 + 30; dist = worldX / 40; routeM = startM + dist;
   Object.assign(kid, { y: GROUND, vy: 0, on: true, jumps: 0, spin: 0, inv: 1.8, held: 1.5 }); focusT = 0; focusLv = 0;
@@ -821,9 +830,9 @@ const RACE_STUMBLE = 1.1, RACE_SLIP = 0.5, MB_SPEED = 560, MB_WARN = 0.6, MB_N =
 const DRAFT_FROM = 4, DRAFT_TO = 30, DRAFT_MAX = 0.08;
 const LUCK = { // weights by your distance to the friend
   lead: [['shield', 60], ['vimto', 40]],                     // 6 m or more ahead
-  close: [['vimto', 45], ['marbles', 40], ['shield', 15]],   // within 6 m
-  behind: [['scooter', 45], ['vimto', 30], ['marbles', 25]], // 6–25 m behind
-  far: [['scooter', 65], ['vimto', 25], ['marbles', 10]],    // 25 m or more behind: and the boost lasts 40% longer
+  close: [['vimto', 40], ['marbles', 35], ['shield', 15], ['storm', 10]], // within 6 m
+  behind: [['scooter', 40], ['vimto', 25], ['marbles', 20], ['storm', 15]], // 6–25 m behind
+  far: [['scooter', 60], ['vimto', 20], ['marbles', 10], ['storm', 10]],    // 25 m or more behind: and the boost lasts 40% longer
 };
 function luckTier() {
   const o = race.opp; if (!o.here || o.gone || o.lost || o.round !== race.seed) return 'close';
@@ -838,7 +847,7 @@ function draftK() {
 function luckRoll() {
   const tier = luckTier(), o = race.opp;
   const aim = N.isOpen() && o.run && !o.out && !o.lost && o.d >= dist - 3; // marbles only roll at a friend who is still running, level or ahead
-  let pool = LUCK[tier].filter(([k]) => (k !== 'marbles' || aim) && (k !== 'shield' || !kid.shield));
+  let pool = LUCK[tier].filter(([k]) => ((k !== 'marbles' && k !== 'storm') || aim) && (k !== 'shield' || !kid.shield));
   if (!pool.length) pool = [['vimto', 1]];
   let r = Math.random() * pool.reduce((a, p) => a + p[1], 0), kind = pool[0][0];
   for (const [k, w] of pool) { if ((r -= w) < 0) { kind = k; break; } }
@@ -855,7 +864,82 @@ function raceMarbles(dt) { // each set of marbles rolls in after its own warning
   while (q.length && q[0].t <= 0) { const m = q.shift(); sandals.push({ sx: -30, y: GROUND - 7, age: 0, rot: 0, hit: false, passed: false, mb: 1, set: m.set, last: m.last }); sfx.whoosh(); }
 }
 // tell the friend how their marbles went, once per throw: 'hit' (you slipped), 'block' (shield or scooter) or 'miss'
-function mbTell(s, r) { if (!race || !race.mbDone || race.mbDone.has(s.set)) return; race.mbDone.add(s.set); N.send({ t: 'mbr', r }); }
+function mbTell(s, r) { if (!race || !race.mbDone || race.mbDone.has(s.set)) return; race.mbDone.add(s.set); N.send({ t: 'mbr', r }); if (r === 'hit') emote(2, true); }
+// The item button: what a luck box gives waits there until you fire it (the shield is worn at once). Marbles and the
+// sandstorm only go at a friend who is still running, level or ahead; a second box fires the held item for you.
+function useItem(auto) {
+  const it = race && race.item; if (!it || st !== 'play' || race.hold > 0) return;
+  const o = race.opp, k = it.kind, px = worldX + 30, py = kid.y - 90;
+  if (k === 'marbles' || k === 'storm') {
+    if (!(N.isOpen() && o.run && !o.out && !o.lost && o.d >= dist - 3)) {
+      if (auto) race.item = null; else { floatText(T('it_noAim', oppName(), oppGirl()), px, py, '#ffb3b3'); buzz(30); bump('itemBtn'); }
+      return;
+    }
+    N.send({ t: k === 'marbles' ? 'mb' : 'st', x: it.x }); race.mbOut++; floatText(T(k === 'marbles' ? 'f_mbSent' : 'f_stSent', oppName(), oppGirl()), px, py); sfx.whoosh();
+    if (k === 'marbles') for (let i = 0; i < 8; i++) parts.push({ x: worldX, y: GROUND - 4, vx: rnd(150, 300), vy: -rnd(0, 120), life: 1.3, max: 1.3, col: pick(['#3fa7d6', '#f25f5c', '#7bd389', '#ffe066']), r: 3.5, marble: 1 });
+  } else if (k === 'vimto') { boost = Math.max(boost, pT('vimto') * it.mul); floatText(T('f_vimto'), px, py); kidSay(T('s_yay'), 1.2); sfx.power(); }
+  else if (k === 'scooter') { kid.scoot = Math.max(kid.scoot, pT('scooter') * it.mul); floatText(T('f_scooter'), px, py); kidSay(T('s_scoot'), 1.4); sfx.power(); }
+  race.item = null;
+}
+let itemShown = '';
+function itemBtn() { // show the button only while an item waits; redraw its picture when the item changes
+  const k = race && race.seed && st === 'play' && race.item ? race.item.kind : ''; if (k === itemShown) return;
+  itemShown = k; $('itemBtn').hidden = !k; if (!k) return;
+  const c = $('itemCv').getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, 96, 96); c.translate(48, 50); c.scale(1.9, 1.9); drawItem(c, k, 0, 0, 0, true);
+}
+// Sandstorm: for STORM_T s the sand hides the road from STORM_CLEAR px ahead of you, so there is less time to react.
+const STORM_T = 2.2, STORM_IN = 0.4, STORM_CLEAR = 200;
+function stormIn() {
+  floatText(T('f_stIn', oppName(), oppGirl()), worldX + 40, kid.y - 110, '#ffe066'); sfx.whoosh(); buzz(40);
+  if (kid.shield > 0) { kid.shield = 0; floatText(T('f_shield'), worldX, kid.y - 70, '#9fd8ff'); N.send({ t: 'mbr', k: 'st', r: 'block' }); return; }
+  race.stormT = STORM_T + STORM_IN; N.send({ t: 'mbr', k: 'st', r: 'hit' }); emote(2, true);
+}
+function drawStorm(c) {
+  const s = race && race.seed && st === 'play' ? race.stormT : 0; if (!(s > 0)) return;
+  const a = Math.min(1, (STORM_T + STORM_IN - s) / STORM_IN, s / 0.4), x0 = ABX + Math.min(STORM_CLEAR, (W - ABX) * 0.4), g = c.createLinearGradient(x0 - 90, 0, x0 + 30, 0);
+  g.addColorStop(0, 'rgba(217,183,122,0)'); g.addColorStop(1, `rgba(217,183,122,${0.94 * a})`); c.fillStyle = g; c.fillRect(x0 - 90, -offY - 20, W - x0 + 110, H + offY + 40);
+  if (REDUCED) return;
+  c.strokeStyle = `rgba(255,244,214,${0.55 * a})`; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath();
+  for (let i = 0; i < 14; i++) { const w = W - x0 + 120, y = 20 + sr(i * 5.1) * (H - 40), x = x0 - 60 + (((sr(i) * w - t * (500 + sr(i + 9) * 500)) % w) + w) % w; c.moveTo(x, y); c.lineTo(x + 50 + sr(i + 3) * 70, y + Math.sin(t * 3 + i) * 4); }
+  c.stroke();
+}
+// Faces: six presets and no typed words. Some are sent for you during a run (you passed them, your attack landed, you
+// fell or got hit); between rounds you tap one. Both ends limit how often.
+const EMO = ['😂', '😎', '😡', '😱', '👏', '🤝'], emoClear = {};
+function emote(i, auto) {
+  if (!race || !N.isOpen() || !race.opp.here) return; const now = performance.now();
+  if (now - (race.emAt || 0) < (auto ? 2500 : 700)) return; race.emAt = now; N.send({ t: 'em', i }); if (!auto) showEmo('me', i);
+}
+function emoteIn(i) {
+  i = num(i) | 0; const o = race.opp, now = performance.now(); if (i < 0 || i >= EMO.length || now - (o.emAt || 0) < 500) return;
+  o.emAt = now; o.em = i; o.emUntil = now + 2000; showEmo('opp', i); if (st !== 'play') play('tek', 1.1, 0.6);
+}
+function showEmo(who, i) {
+  const ids = who === 'me' ? ['raceMeEm', 'fMeEm'] : ['raceOppEm', 'fOppEm'];
+  for (const id of ids) { $(id).textContent = EMO[i]; bump(id); }
+  clearTimeout(emoClear[who]); emoClear[who] = setTimeout(() => { for (const id of ids) $(id).textContent = ''; }, 2600);
+}
+function emoBubble(c, x, y, i) {
+  x = clamp(x, 24, W - 24); c.save(); c.fillStyle = '#fffaf0'; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.arc(x, y, 17, 0, TAU); c.fill(); c.stroke();
+  c.font = '22px serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = INK; c.fillText(EMO[i], x, y + 1); c.restore();
+}
+// who is in front, with a 2 m dead zone so it doesn't flicker; a change of leader is called out on both screens
+function racePlace() {
+  const o = race.opp; if (!o.here || o.gone || o.lost || o.out || !o.run || o.round !== race.seed) return;
+  const g = dist - o.d, was = race.ahead, now = g > 2 ? 1 : g < -2 ? -1 : was; if (now === was) return; race.ahead = now;
+  if (!was || dist < 12) return; // sorting out at the start isn't a pass
+  const at = performance.now(); if (at - race.passAt < 1500) return; race.passAt = at;
+  if (now > 0) { floatText(T('sp_passMe', oppName(), oppGirl()), worldX + 60, kid.y - 120, '#7ee0b0'); sfx.close(); buzz(25); emote(1, true); }
+  else { floatText(T('sp_passOpp', oppName(), oppGirl()), worldX + 60, kid.y - 120, '#ffb3b3'); play('tek', 0.8, 0.9); buzz(20); }
+}
+// the record against each friend (matches won and lost), kept on this phone only, by their player id
+const recOf = pid => { const r = pid && mp().rec && mp().rec[pid]; return r && r.w + r.l > 0 ? r : null; };
+function recAdd(pid, name, res) {
+  if (!pid || !res) return; const d = mp(), rec = d.rec || (d.rec = {}), r = rec[pid] || (rec[pid] = { w: 0, l: 0 });
+  if (res > 0) r.w++; else r.l++; r.n = name; r.at = Date.now();
+  const ids = Object.keys(rec); if (ids.length > 20) delete rec[ids.sort((a, b) => rec[a].at - rec[b].at)[0]];
+  M.save();
+}
 function marbleRoll(c) {
   for (const [col, mx] of [['#3fa7d6', -12], ['#f25f5c', 0], ['#7bd389', 12]]) { c.fillStyle = col; c.strokeStyle = INK; c.lineWidth = 1.4; c.beginPath(); c.arc(mx, 0, 6, 0, TAU); c.fill(); c.stroke(); }
 }
@@ -876,7 +960,7 @@ function beginRace() {
   $('friend').hidden = true; $('menu').hidden = true; $('over').hidden = true; $('sheet').hidden = true; $('loginPop').hidden = true; $('cPick').hidden = true;
   if (swap && !swap.done) endSwap(); swap = null;
   Object.assign(race.opp, { round: race.seed, d: 0, s: 0, tm: null, out: false, run: false, buf: [], off: null, late: false, blip: false, mbX: [], mbAt: -1e9 });
-  race.me = null; race.final = false; race.picked = false; race.boxes = new Set(); race.mbQ = []; race.mbSet = 0; race.mbDone = new Set(); race.mbOut = 0; race.draftSaid = false; race.lateAt = 0; race.oppFinAt = 0; race.credit = 0;
+  race.me = null; race.final = false; race.picked = false; race.boxes = new Set(); race.mbQ = []; race.mbSet = 0; race.mbDone = new Set(); race.mbOut = 0; race.draftSaid = false; race.item = null; race.stormT = 0; race.ahead = 0; race.passAt = 0; race.last100 = false; $('sprintBar').classList.remove('hot'); race.lateAt = 0; race.oppFinAt = 0; race.credit = 0;
   race.startAt = performance.now(); race.goAt = race.startAt + 3000;
   sbCache.fill(null); start(race); graceT = 0; race.hold = 3; race.goT = 0; race.sendT = 0; race.runT = 0; race.myTm = 0; play('tek', 1.2, 0.9);
 }
@@ -887,7 +971,7 @@ function raceHold(dt) {
   raceTick(dt); hud();
 }
 function raceTick(dt) {
-  race.goT = Math.max(0, race.goT - dt);
+  race.goT = Math.max(0, race.goT - dt); if (race.stormT > 0) race.stormT = Math.max(0, race.stormT - dt);
   if (race.hold <= 0 && st === 'play') race.runT += dt; // the race clock: game time, so a slow phone isn't penalised
   race.sendT -= dt; if (race.sendT > 0) return; race.sendT = 0.05;
   N.send({ t: 'p', ts: Math.round(performance.now()), x: Math.round(worldX), y: Math.round(kid.y), d: Math.floor(dist), s: candies, a: kid.on ? 0 : 1, sc: kid.scoot > 0 ? 1 : 0 });
@@ -922,10 +1006,10 @@ function drawGhost(c) {
     const e = spriteGet('gh' + o.ch + o.robe + o.head + (a ? 1 : 0) + (g.sc ? 1 : 0) + idx, KB, gg => person(gg, 0, 0, idx * STEP, a, Object.assign(look, { mouth: 'grin', still: g.sc, arm: g.sc ? 'grip' : undefined, baked: true })));
     if (e) blitSprite(c, e, x, y, 0, 1, 1, 1, null); else person(c, x, y, idx * STEP, a, Object.assign(look, { mouth: 'grin', still: g.sc, arm: g.sc ? 'grip' : undefined }));
     c.restore();
-    tag(c, name, x, y - 98);
+    tag(c, name, x, y - 98); if (o.emUntil > performance.now()) emoBubble(c, x, y - 128, o.em);
   } else {
     const m = Math.round(Math.abs(g.x - worldX) / 40), ahead = g.x > worldX;
-    tag(c, T(ahead ? 'mp_ahead' : 'mp_behind', name, m), ahead ? W - 80 : 80, 150);
+    tag(c, T(ahead ? 'mp_ahead' : 'mp_behind', name, m), ahead ? W - 80 : 80, 150); if (o.emUntil > performance.now()) emoBubble(c, ahead ? W - 80 : 80, 118, o.em);
   }
 }
 // the finish line: a checkered strip on the ground and a banner on two poles
@@ -971,6 +1055,9 @@ function fillRace() {
     : scored && m.over ? (mr === 0 ? T('sp_matchTie') : T(mr > 0 ? 'sp_matchWin' : 'sp_matchLose', name, g)) // the match, from its score
     : r === 0 ? T('mp_tie') : T(r > 0 ? 'sp_rdWin' : 'sp_rdLose', name, g, m.rd);
   $('raceScore').textContent = T('sp_score', m.rd, ROUNDS) + ' · ' + myName() + ' ' + m.me + ' – ' + m.opp + ' ' + name;
+  if (scored && m.over && race.recSeed !== race.seed) { race.recSeed = race.seed; recAdd(o.pid, name, mr); } // the match goes on the record, once
+  const photo = scored && me.tm != null && o.tm != null && Math.abs(me.tm - o.tm) < 0.5 ? T('sp_photo', Math.abs(me.tm - o.tm).toFixed(2)) : '', rc = recOf(o.pid);
+  $('raceRec').textContent = [photo, rc ? T('sp_rec', name, rc.w, rc.l) : ''].filter(Boolean).join(' · ');
   box.querySelector('.race-me').classList.toggle('win', scored && r > 0); box.querySelector('.race-opp').classList.toggle('win', scored && r < 0);
   if (scored && !race.final) { race.final = true; if (r > 0) { play('power', 1.4, 0.8); buzz(30); } }
   if (scored && m.over && mr > 0 && race.bonus !== race.seed) { race.bonus = race.seed; const b = M.raceBonus(); if (b) { note(T('sp_bonus', b), 3000); syncCoins(); } }
@@ -979,7 +1066,7 @@ function renderFriend() {
   if (!race || $('friend').hidden) return;
   const host = race.role === 'host', o = race.opp, fs = race.fs; let msg = '', go = null;
   const gate = fs === 'gate', choose = fs === 'choose' || fs === 'err', showCode = host && !!race.code && (fs === 'waiting' || o.lost || !o.here);
-  $('fLoad').hidden = fs !== 'connecting'; $('fGate').hidden = !gate; $('fChoose').hidden = !choose; if (choose) fillNameTag(); $('fJoin').hidden = !choose; $('fVs').hidden = true; $('fCodeBig').hidden = !showCode;
+  $('fLoad').hidden = fs !== 'connecting'; $('fGate').hidden = !gate; $('fChoose').hidden = !choose; if (choose) fillNameTag(); $('fJoin').hidden = !choose; $('fVs').hidden = true; $('emoFriend').hidden = true; $('fRec').textContent = ''; $('fCodeBig').hidden = !showCode;
   if (showCode) $('fCodeBig').textContent = N.showCode(race.code);
   if (gate) { msg = T('mp_gateLead'); go = 'mp_gateOk'; const ab = ($('fGateQ').dataset.ab || '').split('x'); if (ab.length === 2) $('fGateQ').textContent = T('mp_gateQ', ab[0], ab[1]); }
   else if (choose) { msg = fs === 'err' ? T('mp_err_' + race.err) : T('mp_choose'); go = 'mp_host'; }
@@ -987,12 +1074,13 @@ function renderFriend() {
   else if (o.lost) msg = host ? T('mp_lostTag', oppName()) : T('mp_reconnecting');
   else if (fs === 'waiting' || !o.here) msg = host ? T('mp_send') : T('mp_hello');
   else {
-    $('fVs').hidden = false; $('fMeName').textContent = myName(); $('fOppName').textContent = oppName();
+    $('fVs').hidden = false; $('emoFriend').hidden = false; const rc = recOf(o.pid); $('fRec').textContent = rc ? T('sp_rec', oppName(), rc.w, rc.l) : ''; $('fMeName').textContent = myName(); $('fOppName').textContent = oppName();
     msg = host ? T('mp_joined', oppName(), oppGirl()) : T('sp_waitPick', oppName(), oppGirl()); if (host) go = 'mp_start';
   }
   $('fStatus').textContent = msg; $('fGo').hidden = !go; if (go) { $('fGo').textContent = T(go); $('fGo').dataset.act = go; }
 }
 $('friendBtn').onclick = () => { unlockAudio(); openFriend('choose'); };
+for (const id of ['emoOver', 'emoFriend']) EMO.forEach((e, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'emo'; b.textContent = e; b.onclick = () => { unlockAudio(); emote(i); }; $(id).appendChild(b); });
 $('fLeave').onclick = () => { unlockAudio(); leaveRace(); };
 $('fJoin').onclick = () => { unlockAudio(); openPop('code'); };
 $('fGo').onclick = () => {
@@ -1031,6 +1119,8 @@ function update(dt) {
   speed = base * Math.max(boost > 0 ? 1.3 : 1, kid.scoot > 0 ? 1.42 : 1) * (kid.stumble > 0 ? (race ? RACE_SLIP : 0.65) : 1) * (kid.held > 0 ? 0 : 1);
   worldX += speed * dt; dist = worldX / 40; routeM = startM + dist;
   if (race && dist >= SPRINT_M) { finishSprint(dt); return; }
+  if (race && race.seed) { racePlace();
+    if (!race.last100 && dist >= SPRINT_M - 100) { race.last100 = true; $('sprintBar').classList.add('hot'); floatText(T('sp_last100'), worldX + 80, 130, '#ffe066'); sfx.zone(); buzz(30); } } // the run-in: the bar pulses and the music speeds up
   for (const f of forks) if (!f.told && worldX > f.sign - 520) { f.told = 1; const d = M.data(); if ((d.forkTips || 0) < 3) { d.forkTips = (d.forkTips || 0) + 1; M.save(); note(T('fk_tip'), 4200); } } // the first few forks explain themselves
   if (race && !race.draftSaid && draftK() > 1.03) { race.draftSaid = true; floatText(T('sp_draft'), worldX + 60, kid.y - 100, '#9ff0ff'); } // once a round, so the catch-up isn't a mystery
   const z = zoneAt(routeM); if (z !== zoneNow) { zoneNow = z; showBanner(z); sfx.zone(); lead = Math.min(1, lead + 0.05); M.track('zone', z); if (z === 0) floatText(T('loopBack'), worldX + 60, 150, '#9ff0ff'); }
@@ -1186,10 +1276,14 @@ function grab(it) {
     bump('candyBox'); return;
   }
   let kind = it.kind, mul = 1;
-  if (kind === 'luck') { const l = luckRoll(); kind = l.kind; mul = l.mul; } // a race box: what's inside depends on your place
+  if (kind === 'luck') { // a race box: what's inside depends on your place. It waits on the item button; a shield is worn at once
+    const l = luckRoll(); sfx.power(); puff(it.x, it.y, 16, '#fff6c2', 150); buzz(25); M.track('power', l.kind); runPow++;
+    if (l.kind === 'shield') { kid.shield = 1; floatText(T('f_shieldGet'), it.x, it.y - 24, '#9fd8ff'); return; }
+    if (race.item) useItem(true); // still holding one: it goes off now
+    race.item = { kind: l.kind, mul: l.mul, x: Math.round(it.x) }; floatText(T('it_got'), it.x, it.y - 24); return;
+  }
   sfx.power(); puff(it.x, it.y, 16, '#fff6c2', 150); buzz(25); M.track('power', kind); runPow++;
   if (kind === 'shield') { kid.shield = 1; floatText(T('f_shieldGet'), it.x, it.y - 24, '#9fd8ff'); }
-  if (kind === 'marbles' && race) { N.send({ t: 'mb', x: Math.round(it.x) }); race.mbOut++; floatText(T('f_mbSent', oppName(), oppGirl()), it.x, it.y - 24); for (let i = 0; i < 8; i++) parts.push({ x: it.x, y: GROUND - 4, vx: rnd(150, 300), vy: -rnd(0, 120), life: 1.3, max: 1.3, col: pick(['#3fa7d6', '#f25f5c', '#7bd389', '#ffe066']), r: 3.5, marble: 1 }); return; }
   if (kind === 'vimto') { boost = Math.max(boost, pT('vimto') * mul); floatText(T('f_vimto'), it.x, it.y - 24); kidSay(T('s_yay'), 1.2); }
   if (kind === 'marbles') { dad.slow = pT('marbles'); dad.windup = 0; shout(T('s_slip'), 2); for (let i = 0; i < 8; i++) parts.push({ x: it.x, y: GROUND - 4, vx: -rnd(250, 420), vy: -rnd(0, 120), life: 1.3, max: 1.3, col: pick(['#3fa7d6', '#f25f5c', '#7bd389', '#ffe066']), r: 3.5, marble: 1 }); floatText(T('f_slip'), it.x, it.y - 24); }
   if (kind === 'phone') { dad.freeze = pT('phone'); dad.windup = 0; shout(T('s_phone'), dad.freeze); floatText(T('f_phone'), it.x, it.y - 24); }
@@ -1248,6 +1342,7 @@ function hud() {
   if (race && race.seed) sprintHud();
   const chips = []; const ch = (k, v, m) => chips.push([T(k) + ' ' + v.toFixed(1) + T('sec'), v / m]);
   if (boost > 0) ch('c_vimto', boost, pT('vimto')); if (kid.scoot > 0) ch('c_scooter', kid.scoot, pT('scooter')); if (kid.mag > 0) ch('c_magnet', kid.mag, pT('magnet'));
+  if (race && race.stormT > 0) chips.push([T('c_storm'), race.stormT / (STORM_T + STORM_IN)]);
   if (race && race.oppFinAt) { const left = Math.max(0, LATE_MS - (Date.now() - race.oppFinAt)) / 1000; chips.push([T('c_late', Math.ceil(left)), left / (LATE_MS / 1000)]); }
   if (!race) chips.push([T('c_focus', focusLv), focusLv >= FOCUS_MAX ? 1 : (focusT % FOCUS_STEP) / FOCUS_STEP]);
   if (dad.slow > 0) ch('c_slip', dad.slow, pT('marbles')); if (dad.freeze > 0) ch('c_phone', dad.freeze, pT('phone'));
@@ -1596,6 +1691,10 @@ function drawItem(c, kind, x, y, k = 0, noBob) {
       c.fillStyle = '#e8414b'; c.beginPath(); c.roundRect(-13, -13, 26, 6, 2); c.fill(); c.stroke();
       c.fillStyle = '#ffe066'; for (const sx of [-1, 1]) { c.beginPath(); c.ellipse(sx * 5, -16, 5, 3, sx * 0.5, 0, TAU); c.fill(); c.stroke(); }
       c.font = '800 16px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 3; c.strokeText('?', 0, 3); c.fillStyle = '#fffaf0'; c.fillText('?', 0, 3);
+    } else if (kind === 'storm') { // a puff of sand with the wind through it
+      c.fillStyle = '#e3c58f'; for (const [mx, my, r] of [[-6, 2, 8], [6, -2, 9], [1, 7, 8]]) { c.beginPath(); c.arc(mx, my, r, 0, TAU); c.fill(); c.stroke(); }
+      c.beginPath(); c.arc(0, 2, 8, 0, TAU); c.fill(); c.strokeStyle = '#8a6a3a'; c.lineWidth = 2; c.lineCap = 'round';
+      for (const yy of [-3, 3, 9]) { c.beginPath(); c.moveTo(-9, yy); c.quadraticCurveTo(0, yy - 5, 9, yy); c.stroke(); }
     } else if (kind === 'marbles') {
       [['#3fa7d6', -7, 4], ['#f25f5c', 6, 5], ['#7bd389', -1, -6]].forEach(([col, mx, my]) => { c.fillStyle = col; c.beginPath(); c.arc(mx, my, 7, 0, TAU); c.fill(); c.stroke();
         c.fillStyle = 'rgba(255,255,255,.75)'; c.beginPath(); c.arc(mx - 2.4, my - 2.4, 2, 0, TAU); c.fill(); });
@@ -3156,6 +3255,7 @@ function render() {
   if (kid.sayT > 0 && st === 'over' && stT > 0.5) bubble(ctx, ABX + 30, GROUND - 100, kid.say, true);
   if (st === 'play' && lead < 0.25) { const a = (0.25 - lead) * 2 * (0.6 + 0.4 * Math.sin(t * 10)); const g = ctx.createLinearGradient(0, 0, W * 0.3, 0);
     g.addColorStop(0, 'rgba(200,32,43,' + a + ')'); g.addColorStop(1, 'rgba(200,32,43,0)'); ctx.fillStyle = g; ctx.fillRect(-10, -offY, W * 0.3, H + offY); }
+  drawStorm(ctx); itemBtn();
   drawBanner(ctx); drawStopBanner(ctx);
   if (st === 'pause') { ctx.fillStyle = 'rgba(20,15,35,.55)'; ctx.fillRect(-20, -offY - 20, W + 40, H + offY + 40); ctx.fillStyle = '#fffaf0'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
     ctx.font = '800 34px ' + FONT; ctx.fillText(T('paused'), W / 2, 170); ctx.font = '600 16px ' + FONT; ctx.fillText(T('pausedHint'), W / 2, 202); }
@@ -3527,12 +3627,13 @@ if (DEV) window.__abood = {
   ghost: (m = 3, air = false) => { if (!race) return; const t0 = performance.now() - 400; Object.assign(race.opp, { here: true, run: true, out: false, gone: false, lost: false, round: race.seed, buf: [0, 1].map(i => ({ t: t0 + i * 300, x: worldX + m * 40 + i * 4, y: air ? GROUND - 80 : GROUND, a: air, sc: false })) }); }, // put the friend's ghost m metres ahead
   raceTime: sec => { if (race) race.runT = sec; }, // testing: jump the race clock
   luck: (n = 1000) => { if (!race) return; const c = {}; for (let i = 0; i < n; i++) { const k = luckRoll().kind; c[k] = (c[k] || 0) + 1; } return { tier: luckTier(), c }; }, // testing: what luck boxes give from here
-  marbles: () => { if (race) marblesIn(); }, // testing: as if the friend rolled marbles at you
+  marbles: () => { if (race) marblesIn(); },
+  storm: () => { if (race) stormIn(); }, item: (k, x) => { if (race) race.item = k ? { kind: k, mul: 1, x: x ?? [...race.boxes][0] } : null; }, shield: () => { kid.shield = 1; }, useItem: () => useItem(), emote: i => emote(i), // testing: a sandstorm on you; put an item on the button; press it; send a face // testing: as if the friend rolled marbles at you
   spawnItem: (kind = 'luck', m = 5) => { if (kind === 'marbles') sandals.push({ sx: ABX - 120, y: GROUND - 7, age: 0, rot: 0, hit: false, passed: false, mb: 1 }); else items.push({ x: worldX + m * 40, y: GROUND - 74, kind }); }, // testing: put a box (or rolling marbles) in front of you
   openBox: x => { if (race) grab({ kind: 'luck', x: x ?? worldX, y: kid.y - 30 }); }, // testing: open a luck box where you stand (or as if at x)
   tick: (sec, dt = 1 / 30) => { for (let i = 0; i < Math.round(sec / dt); i++) update(dt); }, // testing: run the game without frames (a hidden tab gets none)
   dropNet: () => N.testDrop(), // testing: cut the race connection as if the network failed
-  get race() { return race && { role: race.role, fs: race.fs, seed: race.seed, area: race.area, hold: race.hold, me: race.me, clock: { hiddenAt, startAt: race.startAt, goAt: race.goAt, credit: race.credit, runT: race.runT }, mbQ: (race.mbQ || []).length, mbOut: race.mbOut, draft: +draftK().toFixed(3), kid: { stumble: +kid.stumble.toFixed(2), inv: +kid.inv.toFixed(2), shield: kid.shield }, marbles: sandals.filter(x => x.mb).length, opp: Object.assign({}, race.opp) }; },
+  get race() { return race && { role: race.role, fs: race.fs, seed: race.seed, area: race.area, hold: race.hold, me: race.me, clock: { hiddenAt, startAt: race.startAt, goAt: race.goAt, credit: race.credit, runT: race.runT }, item: race.item ? race.item.kind : '', boxes: [...(race.boxes || [])], stormT: race.stormT, boost: +boost.toFixed(1), scoot: +kid.scoot.toFixed(1), ahead: race.ahead, last100: race.last100, mbQ: (race.mbQ || []).length, mbOut: race.mbOut, draft: +draftK().toFixed(3), kid: { stumble: +kid.stumble.toFixed(2), inv: +kid.inv.toFixed(2), shield: kid.shield }, marbles: sandals.filter(x => x.mb).length, opp: Object.assign({}, race.opp) }; },
   quality: q => { qLevel = clamp(q, 0, QDPR.length - 1); resize(); },
   portrait: (size, pad = 1) => {
     const c = mk(size, size), g = c.getContext('2d'), bg = g.createLinearGradient(0, 0, 0, size);

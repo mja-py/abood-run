@@ -1,12 +1,12 @@
 // Online race with a friend. One player creates a room and gets a 6-digit code; the friend types the code to join. The two browsers then talk directly over WebRTC (PeerJS). The public PeerJS server only
 // introduces them (and relays through its TURN servers on networks that block direct play), so the code works across
 // different networks. Nothing touches the network until a player opens "Race a friend".
-// No chat: the game only sends its own small messages (hello, start, position, result).
+// No chat: the game only sends its own small messages (hello, start, position, result, items, one of six preset faces).
 //
 // Dropped connections: both sides send a heartbeat every second and treat 5 s of silence as a drop. The joining
 // player then keeps trying to reconnect to the same code; the host keeps the room open. The game decides what a
 // returning player means (see the race section in game.js).
-export const PROTO = 9;
+export const PROTO = 10;
 const PFX = 'abood-run-v2-';
 const LIB = new URL('./vendor/peerjs.min.js', import.meta.url).href;
 const BEAT = 1000, SILENT = 5000, RETRY = 2500, WAIT = 75000; // WAIT: give a slow (waking) server up to 75 s

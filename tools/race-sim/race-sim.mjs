@@ -8,15 +8,17 @@ export const DEFAULT_CFG = {
   VIMTO: 4, SCOOTER: 5, FAR_MUL: 1.4, VIMTO_K: 1.3, SCOOT_K: 1.42, FELL_HOLD: 1.5,
   LUCK: {
     lead: [['shield', 60], ['vimto', 40]],
-    close: [['vimto', 45], ['marbles', 40], ['shield', 15]],
-    behind: [['scooter', 45], ['vimto', 30], ['marbles', 25]],
-    far: [['scooter', 65], ['vimto', 25], ['marbles', 10]],
+    close: [['vimto', 40], ['marbles', 35], ['shield', 15], ['storm', 10]],
+    behind: [['scooter', 40], ['vimto', 25], ['marbles', 20], ['storm', 15]],
+    far: [['scooter', 60], ['vimto', 20], ['marbles', 10], ['storm', 10]],
   },
   TIERS: [-6, 6, 25], // gap <= -6 lead, < 6 close, < 25 behind, else far
   AIM_SLACK: 3, // marbles only if the friend is at least this close behind you (o.d >= dist - 3)
   luckOff: false, // true: boxes give nothing (baseline)
   flat: false, // true: every tier uses the 'close' table (no rubber band)
   FORKS: true, FORK_Y: 118, FORK_STEP_Y: 62, DECK_H: 12, FORK_FIRST: [3600, 6600], FORK_EVERY: [7000, 10000], FORK_MAX: 1800, FORK_LOW: 32,
+  STORM_T: 2.4, STORM_CLEAR: 200, // the sandstorm: how long the road ahead is hidden, and how far ahead stays clear
+  HOLD: 'now', // bots and the item button: 'now' = fire at once, 'smart' = keep attacks for when the friend nears a hazard
   bridge: null, // bots: null = choose by place and skill, 1 = always take the bridge, 0 = never
   MB_N: 3, MB_SPACE: 0.2, MB_SLIP: 1.5, DRAFT: [4, 30, 0.08], // DRAFT: [from m, to m, max bonus]
 };
@@ -107,7 +109,7 @@ function luckTier(P) {
 function luckRoll(P) {
   const c = P.cfg, tier = luckTier(P), o = P.opp, k = P.kid;
   const aim = o.run && !o.out && o.d >= P.dist - c.AIM_SLACK;
-  let pool = c.LUCK[tier].filter(([kk]) => (kk !== 'marbles' || aim) && (kk !== 'shield' || !k.shield));
+  let pool = c.LUCK[tier].filter(([kk]) => ((kk !== 'marbles' && kk !== 'storm') || aim) && (kk !== 'shield' || !k.shield));
   if (!pool.length) pool = [['vimto', 1]];
   let r = P.rng() * pool.reduce((a, p) => a + p[1], 0), kind = pool[0][0];
   for (const [kk, w] of pool) { if ((r -= w) < 0) { kind = kk; break; } }
@@ -127,10 +129,29 @@ function grab(P, it, send) {
   const c = P.cfg; P.stats.boxes++;
   if (c.luckOff) return;
   const l = luckRoll(P), s = P.stats; s.got[l.kind] = (s.got[l.kind] || 0) + 1; s.tierGot[l.tier + ':' + l.kind] = (s.tierGot[l.tier + ':' + l.kind] || 0) + 1;
-  if (l.kind === 'shield') P.kid.shield = 1;
-  if (l.kind === 'marbles') { s.mbSent++; send({ t: 'mb', x: Math.round(it.x) }); return; }
-  if (l.kind === 'vimto') P.boost = Math.max(P.boost, c.VIMTO * l.mul);
-  if (l.kind === 'scooter') P.kid.scoot = Math.max(P.kid.scoot, c.SCOOTER * l.mul);
+  if (l.kind === 'shield') { P.kid.shield = 1; return; }
+  if (P.item) useItem(P, send, true); // still holding one: it goes off now
+  P.item = { kind: l.kind, mul: l.mul, x: Math.round(it.x) }; P.itemT = 0;
+  if (c.HOLD === 'now') useItem(P, send, true);
+}
+// the item button, as in useItem() in js/game.js
+function useItem(P, send, auto) {
+  const c = P.cfg, it = P.item, o = P.opp, s = P.stats; if (!it) return;
+  if (it.kind === 'marbles' || it.kind === 'storm') {
+    if (!(o.run && !o.out && o.d >= P.dist - c.AIM_SLACK)) { if (auto) P.item = null; return; }
+    if (it.kind === 'marbles') { s.mbSent++; send({ t: 'mb', x: it.x }); } else { s.stSent = (s.stSent || 0) + 1; send({ t: 'st', x: it.x }); }
+  } else if (it.kind === 'vimto') P.boost = Math.max(P.boost, c.VIMTO * it.mul);
+  else if (it.kind === 'scooter') P.kid.scoot = Math.max(P.kid.scoot, c.SCOOTER * it.mul);
+  P.item = null;
+}
+// a bot that holds: boosts go at once; an attack waits (up to 5 s) until the friend is about to meet a hazard.
+// Both run the same course, so the thrower can see what the friend is coming up to.
+function botItem(P, send) {
+  const it = P.item; if (!it) return; P.itemT += DT;
+  if (it.kind === 'vimto' || it.kind === 'scooter') { useItem(P, send); return; }
+  const ox = P.opp.d * 40, [a, b] = it.kind === 'marbles' ? [420, 680] : [250, 900];
+  const hazard = P.obs.some(o => o.by === GROUND && o.x > ox + a && o.x < ox + b) || P.gaps.some(g => g.x0 > ox + a && g.x0 < ox + b);
+  if (hazard || P.itemT > 5) useItem(P, send);
 }
 export function marblesIn(P) { const c = P.cfg; for (let i = 0; i < c.MB_N; i++) { const q = P.mbQ, prev = q.length ? q[q.length - 1] : -1; q.push(Math.max(c.MB_WARN + i * c.MB_SPACE, prev + (i ? c.MB_SPACE : 0.35))); (P.mbAnn || (P.mbAnn = [])).push(P.playT); } }
 
@@ -144,6 +165,7 @@ function step(P, dt, press, send, sim) {
   const preX = P.worldX;
   P.worldX += speed * dt; P.dist = P.worldX / 40;
   if (P.dist >= c.SPRINT_M) { const over = (P.dist - c.SPRINT_M) / Math.max(1, speed / 40); P.fin = Math.max(0, P.runT - over); return 'fin'; }
+  if (!sim && P.stormT > 0) P.stormT = Math.max(0, P.stormT - dt);
   P.boost = Math.max(0, P.boost - dt); k.scoot = Math.max(0, k.scoot - dt); k.inv = Math.max(0, k.inv - dt); k.stumble = Math.max(0, k.stumble - dt); k.held = Math.max(0, k.held - dt);
   if (press === 'down') { k.buf = 0.13; P.holding = true; } else if (press === 'up') P.holding = false;
   k.buf -= dt; k.coyote -= dt;
@@ -161,7 +183,7 @@ function step(P, dt, press, send, sim) {
   if (k.on) k.coyote = 0.1;
   if (sim && k.y > GROUND + 12) return 'fall'; // a look-ahead only needs to know it is going down a hole
   if (sim && P.keepY != null && P.worldX < P.keepTo && k.y > P.keepY + 24) return 'fall'; // meaning to stay on the bridge: a deck hole is a fall
-  if (k.y > H + 40) { const x0 = P.worldX; sprintFell(P); P.stats.lostFall += 0; return 'fell'; }
+  if (k.y > H + 40) { const x0 = P.worldX; if (P.stormT > 0) P.stats.stHurt = (P.stats.stHurt || 0) + 1; sprintFell(P); return 'fell'; }
   let ev = null;
   for (const o of P.obs) {
     const d = OB[o.kind];
@@ -173,7 +195,7 @@ function step(P, dt, press, send, sim) {
     const ox = P.worldX + 9 > o.x + 4 && P.worldX - 9 < o.x + o.w - 4;
     if (ox && k.y > top + 4 && k.y - 54 < bot) {
       if (k.scoot > 0) { o.hit = true; if (!sim) P.stats.smash++; }
-      else if (k.inv <= 0) { if (sim) return 'hit'; const r = hitKid(P, 'ob'); o.hit = true; ev = r; if (r === 'hit' && P.forks.some(f => P.worldX > f.x0 && P.worldX < f.x1)) { if (k.y < GROUND - 60) P.fk.hitsDeck++; else P.fk.hitsLow++; } }
+      else if (k.inv <= 0) { if (sim) return 'hit'; const r = hitKid(P, 'ob'); o.hit = true; ev = r; if (r === 'hit' && P.stormT > 0) P.stats.stHurt = (P.stats.stHurt || 0) + 1; if (r === 'hit' && P.forks.some(f => P.worldX > f.x0 && P.worldX < f.x1)) { if (k.y < GROUND - 60) P.fk.hitsDeck++; else P.fk.hitsLow++; } }
     }
   }
   for (const s of P.sandals) {
@@ -195,9 +217,10 @@ function step(P, dt, press, send, sim) {
 }
 
 // ---------- bot ----------
+const see = P => Math.max(30, P.cfg.STORM_CLEAR - (P.react || 0) * runSpeed(P.dist) * 0.6);
 function cloneP(P) {
   return { cfg: P.cfg, rng: P.rng, forks: P.forks, keepY: P.keepY, keepTo: P.keepTo, worldX: P.worldX, dist: P.dist, playT: P.playT, runT: P.runT, boost: P.boost, holding: P.holding,
-    kid: { ...P.kid }, gaps: P.gaps, plats: P.plats, obs: P.obs.filter(o => !o.hit && o.x > P.worldX - 80 && o.x < P.worldX + 900).map(o => ({ ...o })),
+    kid: { ...P.kid }, gaps: P.stormT > 0 ? P.gaps.filter(g => g.x0 < P.worldX + see(P)) : P.gaps, plats: P.plats, obs: P.obs.filter(o => !o.hit && o.x > P.worldX - 80 && o.x < P.worldX + (P.stormT > 0 ? see(P) : 900)).map(o => ({ ...o })),
     items: P.items.filter(i => !i.got && i.x > P.worldX - 40 && i.x < P.worldX + 600).map(i => ({ ...i })), sandals: P.sandals.map(s => ({ ...s })), mbQ: P.mbQ.filter((_, i) => !P.mbAnn || P.playT - P.mbAnn[i] >= (P.react || 0)), stats: P.stats, opp: P.opp };
 }
 // look ahead: press at frame `at` (or never), hold for the whole jump; returns 'ok' / 'hit' / 'fall' and whether a box was taken
@@ -305,9 +328,10 @@ export function race(opts) {
       // deliver
       const box = wire[i]; for (let j = 0; j < box.length; j++) { const w = box[j]; if (w.at <= t) { box.splice(j--, 1); const m = w.m;
         if (m.t === 'p') p.opp.d = m.d; else if (m.t === 'mb') { const x = m.x; if (p.boxes.has(x) && !(p.mbX || (p.mbX = [])).includes(x) && t - (p.mbAt ?? -9) >= cfg.MB_GAP) { p.mbX.push(x); p.mbAt = t; marblesIn(p); } }
+        else if (m.t === 'st') { const x = m.x; if (p.boxes.has(x) && !(p.mbX || (p.mbX = [])).includes(x) && t - (p.mbAt ?? -9) >= cfg.MB_GAP) { p.mbX.push(x); p.mbAt = t; if (p.kid.shield > 0) { p.kid.shield = 0; p.stats.stBlock = (p.stats.stBlock || 0) + 1; } else { p.stormT = cfg.STORM_T; p.stats.stIn = (p.stats.stIn || 0) + 1; } } }
         else if (m.t === 'out') { p.opp.out = true; p.opp.tm = m.tm; } } }
       if (p.fin != null) continue;
-      p.react = bots[i].s.react; const pr = botThink(p, bots[i]);
+      p.react = bots[i].s.react; if (cfg.HOLD === 'smart') botItem(p, sends[i]); const pr = botThink(p, bots[i]);
       const r = step(p, DT, pr, sends[i], false);
       if (r === 'fin') sends[i]({ t: 'out', tm: p.fin });
       sendT[i] -= DT; if (sendT[i] <= 0) { sendT[i] = 0.05; sends[i]({ t: 'p', d: Math.floor(p.dist) }); }
