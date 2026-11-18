@@ -33,6 +33,7 @@
 <div id="sprintBar" hidden><span class="sb-place" id="sbPlace" hidden></span><div class="sb-track" aria-hidden="true"><i class="sb-dot sb-opp" id="sbOpp" hidden></i><i class="sb-dot sb-me" id="sbMe"></i><b class="sb-flag"></b></div><span class="sb-left" id="sbLeft"></span></div>
 <button class="corner" id="pauseBtn" data-i18n-aria="pause" aria-label="إيقاف مؤقت" hidden>II</button>
 <button class="corner" id="mute" data-i18n-aria="sound" aria-label="الصوت والموسيقى" hidden>♪</button>
+<button class="corner" id="itemBtn" data-i18n-aria="it_aria" aria-label="استخدم الغرض" hidden><canvas id="itemCv" width="96" height="96" aria-hidden="true"></canvas></button>
 
 <div class="overlay" id="menu" hidden>
   <div class="panel menu">
@@ -74,7 +75,9 @@
         <div class="race-box" id="raceBox" hidden>
           <p class="race-head" id="raceHead"></p>
           <p class="race-score" id="raceScore"></p>
-          <div class="race-row"><span class="race-me"><b id="raceMe" dir="ltr">0</b><small id="raceMeName"></small></span><em data-i18n="mp_vs"></em><span class="race-opp"><b id="raceOpp" dir="ltr">0</b><small id="raceOppName"></small></span></div>
+          <p class="race-score" id="raceRec"></p>
+          <div class="race-row"><span class="race-me"><b id="raceMe" dir="ltr">0</b><small id="raceMeName"></small><i class="emo-pop" id="raceMeEm"></i></span><em data-i18n="mp_vs"></em><span class="race-opp"><b id="raceOpp" dir="ltr">0</b><small id="raceOppName"></small><i class="emo-pop" id="raceOppEm"></i></span></div>
+          <div class="emo-row" id="emoOver"></div>
         </div>
         <h2 id="overTitle"></h2>
         <p id="overMsg"></p>
@@ -127,7 +130,8 @@
   <div class="panel pick friend" role="dialog" aria-modal="true" aria-labelledby="fTitle">
     <p class="kicker" data-i18n="mp_kicker"></p>
     <h2 id="fTitle" data-i18n="mp_title"></h2>
-    <div class="f-vs" id="fVs" hidden><div><canvas id="avMe" width="300" height="300" aria-hidden="true"></canvas><b id="fMeName"></b></div><em data-i18n="mp_vs"></em><div><canvas id="avOpp" width="300" height="300" aria-hidden="true"></canvas><b id="fOppName"></b></div></div>
+    <div class="f-vs" id="fVs" hidden><div><canvas id="avMe" width="300" height="300" aria-hidden="true"></canvas><b id="fMeName"></b><i class="emo-pop" id="fMeEm"></i></div><em data-i18n="mp_vs"></em><div><canvas id="avOpp" width="300" height="300" aria-hidden="true"></canvas><b id="fOppName"></b><i class="emo-pop" id="fOppEm"></i></div></div>
+    <p class="f-rec" id="fRec"></p><div class="emo-row" id="emoFriend" hidden></div>
     <p class="f-status" id="fStatus" role="status" aria-live="polite"></p>
     <div class="f-gate" id="fGate" hidden>
       <p class="f-gate-text" data-i18n="mp_gateText"></p>
