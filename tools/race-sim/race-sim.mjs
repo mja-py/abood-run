@@ -16,6 +16,8 @@ export const DEFAULT_CFG = {
   AIM_SLACK: 3, // marbles only if the friend is at least this close behind you (o.d >= dist - 3)
   luckOff: false, // true: boxes give nothing (baseline)
   flat: false, // true: every tier uses the 'close' table (no rubber band)
+  FORKS: true, FORK_Y: 118, FORK_STEP_Y: 62, DECK_H: 12, FORK_FIRST: [3600, 6600], FORK_EVERY: [7000, 10000], FORK_MAX: 1800, FORK_LOW: 32,
+  bridge: null, // bots: null = choose by place and skill, 1 = always take the bridge, 0 = never
   MB_N: 3, MB_SPACE: 0.2, MB_SLIP: 1.5, DRAFT: [4, 30, 0.08], // DRAFT: [from m, to m, max bonus]
 };
 const H = 400, GROUND = 330, W = 866, ABX = 360, DT = 1 / 60;
@@ -44,13 +46,31 @@ function newPlayer(seed, zone, cfg, rng) {
     kid: { y: GROUND, vy: 0, on: true, jumps: 0, coyote: 0, buf: 0, inv: 0, stumble: 0, scoot: 0, shield: 0, held: 0 },
     holding: false, fin: null, stats: { hits: 0, obsHits: 0, mbHits: 0, mbDodged: 0, mbBlocked: 0, falls: 0, shieldSaves: 0, boxes: 0, boxSeen: 0, got: {}, tierGot: {}, mbSent: 0, smash: 0, lostHit: 0, lostFall: 0 },
     opp: { d: 0, run: true, out: false, tm: null }, out: [] };
+  P.forks = []; P.fk = { n: 0, bridge: 0, done: 0, hitsLow: 0, hitsDeck: 0, drops: 0, boxes: 0 };
+  P.nextFork = cfg.FORKS ? P.genX + (cfg.FORK_FIRST[0] + P.crand() * (cfg.FORK_FIRST[1] - cfg.FORK_FIRST[0])) : Infinity;
   return P;
 }
-function addObs(P, x, k) { P.obs.push({ x, x0: x, kind: k, w: OB[k].w, h: OB[k].h, hit: false, lift: 0, seed: P.crand() * 6 }); }
+function addObs(P, x, k, by = GROUND) { P.obs.push({ x, x0: x, by, kind: k, w: OB[k].w, h: OB[k].h, hit: false, lift: 0, seed: P.crand() * 6 }); }
 function box(P, x, y) { P.crand(); P.items.push({ x, y, kind: 'luck' }); P.boxes.add(Math.round(x)); } // power() draws crand once, then 'luck'
+function genFork(P, crand, crnd, cpick) { // the same steps, in the same order, as genFork() in js/game.js
+  const c = P.cfg, x0 = P.genX, y = GROUND - c.FORK_Y, n = crand() < 0.5 ? 3 : 2, hard = n - 2;
+  const low = P.zobs.filter(k => !OB[k].vx && !OB[k].bounce && !OB[k].side && OB[k].h <= c.FORK_LOW), pool = low.length ? low : ['box'];
+  P.plats.push({ x: x0, y: GROUND - c.FORK_STEP_Y, w: 100 });
+  let x = x0 + 140, bx = 0; const d0 = x;
+  for (let i = 0; i < n; i++) {
+    const w = i === hard ? crnd(440, 520) : crnd(300, 400);
+    P.plats.push({ x, y, w });
+    if (i === hard) addObs(P, x + w * 0.35, cpick(pool), y);
+    if (i === n - 1) { bx = x + w * 0.7; box(P, bx, y - 34); }
+    x += w + (i < n - 1 ? crnd(95, 125) : 0);
+  }
+  P.forks.push({ x0, x1: x, d0, y, bx });
+  P.genX = x + crnd(420, 520); P.nextFork = x + crnd(c.FORK_EVERY[0], c.FORK_EVERY[1]);
+}
 function gen(P) {
   const crand = P.crand, crnd = (a, b) => a + crand() * (b - a), cpick = a => a[Math.floor(crand() * a.length)];
   while (P.genX < P.worldX + W + 400) {
+    if (P.genX >= P.nextFork) { if (P.genX + P.cfg.FORK_MAX > P.cfg.SPRINT_M * 40 - 600) P.nextFork = Infinity; else { genFork(P, crand, crnd, cpick); continue; } }
     const z = P.zobs, r = crand(), gd = Math.max(0, (P.genX - 900) / 40) + P.cfg.SPRINT_HARD, hard = Math.min(1, gd / 8000), spread = Math.sqrt(runSpeed(gd) / 320);
     let genX = P.genX;
     if (r < 0.34) {
@@ -73,7 +93,7 @@ function gen(P) {
     }
     P.genX = genX;
   }
-  const cut = P.worldX - ABX - 200;
+  const cut = P.worldX - ABX - 200; P.forks = P.forks.filter(f => f.x1 > cut);
   P.gaps = P.gaps.filter(g => g.x1 > cut); P.plats = P.plats.filter(p => p.x + p.w > cut);
   P.obs = P.obs.filter(o => o.x + 80 > cut && !o.gone); P.items = P.items.filter(i => i.x > cut && !i.got);
 }
@@ -133,12 +153,14 @@ function step(P, dt, press, send, sim) {
   }
   k.vy += 2300 * dt * (!P.holding && k.vy < 0 ? 2.2 : 1);
   const py = k.y; k.y += k.vy * dt; k.on = false;
+  if (k.vy < 0) for (const f of P.forks) { if (P.worldX + 8 <= f.d0 || P.worldX - 8 >= f.x1) continue; const u = f.y + c.DECK_H + 54; if (py >= u && k.y < u) { k.y = u; k.vy = 0; } }
   if (k.vy >= 0) {
     for (const p of P.plats) { if (P.worldX + 8 > p.x && P.worldX - 8 < p.x + p.w && py <= p.y + 1 && k.y >= p.y) { k.y = p.y; k.vy = 0; k.on = true; k.jumps = 0; break; } }
     if (!k.on && !overGap(P, P.worldX) && py <= GROUND + 1 && k.y >= GROUND) { k.y = GROUND; k.vy = 0; k.on = true; k.jumps = 0; }
   }
   if (k.on) k.coyote = 0.1;
   if (sim && k.y > GROUND + 12) return 'fall'; // a look-ahead only needs to know it is going down a hole
+  if (sim && P.keepY != null && P.worldX < P.keepTo && k.y > P.keepY + 24) return 'fall'; // meaning to stay on the bridge: a deck hole is a fall
   if (k.y > H + 40) { const x0 = P.worldX; sprintFell(P); P.stats.lostFall += 0; return 'fell'; }
   let ev = null;
   for (const o of P.obs) {
@@ -147,11 +169,11 @@ function step(P, dt, press, send, sim) {
     if (d.vx) { const nx = o.x + d.vx * dt; if (!overGap(P, nx, 0) && !overGap(P, nx + o.w, 0)) o.x = nx; }
     if (d.side) o.x = o.x0 + Math.sin(P.playT * 2.4 + o.seed) * 26;
     o.lift = d.bounce ? Math.abs(Math.sin(P.playT * 4.2 + o.seed)) * 46 : 0;
-    const top = GROUND - o.lift - o.h, bot = GROUND - o.lift;
+    const top = o.by - o.lift - o.h, bot = o.by - o.lift;
     const ox = P.worldX + 9 > o.x + 4 && P.worldX - 9 < o.x + o.w - 4;
     if (ox && k.y > top + 4 && k.y - 54 < bot) {
       if (k.scoot > 0) { o.hit = true; if (!sim) P.stats.smash++; }
-      else if (k.inv <= 0) { if (sim) return 'hit'; const r = hitKid(P, 'ob'); o.hit = true; ev = r; }
+      else if (k.inv <= 0) { if (sim) return 'hit'; const r = hitKid(P, 'ob'); o.hit = true; ev = r; if (r === 'hit' && P.forks.some(f => P.worldX > f.x0 && P.worldX < f.x1)) { if (k.y < GROUND - 60) P.fk.hitsDeck++; else P.fk.hitsLow++; } }
     }
   }
   for (const s of P.sandals) {
@@ -164,7 +186,7 @@ function step(P, dt, press, send, sim) {
   for (const it of P.items) {
     if (it.got) continue;
     const dx = it.x - P.worldX, dy = it.y - (k.y - 30);
-    if (dx * dx + dy * dy < 32 * 32) { it.got = true; if (sim) { P.simGot = 1; continue; } grab(P, it, send); }
+    if (dx * dx + dy * dy < 32 * 32) { it.got = true; if (sim) { P.simGot = 1; continue; } if (P.forks.some(f => Math.abs(f.bx - it.x) < 1)) P.fk.boxes++; grab(P, it, send); }
   }
   const q = P.mbQ;
   if (q.length) { for (let i = 0; i < q.length; i++) q[i] -= dt; while (q.length && q[0] <= 0) { q.shift(); if (P.mbAnn) P.mbAnn.shift(); P.sandals.push({ sx: -30, hit: false, passed: false }); } }
@@ -174,7 +196,7 @@ function step(P, dt, press, send, sim) {
 
 // ---------- bot ----------
 function cloneP(P) {
-  return { cfg: P.cfg, rng: P.rng, worldX: P.worldX, dist: P.dist, playT: P.playT, runT: P.runT, boost: P.boost, holding: P.holding,
+  return { cfg: P.cfg, rng: P.rng, forks: P.forks, keepY: P.keepY, keepTo: P.keepTo, worldX: P.worldX, dist: P.dist, playT: P.playT, runT: P.runT, boost: P.boost, holding: P.holding,
     kid: { ...P.kid }, gaps: P.gaps, plats: P.plats, obs: P.obs.filter(o => !o.hit && o.x > P.worldX - 80 && o.x < P.worldX + 900).map(o => ({ ...o })),
     items: P.items.filter(i => !i.got && i.x > P.worldX - 40 && i.x < P.worldX + 600).map(i => ({ ...i })), sandals: P.sandals.map(s => ({ ...s })), mbQ: P.mbQ.filter((_, i) => !P.mbAnn || P.playT - P.mbAnn[i] >= (P.react || 0)), stats: P.stats, opp: P.opp };
 }
@@ -199,12 +221,49 @@ export const SKILLS = {
   kid: { sigma: 0.13, lapse: 0.1, late: 0.25, box: 0.45, react: 0.45 },
 };
 function gauss(rng) { let u = 0, v = 0; while (!u) u = rng(); while (!v) v = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+// where the bot next stands if it presses at frame `at` (null: it gets hit or falls first)
+function landY(P, at, frames) {
+  const S = cloneP(P); S.keepY = null; let air = false;
+  for (let f = 0; f < frames; f++) {
+    if (f > at && S.kid.vy >= 0 && S.holding) S.holding = false;
+    const r = step(S, DT, f === at ? 'down' : null, null, true);
+    if (r) return null;
+    if (f >= at) { if (!S.kid.on) air = true; else if (air) return S.kid.y; }
+  }
+  return null;
+}
+// A fork: decide once whether to take the bridge (more often when behind: the box is up there), then hop onto the step
+// and from the step onto the deck. On the deck the normal look-ahead treats a deck hole as a fall.
+// Returns null to do nothing this frame, or undefined to let the normal thinking run.
+function botFork(P, B) {
+  const c = P.cfg, k = P.kid; let f = B.fk;
+  if (f && P.worldX > f.x1 - 30) { if (P.keepY != null) P.fk.done++; B.fk = null; P.keepY = null; return undefined; }
+  if (!f) {
+    f = P.forks.find(q => !q.seen && q.x0 - P.worldX < 420 && q.x0 > P.worldX); if (!f) return undefined;
+    f.seen = 1; B.fk = f; P.fk.n++;
+    const gap = P.opp.d - P.dist, base = gap > 6 ? 0.85 : gap < -6 ? 0.35 : 0.6;
+    B.takes = c.bridge != null ? !!c.bridge : P.rng() < base * (0.5 + 0.5 * B.s.box);
+    if (B.takes) P.fk.bridge++;
+  }
+  if (!B.takes) return undefined;
+  if (P.keepY != null) { if (k.on && k.y > f.y + 30) { P.fk.drops++; P.keepY = null; B.takes = false; } return undefined; } // fell through a deck hole: carry on below
+  if (k.on && Math.abs(k.y - f.y) < 1 && P.worldX > f.d0 - 10) { P.keepY = f.y; P.keepTo = f.x1 - 30; return undefined; } // on the deck
+  if (!k.on) return undefined;
+  const stepY = GROUND - c.FORK_STEP_Y, onStep = Math.abs(k.y - stepY) < 1;
+  if (!onStep && P.worldX > f.x0 + 60) { B.takes = false; return undefined; } // missed the step: the underpass it is
+  const want = onStep ? f.y : stepY, good = [];
+  for (let a = 0; a < 46; a++) { const y = landY(P, a, 100); if (y != null && Math.abs(y - want) < 1) good.push(a); else if (good.length) break; }
+  if (!good.length || good[0] > 20) return undefined; // not yet (or not possible from here)
+  B.pressAt = Math.max(1, Math.round((good[0] + good[good.length - 1]) / 2 + gauss(P.rng) * B.s.sigma * 60));
+  return null;
+}
 function botThink(P, B) {
   // a press is already planned: wait for it
   if (B.pressAt != null) { B.pressAt--; if (B.pressAt <= 0) { B.pressAt = null; B.cool = 6; return 'down'; } return null; }
   if (B.cool > 0) { B.cool--; return null; }
   if (P.holding && P.kid.vy >= 0) return 'up';
   const k = P.kid;
+  if (P.forks.length) { const fr = botFork(P, B); if (fr !== undefined) return fr; }
   if (!k.on && k.jumps >= 2) return null;
   const HZ = 54; // ~0.9 s ahead
   const none = look(P, -1, HZ);
@@ -260,5 +319,5 @@ export function race(opts) {
     if ((A.fin != null || Bp.fin != null) && t > 150) break;
   }
   const ta = A.fin ?? 999, tb = Bp.fin ?? 999;
-  return { win: Math.abs(ta - tb) < 0.05 ? 0 : ta < tb ? 1 : -1, ta, tb, changes, A: A.stats, B: Bp.stats, gaps, trace };
+  return { fk: [A.fk, Bp.fk], win: Math.abs(ta - tb) < 0.05 ? 0 : ta < tb ? 1 : -1, ta, tb, changes, A: A.stats, B: Bp.stats, gaps, trace };
 }

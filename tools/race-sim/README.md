@@ -6,6 +6,8 @@ A headless copy of the online sprint race (course generation, jumps, obstacles, 
 node tools/race-sim/exp.mjs 1000 x '{"now":{}}' 'casual-casual,pro-casual,casual-kid' > /tmp/sim.json && node tools/race-sim/show.js /tmp/sim.json
 ```
 
-Columns: `betW` how often the first-named (better) player wins a round, `match` the same for best of 3, `margin` the average finish gap in seconds, `<1s%` races decided by under a second, `chg` lead changes per race, `cb15` / `cb30` how often the player 15 / 30 m behind at 400 m still wins, `mbHit%` marbles that land.
+Forks (bridge over an underpass) are simulated too: bots decide at each fork, taking the bridge more often when behind. `cfg.bridge` forces it (`1` always, `0` never), which is how to check with `perfect` bots that both roads can be cleared without a hit.
+
+Columns: `betW` how often the first-named (better) player wins a round, `match` the same for best of 3, `margin` the average finish gap in seconds, `<1s%` races decided by under a second, `chg` lead changes per race, `cb15` / `cb30` how often the player 15 / 30 m behind at 400 m still wins, `mbHit%` marbles that land, `forks` forks per player per race, `bridge%` how often the bridge was chosen, `done%` how many of those bridges were completed.
 
 If you change race rules in `js/game.js`, change `DEFAULT_CFG` (or the copied code) here too, or the numbers stop meaning anything.

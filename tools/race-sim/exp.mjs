@@ -5,7 +5,7 @@ import os from 'node:os';
 import { race } from './race-sim.mjs';
 if (!isMainThread) {
   const { jobs } = workerData; const out = [];
-  for (const j of jobs) { const r = race(j); out.push({ k: j.k, win: r.win, ta: r.ta, tb: r.tb, ch: r.changes, g: r.gaps, A: r.A, B: r.B }); }
+  for (const j of jobs) { const r = race(j); out.push({ k: j.k, fk: r.fk, win: r.win, ta: r.ta, tb: r.tb, ch: r.changes, g: r.gaps, A: r.A, B: r.B }); }
   parentPort.postMessage(out);
 } else {
   const N = +process.argv[2] || 400, cfgName = process.argv[3] || 'all';
@@ -29,6 +29,7 @@ if (!isMainThread) {
     // comebacks: whoever is behind at 400 m (gap from the first-named player's side)
     let g = r.g[400]; if (g != null) { if (flip) g = -g; const behindIsBetter = g < 0, gap = Math.abs(g); const behindWon = behindIsBetter ? w === 1 : w === -1;
       if (gap >= 15) { a.cb15n++; if (behindWon) a.cb15w++; } if (gap >= 30) { a.cb30n++; if (behindWon) a.cb30w++; } }
+    for (const f of r.fk || []) { a.fkN = (a.fkN || 0) + f.n; a.fkB = (a.fkB || 0) + f.bridge; a.fkD = (a.fkD || 0) + f.done; }
     for (const s of [r.A, r.B]) { a.mbS += s.mbSent; for (const [k, v] of Object.entries(s.tierGot)) a.got[k] = (a.got[k] || 0) + v; a.shield += s.shieldSaves; a.obsH += s.obsHits; a.falls += s.falls; }
     a.mbH += r.A.mbHits + r.B.mbHits;
   }
@@ -39,7 +40,7 @@ if (!isMainThread) {
     const p = a.bw / Math.max(1, a.n - a.ties), match = p * p * (3 - 2 * p);
     rows.push({ cfg: cn, pair, n: a.n, betterWins: +(100 * p1).toFixed(1), match: +(100 * match).toFixed(1), tBetter: +(a.tB / a.n).toFixed(1), tWorse: +(a.tW / a.n).toFixed(1), margin: +(a.margin / a.n).toFixed(2), under1s: +(100 * a.close1 / a.n).toFixed(1), leadChanges: +(a.ch / a.n).toFixed(2),
       comeback15: a.cb15n ? +(100 * a.cb15w / a.cb15n).toFixed(1) + '% of ' + a.cb15n : '-', comeback30: a.cb30n ? +(100 * a.cb30w / a.cb30n).toFixed(1) + '% of ' + a.cb30n : '-',
-      mbPerRace: +(a.mbS / a.n).toFixed(2), mbHitPct: a.mbS ? +(100 * a.mbH / a.mbS).toFixed(1) : 0, shieldSaves: +(a.shield / a.n).toFixed(2), obsHits: +(a.obsH / a.n / 2).toFixed(2), falls: +(a.falls / a.n / 2).toFixed(2), got: a.got });
+      mbPerRace: +(a.mbS / a.n).toFixed(2), mbHitPct: a.mbS ? +(100 * a.mbH / a.mbS).toFixed(1) : 0, shieldSaves: +(a.shield / a.n).toFixed(2), obsHits: +(a.obsH / a.n / 2).toFixed(2), falls: +(a.falls / a.n / 2).toFixed(2), forks: +((a.fkN || 0) / a.n / 2).toFixed(2), bridgePct: a.fkN ? +(100 * a.fkB / a.fkN).toFixed(0) : 0, bridgeDone: a.fkB ? +(100 * a.fkD / a.fkB).toFixed(0) : 0, got: a.got });
   }
   console.log(JSON.stringify(rows));
 }

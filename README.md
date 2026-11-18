@@ -14,6 +14,9 @@ Progress is saved on the device: in-game dirhams (no real payments), a shop with
 - **Items:** Vimto (faster), marbles (Baba slips), Mama's phone call (Baba stops), scooter (smash obstacles), magnet (pulls in sweets), sweets jar (+15, times the combo).
 - **Power-ups and boosters:** picking up a power-up while the same booster is running never shortens it.
 - **Watch out:** when “!” appears over Baba, he throws his sandal along the ground. Jump it.
+- **Forks, bridge or underpass:** every 200 m or so the road splits, and a signpost just before it shows the choice. The rule is always the same, so you can decide before you get there:
+  - **Up, over the bridge (the hard road with the prizes):** hop onto the step, then onto the deck. Up there are a row of sweets, one obstacle, one or two holes in the deck, and on the last piece a sweets jar and a power-up box. Falling through a hole doesn't end the run: you drop onto the underpass and miss the rest of the prizes. Sandals roll along the ground, so they pass under you.
+  - **Straight on, through the underpass (the easy road):** nothing in the way and no holes, just a few sweets and no prize. The bridge is a roof from below, holes included (a jump bumps its head), so you can't hop up for the prize halfway: you choose at the step.
 
 ## The route
 
@@ -106,6 +109,7 @@ Two players race on the same course, each on their own phone, from anywhere.
 - **Join room:** the friend taps *Join room* and types the code into six boxes (pasting works too). There is no link; the code is the only way in.
 - **Race names:** typed on a pop-up card, letters only in the game's language (Arabic letters in Arabic, English letters in English), 2 to 12, no numbers or symbols. Empty means the character's own name. The card asks for a nickname, not a full name, and only the friend you race sees it.
 - **Sprint race:** the first to the finish line, 600 m from the start, wins the round. The host taps *Let's race!* and picks the first course; both get a 3-2-1 countdown. Both games use the same seed and course, so the course is identical, and obstacles are mixed as if the run were already 2 km in, so the sprint is busy from the start. A bar under the top of the screen shows both runners, the finish flag, your place (1st or 2nd) and the metres left.
+- **Forks in a race:** both players get the same forks in the same places (about two in a sprint, never across the finish line). The box on the bridge is a luck box, so the bridge suits the player behind; marbles roll along the ground, so they miss a player on the bridge and are harder to hop under its low roof. In simulated races, bots took the bridge about half the time and an average player completed about 3 bridges in 4; the balance numbers below stayed in range.
 - **No Baba in a race:** it's a speed battle between the two players. Baba stays home, so there is no lead bar, no sandals, no Focus and no Mama's phone call. Bumping into an obstacle makes you stumble (1.1 s at half speed), and falling in a hole puts you on the far side after a 1.5-second stop. So a mistake costs time, never the race, and a race always ends.
 - **Luck boxes, so the one behind can catch up:** every power-up on a race course is a red gift box with a question mark, in the same places for both players. What's inside is rolled when you open it, from your distance to your friend:
 
