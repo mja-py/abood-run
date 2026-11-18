@@ -1,8 +1,8 @@
 # اركض يا عبود! · Run, Abood!
 
-لعبة جري في المتصفح: عبود بالكندورة والشماغ الأحمر يهرب من أبوه، وأبوه وراه بغترة معوجّة والنعال في يده. الطريق لفة حول دبي: من الممزر على البحر، بسوق ديرة على الخور، ووسط المدينة عند برج خليفة، وجميرا، ونفق الأسماك الزجاجي في نخلة جميرا، لين JBR وعين دبي (٣٠ كم). وبعدها داخل المدينة: إكسبو سيتي، وغولف الحبتور، وحديقة ند الشبا، وحديقة الخوانيج، وخور دبي هاربر (٣٠ كم ثانية)، وترجع للممزر من جديد.
+لعبة جري في المتصفح: عبود بالكندورة والشماغ الأحمر يهرب من أبوه، وأبوه وراه بغترة معوجّة والنعال في يده. الطريق لفة حول دبي: من الممزر على البحر، بسوق ديرة على الخور، ووسط المدينة عند برج خليفة، وجميرا، ونفق الأسماك الزجاجي في نخلة جميرا، لين JBR وعين دبي (٣٠ كم). وبعدها داخل المدينة: إكسبو سيتي، والغولف والبولو، وحديقة ند الشبا، وحديقة الخوانيج، وخور دبي هاربر (٣٠ كم ثانية)، وترجع للممزر من جديد.
 
-An endless runner for the browser. Abood, in his kandura and red shemagh, runs from Baba right across Dubai, in the real order: from Al Mamzar, through the old Deira souq on the Creek, past Burj Khalifa in Downtown, along Jumeirah, through the glass aquarium tunnel on the Palm and on to JBR and Ain Dubai. Then the route turns inland, past Expo City, Al Habtoor golf, Nad Al Sheba and Al Khawaneej to Dubai Creek Harbour, and loops back to Al Mamzar. Arabic is the default language. The flag buttons switch to English.
+An endless runner for the browser. Abood, in his kandura and red shemagh, runs from Baba right across Dubai, in the real order: from Al Mamzar, through the old Deira souq on the Creek, past Burj Khalifa in Downtown, along Jumeirah, through the glass aquarium tunnel on the Palm and on to JBR and Ain Dubai. Then the route turns inland, past Expo City, the golf and polo greens, Nad Al Sheba and Al Khawaneej to Dubai Creek Harbour, and loops back to Al Mamzar. Arabic is the default language. The flag buttons switch to English.
 
 Progress is saved on the device: in-game dirhams (no real payments), a shop with power-up upgrades and boosters, a wardrobe for Abood and his sister Mozah (unlocked by missions), 15 badges, the mission ladder plus three daily missions, postcards from 46 landmarks, and a 7-day login gift.
 
