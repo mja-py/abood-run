@@ -19,6 +19,8 @@ export const DEFAULT_CFG = {
   FORKS: true, FORK_Y: 118, FORK_STEP_Y: 62, DECK_H: 12, FORK_FIRST: [3600, 6600], FORK_EVERY: [7000, 10000], FORK_MAX: 1800, FORK_LOW: 32,
   STORM_T: 2.4, STORM_CLEAR: 200, // the sandstorm: how long the road ahead is hidden, and how far ahead stays clear
   HOLD: 'now', // bots and the item button: 'now' = fire at once, 'smart' = keep attacks for when the friend nears a hazard
+  SIDES: true, SIDE_FIRST: [5000, 9000], SIDE_EVERY: [14000, 20000], SIDE_LEN: [2400, 3200], SIDE_STEP_Y: 62, SIDE_IN: 30,
+  side: null, // bots: null = choose by place and skill, 1 = always turn into a side road, 0 = never
   bridge: null, // bots: null = choose by place and skill, 1 = always take the bridge, 0 = never
   MB_N: 3, MB_SPACE: 0.2, MB_SLIP: 1.5, DRAFT: [4, 30, 0.08], // DRAFT: [from m, to m, max bonus]
 };
@@ -31,10 +33,13 @@ const ZONE_OBS = [
   ['basket', 'ball', 'cat', 'flower', 'cooler', 'escooter'], ['goat', 'sack', 'rock', 'bush', 'dallah', 'basket'],
   ['escooter', 'ball', 'dbag', 'cone', 'flower', 'ring'],
 ];
-const OB = { box: { w: 34, h: 32 }, bin: { w: 30, h: 46 }, cat: { w: 34, h: 30 }, cone: { w: 24, h: 36 }, goat: { w: 44, h: 38, vx: -45 }, ball: { w: 22, h: 22, bounce: 1, vx: -60 },
+const OB = { spice: { w: 40, h: 26 }, handcart: { w: 54, h: 36, vx: -50 }, trolley: { w: 46, h: 40, vx: -70 }, wetsign: { w: 26, h: 38 }, plantpot: { w: 30, h: 46 }, suitcase: { w: 30, h: 38 }, robot: { w: 40, h: 18, vx: -40 },
+  box: { w: 34, h: 32 }, bin: { w: 30, h: 46 }, cat: { w: 34, h: 30 }, cone: { w: 24, h: 36 }, goat: { w: 44, h: 38, vx: -45 }, ball: { w: 22, h: 22, bounce: 1, vx: -60 },
   sack: { w: 30, h: 36 }, carpet: { w: 58, h: 20 }, crab: { w: 30, h: 18, side: 1 }, cooler: { w: 40, h: 30 }, rock: { w: 42, h: 28 }, bush: { w: 38, h: 30 }, lizard: { w: 46, h: 14, vx: -110 },
   bike: { w: 44, h: 30 }, gas: { w: 22, h: 36 }, dbag: { w: 32, h: 30 }, dbike: { w: 60, h: 54, vx: -170 }, crate: { w: 32, h: 40 }, chairs: { w: 30, h: 46 },
   castle: { w: 40, h: 28 }, mandoos: { w: 36, h: 32 }, ring: { w: 30, h: 30, vx: -40 }, gbag: { w: 22, h: 40 }, cart: { w: 50, h: 40, vx: -120 }, escooter: { w: 40, h: 38 }, basket: { w: 32, h: 24 }, flower: { w: 30, h: 32 }, dallah: { w: 28, h: 34 }, wood: { w: 44, h: 20 }, buggy: { w: 58, h: 38, vx: -150 } };
+const SIDE = { souq: ['sack', 'carpet', 'dallah', 'mandoos', 'wood', 'cat', 'spice', 'handcart'], mall: ['trolley', 'wetsign', 'plantpot', 'suitcase', 'dbag', 'box', 'robot'] };
+const sideTheme = zi => zi === 1 ? 'souq' : zi === 2 || zi === 5 || zi === 6 || zi === 10 ? 'mall' : '';
 const seeded = a => () => { a = (a + 0x6D2B79F5) | 0; let x = Math.imul(a ^ (a >>> 15), 1 | a); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
 const runSpeed = d => 310 + Math.min(260, d * 0.05);
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
@@ -43,13 +48,15 @@ export function makeRng(s) { return seeded(s); }
 
 // ---------- one player's game ----------
 function newPlayer(seed, zone, cfg, rng) {
-  const P = { cfg, rng, crand: seeded(seed), zobs: ZONE_OBS[zone], genX: 900, worldX: 0, dist: 0, playT: 0, runT: 0,
+  const P = { cfg, rng, crand: seeded(seed), zi: zone, zobs: ZONE_OBS[zone], genX: 900, worldX: 0, dist: 0, playT: 0, runT: 0,
     gaps: [], plats: [], obs: [], items: [], sandals: [], mbQ: [], boxes: new Set(), boost: 0,
     kid: { y: GROUND, vy: 0, on: true, jumps: 0, coyote: 0, buf: 0, inv: 0, stumble: 0, scoot: 0, shield: 0, held: 0 },
     holding: false, fin: null, stats: { hits: 0, obsHits: 0, mbHits: 0, mbDodged: 0, mbBlocked: 0, falls: 0, shieldSaves: 0, boxes: 0, boxSeen: 0, got: {}, tierGot: {}, mbSent: 0, smash: 0, lostHit: 0, lostFall: 0 },
     opp: { d: 0, run: true, out: false, tm: null }, out: [] };
   P.forks = []; P.fk = { n: 0, bridge: 0, done: 0, hitsLow: 0, hitsDeck: 0, drops: 0, boxes: 0 };
   P.nextFork = cfg.FORKS ? P.genX + (cfg.FORK_FIRST[0] + P.crand() * (cfg.FORK_FIRST[1] - cfg.FORK_FIRST[0])) : Infinity;
+  P.sides = []; P.inSide = null; P.sd = { n: 0, took: 0, done: 0, hitsIn: 0, boxesIn: 0 };
+  P.nextSide = cfg.SIDES ? P.genX + (cfg.SIDE_FIRST[0] + P.crand() * (cfg.SIDE_FIRST[1] - cfg.SIDE_FIRST[0])) : Infinity;
   return P;
 }
 function addObs(P, x, k, by = GROUND) { P.obs.push({ x, x0: x, by, kind: k, w: OB[k].w, h: OB[k].h, hit: false, lift: 0, seed: P.crand() * 6 }); }
@@ -69,16 +76,47 @@ function genFork(P, crand, crnd, cpick) { // the same steps, in the same order, 
   P.forks.push({ x0, x1: x, d0, y, bx });
   P.genX = x + crnd(420, 520); P.nextFork = x + crnd(c.FORK_EVERY[0], c.FORK_EVERY[1]);
 }
-function gen(P) {
+// side roads, as genSide() / fillSide() / enterSide() / leaveSide() in js/game.js
+function genSide(P, crand, crnd) {
+  const c = P.cfg, theme = sideTheme(P.zi), gx = P.genX + 620;
+  const sd = { x0: gx, x1: gx + crnd(c.SIDE_LEN[0], c.SIDE_LEN[1]), theme, seed: (crand() * 4294967296) >>> 0 };
+  P.plats.push({ x: gx - 130, y: GROUND - c.SIDE_STEP_Y, w: 220 });
+  // its own lists, from its own seed
+  const keep = [P.gaps, P.plats, P.obs, P.items, P.crand], r2 = seeded(sd.seed), rn = (a, b) => a + r2() * (b - a), pk = a => a[Math.floor(r2() * a.length)], pool = SIDE[theme], still = pool.filter(k => !OB[k].vx);
+  P.gaps = []; P.plats = []; P.obs = []; P.items = []; P.crand = r2;
+  const spread = Math.sqrt(runSpeed(Math.max(0, (sd.x0 - 900) / 40) + c.SPRINT_HARD) / 320), end = sd.x1 - 520; let x = sd.x0 + 300, mid = (sd.x0 + end) / 2;
+  while (x < end) {
+    if (mid && x > mid) { box(P, x, GROUND - 74); x += 260; mid = 0; continue; }
+    const r = r2();
+    if (r < 0.6) { const k = pk(pool); if (OB[k].vx) x += 120; addObs(P, x, k); r2(); if (r2() < 0.35) { const dx = rn(200, 250) * spread; addObs(P, x + dx, pk(still)); x += dx; } x += rn(230, 340) * spread; }
+    else if (r < 0.78) { const w = rn(170, 240), y = GROUND - rn(85, 115); P.plats.push({ x, y, w }); x += w + rn(220, 300); }
+    else { r2(); x += rn(260, 330); }
+  }
+  box(P, end + 140, GROUND - 74); sd.bx = end + 140;
+  sd.gaps = P.gaps; sd.plats = P.plats; sd.obs = P.obs; sd.items = P.items;
+  [P.gaps, P.plats, P.obs, P.items, P.crand] = keep;
+  P.sides.push(sd);
+  P.genX = gx + 260; P.calmTo = gx + 1000; P.nextSide = sd.x1 + crnd(c.SIDE_EVERY[0], c.SIDE_EVERY[1]); P.nextFork = Math.max(P.nextFork, sd.x1 + 500);
+}
+function enterSide(P, sd) {
+  gen(P, sd.x1 + W + 700);
+  P.stash = [P.gaps, P.plats, P.obs, P.items, P.forks]; P.gaps = sd.gaps; P.plats = sd.plats; P.obs = sd.obs; P.items = sd.items; P.forks = []; P.inSide = sd; P.sd.took++;
+}
+function leaveSide(P) { [P.gaps, P.plats, P.obs, P.items, P.forks] = P.stash; P.stash = null; P.inSide = null; P.sd.done++; gen(P); }
+function gen(P, to = P.worldX + W + 400) {
+  if (P.inSide) return;
   const crand = P.crand, crnd = (a, b) => a + crand() * (b - a), cpick = a => a[Math.floor(crand() * a.length)];
-  while (P.genX < P.worldX + W + 400) {
+  while (P.genX < to) {
+    const back = P.sides.find(q => !q.cleared && P.genX >= q.x1 - 520);
+    if (back) { back.cleared = 1; P.genX = Math.max(P.genX, back.x1 + 560); continue; }
+    if (P.genX >= P.nextSide && sideTheme(P.zi)) { if (P.genX + 620 + P.cfg.SIDE_LEN[1] > P.cfg.SPRINT_M * 40 - 800) P.nextSide = Infinity; else { genSide(P, crand, crnd); continue; } }
     if (P.genX >= P.nextFork) { if (P.genX + P.cfg.FORK_MAX > P.cfg.SPRINT_M * 40 - 600) P.nextFork = Infinity; else { genFork(P, crand, crnd, cpick); continue; } }
     const z = P.zobs, r = crand(), gd = Math.max(0, (P.genX - 900) / 40) + P.cfg.SPRINT_HARD, hard = Math.min(1, gd / 8000), spread = Math.sqrt(runSpeed(gd) / 320);
     let genX = P.genX;
     if (r < 0.34) {
-      const k = cpick(z); addObs(P, genX, k);
+      const zo = genX < (P.calmTo || 0) ? z.filter(q => !OB[q].vx) : z, k = cpick(zo); addObs(P, genX, k);
       if (crand() < 0.5) {} // candy arc
-      if (crand() < 0.12 + hard * 0.38) { const dx = crnd(200, 250) * spread; addObs(P, genX + dx, cpick(z)); genX += dx; }
+      if (crand() < 0.12 + hard * 0.38) { const dx = crnd(200, 250) * spread; addObs(P, genX + dx, cpick(zo)); genX += dx; }
       genX += crnd(270, 450) * spread;
     } else if (r < 0.52) {
       const w = crnd(85, 110 + hard * 50); P.gaps.push({ x0: genX, x1: genX + w }); genX += w + crnd(250, 340);
@@ -95,7 +133,7 @@ function gen(P) {
     }
     P.genX = genX;
   }
-  const cut = P.worldX - ABX - 200; P.forks = P.forks.filter(f => f.x1 > cut);
+  const cut = P.worldX - ABX - 200; P.forks = P.forks.filter(f => f.x1 > cut); P.sides = P.sides.filter(q => q.x1 + 700 > cut);
   P.gaps = P.gaps.filter(g => g.x1 > cut); P.plats = P.plats.filter(p => p.x + p.w > cut);
   P.obs = P.obs.filter(o => o.x + 80 > cut && !o.gone); P.items = P.items.filter(i => i.x > cut && !i.got);
 }
@@ -164,6 +202,7 @@ function step(P, dt, press, send, sim) {
   const speed = base * Math.max(P.boost > 0 ? c.VIMTO_K : 1, k.scoot > 0 ? c.SCOOT_K : 1) * (k.stumble > 0 ? c.RACE_SLIP : 1) * (k.held > 0 ? 0 : 1);
   const preX = P.worldX;
   P.worldX += speed * dt; P.dist = P.worldX / 40;
+  if (!sim) { if (P.inSide) { if (P.worldX >= P.inSide.x1) leaveSide(P); } else for (const q of P.sides) { if (!q.passed && k.on && P.worldX > q.x0 - 140 && Math.abs(k.y - (GROUND - c.SIDE_STEP_Y)) < 1) q.stood = 1; if (!q.passed && P.worldX >= q.x0) { q.passed = 1; if (q.stood && k.y < GROUND - c.SIDE_IN) { enterSide(P, q); break; } } } }
   if (P.dist >= c.SPRINT_M) { const over = (P.dist - c.SPRINT_M) / Math.max(1, speed / 40); P.fin = Math.max(0, P.runT - over); return 'fin'; }
   if (!sim && P.stormT > 0) P.stormT = Math.max(0, P.stormT - dt);
   P.boost = Math.max(0, P.boost - dt); k.scoot = Math.max(0, k.scoot - dt); k.inv = Math.max(0, k.inv - dt); k.stumble = Math.max(0, k.stumble - dt); k.held = Math.max(0, k.held - dt);
@@ -188,14 +227,14 @@ function step(P, dt, press, send, sim) {
   for (const o of P.obs) {
     const d = OB[o.kind];
     if (o.hit) continue;
-    if (d.vx) { const nx = o.x + d.vx * dt; if (!overGap(P, nx, 0) && !overGap(P, nx + o.w, 0)) o.x = nx; }
+    if (d.vx && o.x - P.worldX < W + 400) { const nx = o.x + d.vx * dt; if (!overGap(P, nx, 0) && !overGap(P, nx + o.w, 0)) o.x = nx; }
     if (d.side) o.x = o.x0 + Math.sin(P.playT * 2.4 + o.seed) * 26;
     o.lift = d.bounce ? Math.abs(Math.sin(P.playT * 4.2 + o.seed)) * 46 : 0;
     const top = o.by - o.lift - o.h, bot = o.by - o.lift;
     const ox = P.worldX + 9 > o.x + 4 && P.worldX - 9 < o.x + o.w - 4;
     if (ox && k.y > top + 4 && k.y - 54 < bot) {
       if (k.scoot > 0) { o.hit = true; if (!sim) P.stats.smash++; }
-      else if (k.inv <= 0) { if (sim) return 'hit'; const r = hitKid(P, 'ob'); o.hit = true; ev = r; if (r === 'hit' && P.stormT > 0) P.stats.stHurt = (P.stats.stHurt || 0) + 1; if (r === 'hit' && P.forks.some(f => P.worldX > f.x0 && P.worldX < f.x1)) { if (k.y < GROUND - 60) P.fk.hitsDeck++; else P.fk.hitsLow++; } }
+      else if (k.inv <= 0) { if (sim) return 'hit'; const r = hitKid(P, 'ob'); o.hit = true; ev = r; if (r === 'hit' && P.inSide) P.sd.hitsIn++; if (r === 'hit' && P.stormT > 0) P.stats.stHurt = (P.stats.stHurt || 0) + 1; if (r === 'hit' && P.forks.some(f => P.worldX > f.x0 && P.worldX < f.x1)) { if (k.y < GROUND - 60) P.fk.hitsDeck++; else P.fk.hitsLow++; } }
     }
   }
   for (const s of P.sandals) {
@@ -208,7 +247,7 @@ function step(P, dt, press, send, sim) {
   for (const it of P.items) {
     if (it.got) continue;
     const dx = it.x - P.worldX, dy = it.y - (k.y - 30);
-    if (dx * dx + dy * dy < 32 * 32) { it.got = true; if (sim) { P.simGot = 1; continue; } if (P.forks.some(f => Math.abs(f.bx - it.x) < 1)) P.fk.boxes++; grab(P, it, send); }
+    if (dx * dx + dy * dy < 32 * 32) { it.got = true; if (sim) { P.simGot = 1; continue; } if (P.forks.some(f => Math.abs(f.bx - it.x) < 1)) P.fk.boxes++; if (P.inSide) P.sd.boxesIn++; grab(P, it, send); }
   }
   const q = P.mbQ;
   if (q.length) { for (let i = 0; i < q.length; i++) q[i] -= dt; while (q.length && q[0] <= 0) { q.shift(); if (P.mbAnn) P.mbAnn.shift(); P.sandals.push({ sx: -30, hit: false, passed: false }); } }
@@ -280,12 +319,35 @@ function botFork(P, B) {
   B.pressAt = Math.max(1, Math.round((good[0] + good[good.length - 1]) / 2 + gauss(P.rng) * B.s.sigma * 60));
   return null;
 }
+// A side road: decide once (more often when behind: the box is in there), then hop onto the doorstep and stay on it
+// through the gate. Returns null to do nothing this frame, or undefined to let the normal thinking run.
+function botSide(P, B) {
+  const c = P.cfg, k = P.kid; let q = B.sq;
+  if (q && (P.inSide || P.worldX > q.x0 + 10)) { B.sq = null; return undefined; }
+  if (!q) {
+    q = P.sides.find(v => !v.seen && v.x0 - 130 - P.worldX < 420 && v.x0 > P.worldX + 140); if (!q) return undefined;
+    q.seen = 1; B.sq = q; P.sd.n++;
+    const gap = P.opp.d - P.dist, base = gap > 6 ? 0.85 : gap < -6 ? 0.35 : 0.6;
+    B.turn = c.side != null ? !!c.side : P.rng() < base * (0.5 + 0.5 * B.s.box);
+  }
+  if (!B.turn) return undefined;
+  const stepY = GROUND - c.SIDE_STEP_Y;
+  if (k.on && Math.abs(k.y - stepY) < 1 && P.worldX > q.x0 - 140) return P.holding ? 'up' : null; // on the doorstep: just run through
+  if (!k.on) return undefined;
+  if (P.worldX > q.x0 - 60) { B.turn = false; return undefined; } // missed it: the main road
+  const good = [];
+  for (let a = 0; a < 46; a++) { const y = landY(P, a, 100); if (y != null && Math.abs(y - stepY) < 1) good.push(a); else if (good.length) break; }
+  if (!good.length || good[0] > 20) return undefined;
+  B.pressAt = Math.max(1, Math.round((good[0] + good[good.length - 1]) / 2 + gauss(P.rng) * B.s.sigma * 60));
+  return null;
+}
 function botThink(P, B) {
   // a press is already planned: wait for it
   if (B.pressAt != null) { B.pressAt--; if (B.pressAt <= 0) { B.pressAt = null; B.cool = 6; return 'down'; } return null; }
   if (B.cool > 0) { B.cool--; return null; }
   if (P.holding && P.kid.vy >= 0) return 'up';
   const k = P.kid;
+  if (P.sides.length && !P.inSide) { const sr = botSide(P, B); if (sr !== undefined) return sr; }
   if (P.forks.length) { const fr = botFork(P, B); if (fr !== undefined) return fr; }
   if (!k.on && k.jumps >= 2) return null;
   const HZ = 54; // ~0.9 s ahead
@@ -343,5 +405,5 @@ export function race(opts) {
     if ((A.fin != null || Bp.fin != null) && t > 150) break;
   }
   const ta = A.fin ?? 999, tb = Bp.fin ?? 999;
-  return { fk: [A.fk, Bp.fk], win: Math.abs(ta - tb) < 0.05 ? 0 : ta < tb ? 1 : -1, ta, tb, changes, A: A.stats, B: Bp.stats, gaps, trace };
+  return { sd: [A.sd, Bp.sd], fk: [A.fk, Bp.fk], win: Math.abs(ta - tb) < 0.05 ? 0 : ta < tb ? 1 : -1, ta, tb, changes, A: A.stats, B: Bp.stats, gaps, trace };
 }

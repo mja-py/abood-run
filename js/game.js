@@ -215,7 +215,7 @@ function buzz(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e
 let race = null; // set while racing a friend online (see the race section)
 let st = 'boot', t = 0, stT = 0, worldX = 0, speed = 320, lead = 0.6, dist = 0, candies = 0, candyCount = 0, boost = 0, shake = 0, graceT = 0;
 let combo = 0, comboT = 0, closeCalls = 0, zoneNow = 0, banner = null;
-let gaps = [], plats = [], obs = [], items = [], parts = [], sandals = [], birds = [], fish = [], forks = [], genX = 0, nextFork = Infinity, holding = false;
+let gaps = [], plats = [], obs = [], items = [], parts = [], sandals = [], birds = [], fish = [], forks = [], sides = [], inSide = null, sideStash = null, sideFade = 0, forceSide = '', genX = 0, nextFork = Infinity, nextSide = Infinity, calmTo = 0, holding = false;
 // route progress and per-run mission counters
 let nextStop = null, prevStopAt = 0, lastStop = null, stopBanner = null, runHit = 0, runPow = 0, maxFocus = 0, comboMax = 0, runDone = [];
 const KID_H = 54; // how tall Abood is for a hit or a head bump
@@ -250,13 +250,14 @@ const runSpeed = d => 310 + Math.min(260, d * 0.05); // grows steadily: 360 at 1
 function reset() {
   focusT = 0; focusLv = 0; paceT = M.paceTarget(); assist = 1; spawnBoost = 1; sandalMul = 1; mercyT = 0; hitTimes = [];
   t = 0; worldX = 0; lead = 0.7; dist = 0; routeM = startM; nextStop = stopAfter(startM + 25); prevStopAt = startM; lastStop = null; stopBanner = null; fish = []; runHit = 0; runPow = 0; maxFocus = 0; comboMax = 0; runDone = []; candies = 0; candyCount = 0; boost = 0; shake = 0; graceT = GRACE; combo = 0; comboT = 0; closeCalls = 0; zoneNow = 0; banner = null;
-  gaps = []; plats = []; obs = []; items = []; parts = []; sandals = []; forks = []; genX = 900; nextFork = genX + crnd(FORK_FIRST[0], FORK_FIRST[1]);
+  gaps = []; plats = []; obs = []; items = []; parts = []; sandals = []; forks = []; sides = []; inSide = null; sideStash = null; sideFade = 0; genX = 900; nextFork = genX + crnd(FORK_FIRST[0], FORK_FIRST[1]); nextSide = genX + crnd(SIDE_FIRST[0], SIDE_FIRST[1]); calmTo = 0;
   Object.assign(kid, { y: GROUND, vy: 0, on: true, jumps: 0, coyote: 0, buf: 0, inv: 0, stumble: 0, sx: 1, sy: 1, spin: 0, scoot: 0, mag: 0, shield: 0, held: 0, say: '', sayT: 0, next: 6 });
   Object.assign(dad, { y: GROUND, vy: 0, on: true, slow: 0, freeze: 0, say: T('s_come'), sayT: 2, next: 3, anger: 0, windup: 0, cd: 9, has: true, regrab: 0 });
 }
 
 // ---------- level generation ----------
-const OB = { box: { w: 34, h: 32 }, bin: { w: 30, h: 46 }, cat: { w: 34, h: 30 }, cone: { w: 24, h: 36 }, goat: { w: 44, h: 38, vx: -45 }, ball: { w: 22, h: 22, bounce: 1, vx: -60 },
+const OB = { spice: { w: 40, h: 26 }, handcart: { w: 54, h: 36, vx: -50 }, trolley: { w: 46, h: 40, vx: -70 }, wetsign: { w: 26, h: 38 }, plantpot: { w: 30, h: 46 }, suitcase: { w: 30, h: 38 }, robot: { w: 40, h: 18, vx: -40 },
+  box: { w: 34, h: 32 }, bin: { w: 30, h: 46 }, cat: { w: 34, h: 30 }, cone: { w: 24, h: 36 }, goat: { w: 44, h: 38, vx: -45 }, ball: { w: 22, h: 22, bounce: 1, vx: -60 },
   sack: { w: 30, h: 36 }, carpet: { w: 58, h: 20 }, crab: { w: 30, h: 18, side: 1 }, cooler: { w: 40, h: 30 }, rock: { w: 42, h: 28 }, bush: { w: 38, h: 30 }, lizard: { w: 46, h: 14, vx: -110 },
   bike: { w: 44, h: 30 }, gas: { w: 22, h: 36 }, dbag: { w: 32, h: 30 }, dbike: { w: 60, h: 54, vx: -170 }, crate: { w: 32, h: 40 }, chairs: { w: 30, h: 46 },
   castle: { w: 40, h: 28 }, mandoos: { w: 36, h: 32 }, ring: { w: 30, h: 30, vx: -40 }, gbag: { w: 22, h: 40 }, cart: { w: 50, h: 40, vx: -120 }, escooter: { w: 40, h: 38 }, basket: { w: 32, h: 24 }, flower: { w: 30, h: 32 }, dallah: { w: 28, h: 34 }, wood: { w: 44, h: 20 }, buggy: { w: 58, h: 38, vx: -150 } };
@@ -287,14 +288,67 @@ function genFork() {
   forks.push({ x0, x1: x, d0, y, sign: x0 - 250, z: zi });
   genX = x + crnd(420, 520); nextFork = x + crnd(FORK_EVERY[0], FORK_EVERY[1]);
 }
-function gen() {
-  while (genX < worldX + W + 400) {
+// Side roads: a signposted gate into a different place for 60-80 m, then back out onto the main road. Hop onto the
+// doorstep and through the gate to turn in; stay on the ground to keep to the main road. Both roads are the same
+// length. The rule is fixed and the sign shows it: inside there are no holes, more sweets, two power-up boxes (one
+// halfway, one near the end) and a jar, but more in the way. Each side road is laid out from its own seed when its gate is made, so both
+// players of a race get the same one whether they turn in or not.
+const SIDE = { souq: { z: 1, obs: ['sack', 'carpet', 'dallah', 'mandoos', 'wood', 'cat', 'spice', 'handcart'] }, mall: { z: 2, obs: ['trolley', 'wetsign', 'plantpot', 'suitcase', 'dbag', 'box', 'robot'] } };
+const SIDE_FIRST = [5000, 9000], SIDE_EVERY = [14000, 20000], SIDE_LEN = [2400, 3200], SIDE_STEP_Y = 62, SIDE_IN = 30;
+const sideTheme = zi => forceSide || (zi === 1 ? 'souq' : zi === 2 || zi === 5 || zi === 6 || zi === 10 ? 'mall' : ''); // souq alley by the Creek; malls in Downtown, JBR, Expo, Creek Harbour
+function genSide() {
+  const zi = zoneAt(routeOfX(genX)), theme = sideTheme(zi), gx = genX + 620; forceSide = ''; // a clear run-up, so nobody lands on the doorstep by accident
+  const sd = { x0: gx, x1: gx + crnd(SIDE_LEN[0], SIDE_LEN[1]), theme, sign: gx - 420, z: zi, seed: (crand() * 4294967296) >>> 0 };
+  plats.push({ x: gx - 130, y: GROUND - SIDE_STEP_Y, w: 220, z: zi, door: theme }); // the doorstep, running on through the gate
+  for (let i = 0; i < 3; i++) items.push({ x: gx - 100 + i * 34, y: GROUND - SIDE_STEP_Y - 26, kind: 'candy', c: i });
+  fillSide(sd); sides.push(sd);
+  genX = gx + 260; calmTo = gx + 1000; nextSide = sd.x1 + crnd(SIDE_EVERY[0], SIDE_EVERY[1]); nextFork = Math.max(nextFork, sd.x1 + 500); // no bridge until the side road is back
+}
+function fillSide(sd) { // lay the side road into its own lists, from its own seed
+  const keep = [gaps, plats, obs, items, crand], pool = SIDE[sd.theme].obs, still = pool.filter(k => !OB[k].vx), pz = SIDE[sd.theme].z;
+  gaps = []; plats = []; obs = []; items = []; crand = seeded(sd.seed);
+  const gd = race ? Math.max(0, (sd.x0 - 900) / 40) + SPRINT_HARD : dist, spread = Math.sqrt(runSpeed(gd) / 320), end = sd.x1 - 520;
+  let x = sd.x0 + 300, mid = (sd.x0 + end) / 2;
+  while (x < end) {
+    if (mid && x > mid) { box(x, GROUND - 74); x += 260; mid = 0; continue; } // a first box halfway: the main road has its own boxes, so the side road must pay better
+    const r = crand();
+    if (r < 0.6) {
+      const k = cpick(pool); if (OB[k].vx) x += 120; // room in front of something that rolls towards you
+      addObs(x, k); if (crand() < 0.5) candyArc(x - 50, x + OB[k].w + 50, GROUND - 50, 62);
+      if (crand() < 0.35) { const dx = crnd(200, 250) * spread; addObs(x + dx, cpick(still)); x += dx; }
+      x += crnd(230, 340) * spread;
+    } else if (r < 0.78) {
+      const w = crnd(170, 240), y = GROUND - crnd(85, 115); plats.push({ x, y, w, z: pz });
+      for (let cx = x + 24; cx < x + w - 10; cx += 34) items.push({ x: cx, y: y - 26, kind: 'candy', c: cx });
+      x += w + crnd(220, 300);
+    } else {
+      const jar = crand() < 0.25; for (let i = 0; i < 6; i++) items.push({ x: x + i * 34, y: GROUND - 26 - (i === 5 && jar ? 30 : 0), kind: i === 5 && jar ? 'jar' : 'candy', c: i }); x += crnd(260, 330);
+    }
+  }
+  box(end + 140, GROUND - 74); items.push({ x: end + 270, y: GROUND - 30, kind: 'jar', c: 0 }); // the prize, near the way out
+  sd.gaps = gaps; sd.plats = plats; sd.obs = obs; sd.items = items;
+  [gaps, plats, obs, items, crand] = keep;
+}
+function enterSide(sd) {
+  gen(sd.x1 + W + 700); // lay the main road past the exit first: gen() rests while we are inside
+  sideStash = [gaps, plats, obs, items, forks]; gaps = sd.gaps; plats = sd.plats; obs = sd.obs; items = sd.items; forks = [];
+  inSide = sd; sideFade = 1; sfx.zone(); buzz(25); floatText(T('sd_in_' + sd.theme), worldX + 70, 130, '#ffe066');
+}
+function leaveSide() {
+  [gaps, plats, obs, items, forks] = sideStash; sideStash = null; inSide = null; sideFade = 1; floatText(T('sd_out'), worldX + 70, 130, '#9ff0ff'); gen();
+}
+function gen(to = worldX + W + 400) {
+  if (inSide) return;
+  while (genX < to) {
+    const back = sides.find(q => !q.cleared && genX >= q.x1 - 520); // where a side road comes back out, the main road is clear
+    if (back) { back.cleared = 1; for (let i = 0; i < 6; i++) items.push({ x: back.x1 - 130 + i * 34, y: GROUND - 26, kind: 'candy', c: i }); genX = Math.max(genX, back.x1 + 560); continue; }
+    if (genX >= nextSide && sideTheme(zoneAt(routeOfX(genX)))) { if (race && genX + 620 + SIDE_LEN[1] > SPRINT_M * 40 - 800) nextSide = Infinity; else { genSide(); continue; } } // none across a finish line
     if (genX >= nextFork) { if (race && genX + FORK_MAX > SPRINT_M * 40 - 600) nextFork = Infinity; else { genFork(); continue; } } // none across a finish line
     const z = ZONES[zoneAt(routeOfX(genX))], r = crand(), gd = race ? Math.max(0, (genX - 900) / 40) + SPRINT_HARD : dist, hard = Math.min(1, gd / 8000), spread = Math.sqrt(runSpeed(gd) / 320); // spacing grows with speed so it stays jumpable
     if (r < 0.34) {
-      const k = cpick(z.obs); addObs(genX, k);
+      const zo = genX < calmTo ? z.obs.filter(q => !OB[q].vx) : z.obs, k = cpick(zo); addObs(genX, k); // nothing rolling towards a gate: a jump there would look like turning in
       if (crand() < 0.5) candyArc(genX - 50, genX + OB[k].w + 50, GROUND - 50, 62);
-      if (crand() < 0.12 + hard * 0.38) { const dx = crnd(200, 250) * spread; addObs(genX + dx, cpick(z.obs)); genX += dx; }
+      if (crand() < 0.12 + hard * 0.38) { const dx = crnd(200, 250) * spread; addObs(genX + dx, cpick(zo)); genX += dx; }
       genX += crnd(270, 450) * spread;
     } else if (r < 0.52) {
       const w = crnd(85, 110 + hard * 50); gaps.push({ x0: genX, x1: genX + w });
@@ -315,7 +369,7 @@ function gen() {
   }
   if (!Number.isFinite(genX)) genX = worldX + W + 100;
   const cut = worldX - ABX - 200;
-  compact(gaps, g => g.x1 > cut); compact(forks, f => f.x1 > cut); compact(plats, p => p.x + p.w > cut); compact(obs, o => o.x + o.hx + 80 > cut && o.hy < 300); compact(items, i => i.x > cut && !i.got);
+  compact(gaps, g => g.x1 > cut); compact(sides, q => q.x1 + 700 > cut); compact(forks, f => f.x1 > cut); compact(plats, p => p.x + p.w > cut); compact(obs, o => o.x + o.hx + 80 > cut && o.hy < 300); compact(items, i => i.x > cut && !i.got);
 }
 const overGap = (x, m = 5) => { for (const g of gaps) if (x > g.x0 + m && x < g.x1 - m) return true; return false; };
 
@@ -686,7 +740,7 @@ N.on('data', d => {
     const now = performance.now(), ts = num(d.ts), off = now - ts, x = num(d.x), b = o.buf;
     o.off = o.off == null || off < o.off ? off : o.off + (off - o.off) * 0.01; // the smallest delay seen, drifting slowly
     const last = b[b.length - 1], at = last ? Math.max(last.t + 1, ts + o.off) : ts + o.off;
-    b.push({ t: at, x, y: clamp(num(d.y), -200, H + 60), a: !!d.a, sc: !!d.sc }); if (b.length > 40) b.shift();
+    b.push({ t: at, x, y: clamp(num(d.y), -200, H + 60), a: !!d.a, sc: !!d.sc, sd: !!d.sd }); if (b.length > 40) b.shift();
     o.d = Math.max(0, num(d.d) | 0); o.s = num(d.s) | 0; o.run = true;
     if (st === 'over') fillRace();
   } else if (d.t === 'hi') {
@@ -974,7 +1028,7 @@ function raceTick(dt) {
   race.goT = Math.max(0, race.goT - dt); if (race.stormT > 0) race.stormT = Math.max(0, race.stormT - dt);
   if (race.hold <= 0 && st === 'play') race.runT += dt; // the race clock: game time, so a slow phone isn't penalised
   race.sendT -= dt; if (race.sendT > 0) return; race.sendT = 0.05;
-  N.send({ t: 'p', ts: Math.round(performance.now()), x: Math.round(worldX), y: Math.round(kid.y), d: Math.floor(dist), s: candies, a: kid.on ? 0 : 1, sc: kid.scoot > 0 ? 1 : 0 });
+  N.send({ t: 'p', ts: Math.round(performance.now()), x: Math.round(worldX), y: Math.round(kid.y), d: Math.floor(dist), s: candies, a: kid.on ? 0 : 1, sc: kid.scoot > 0 ? 1 : 0, sd: inSide ? 1 : 0 });
 }
 // where the ghost is now: GHOST_DELAY ms in the past, between the two positions around that moment
 function ghostPos() {
@@ -982,10 +1036,10 @@ function ghostPos() {
   const rt = performance.now() - GHOST_DELAY;
   let i = b.length - 1; while (i > 0 && b[i].t > rt) i--;
   const p = b[i], q = b[i + 1];
-  if (q) { const f = clamp((rt - p.t) / Math.max(1, q.t - p.t), 0, 1); return { x: p.x + (q.x - p.x) * f, y: p.y + (q.y - p.y) * f, a: f < 0.5 ? p.a : q.a, sc: q.sc }; }
+  if (q) { const f = clamp((rt - p.t) / Math.max(1, q.t - p.t), 0, 1); return { x: p.x + (q.x - p.x) * f, y: p.y + (q.y - p.y) * f, a: f < 0.5 ? p.a : q.a, sc: q.sc, sd: q.sd }; }
   const r = b[i - 1]; if (!r || rt < p.t) return p;
   const vx = (p.x - r.x) / Math.max(1, p.t - r.t); // past the newest one: keep going a little (up to 0.25 s)
-  return { x: p.x + vx * Math.min(250, rt - p.t), y: p.y, a: p.a, sc: p.sc };
+  return { x: p.x + vx * Math.min(250, rt - p.t), y: p.y, a: p.a, sc: p.sc, sd: p.sd };
 }
 function tag(c, txt, x, y) {
   c.save(); c.font = '800 14px ' + FONT; c.direction = getLang() === 'ar' ? 'rtl' : 'ltr'; c.textAlign = 'center'; c.textBaseline = 'middle';
@@ -998,8 +1052,8 @@ function drawGhost(c) {
   const name = oppName();
   if (o.lost) { tag(c, T('mp_lostTag', name), W / 2, 150); return; }
   const g = o.run && ghostPos(); if (!g) return;
-  const x = g.x - worldX + ABX;
-  if (x > -40 && x < W + 40) {
+  const x = g.x - worldX + ABX, apart = !!g.sd !== !!inSide; // on different roads: no ghost, just where they are
+  if (!apart && x > -40 && x < W + 40) {
     let y = g.y; const a = g.a && !g.sc, idx = a || g.sc ? 0 : qph(g.x * 0.034), look = oppLook();
     c.save(); c.globalAlpha *= 0.5;
     if (g.sc) { scooter(c, x, y); y -= 6; }
@@ -1009,7 +1063,8 @@ function drawGhost(c) {
     tag(c, name, x, y - 98); if (o.emUntil > performance.now()) emoBubble(c, x, y - 128, o.em);
   } else {
     const m = Math.round(Math.abs(g.x - worldX) / 40), ahead = g.x > worldX;
-    tag(c, T(ahead ? 'mp_ahead' : 'mp_behind', name, m), ahead ? W - 80 : 80, 150); if (o.emUntil > performance.now()) emoBubble(c, ahead ? W - 80 : 80, 118, o.em);
+    const their = apart && g.sd && sides.find(q => g.x >= q.x0 && g.x < q.x1), place = !apart ? '' : ' · ' + T(g.sd ? 'sd_p_' + (their ? their.theme : 'souq') : 'sd_p_road');
+    tag(c, T(ahead ? 'mp_ahead' : 'mp_behind', name, m) + place, ahead ? W - 80 : 80, 150); if (o.emUntil > performance.now()) emoBubble(c, ahead ? W - 80 : 80, 118, o.em);
   }
 }
 // the finish line: a checkered strip on the ground and a banner on two poles
@@ -1106,7 +1161,7 @@ function update(dt) {
   updAmbient(dt);
   if (banner) { banner.t += dt; if (banner.t > 3.4) banner = null; }
   if (st === 'menu') {
-    worldX += 240 * dt; dist = worldX / 40; routeM = startM + dist; kid.ph += dt * 9; dad.ph += dt * 10; gen(); gaps.length = 0; obs.length = 0; items.length = 0; plats.length = 0; forks.length = 0;
+    worldX += 240 * dt; dist = worldX / 40; routeM = startM + dist; kid.ph += dt * 9; dad.ph += dt * 10; gen(); gaps.length = 0; obs.length = 0; items.length = 0; plats.length = 0; forks.length = 0; sides.length = 0;
     dad.sayT -= dt; kid.sayT -= dt; if (dad.sayT < -1.2) shout(pick(T('s_shouts')), 2); if (kid.sayT < -3 && dad.sayT < 0) kidSay(pick(T('s_taunts')), 1.6);
     zoneNow = zoneAt(routeM); return;
   }
@@ -1119,6 +1174,13 @@ function update(dt) {
   speed = base * Math.max(boost > 0 ? 1.3 : 1, kid.scoot > 0 ? 1.42 : 1) * (kid.stumble > 0 ? (race ? RACE_SLIP : 0.65) : 1) * (kid.held > 0 ? 0 : 1);
   worldX += speed * dt; dist = worldX / 40; routeM = startM + dist;
   if (race && dist >= SPRINT_M) { finishSprint(dt); return; }
+  sideFade = Math.max(0, sideFade - dt * 4);
+  if (inSide) { if (worldX >= inSide.x1) leaveSide(); }
+  else for (const q of sides) {
+    if (!q.told && worldX > q.sign - 520) { q.told = 1; const d = M.data(); if ((d.sideTips || 0) < 3) { d.sideTips = (d.sideTips || 0) + 1; M.save(); note(T('sd_tip'), 4600); } } // the first few explain themselves
+    if (!q.passed && kid.on && worldX > q.x0 - 140 && Math.abs(kid.y - (GROUND - SIDE_STEP_Y)) < 1) q.stood = 1; // on the doorstep
+    if (!q.passed && worldX >= q.x0) { q.passed = 1; if (q.stood && kid.y < GROUND - SIDE_IN) { enterSide(q); break; } } // through the gate, off the doorstep
+  }
   if (race && race.seed) { racePlace();
     if (!race.last100 && dist >= SPRINT_M - 100) { race.last100 = true; $('sprintBar').classList.add('hot'); floatText(T('sp_last100'), worldX + 80, 130, '#ffe066'); sfx.zone(); buzz(30); } } // the run-in: the bar pulses and the music speeds up
   for (const f of forks) if (!f.told && worldX > f.sign - 520) { f.told = 1; const d = M.data(); if ((d.forkTips || 0) < 3) { d.forkTips = (d.forkTips || 0) + 1; M.save(); note(T('fk_tip'), 4200); } } // the first few forks explain themselves
@@ -1171,7 +1233,7 @@ function update(dt) {
   for (const o of obs) {
     const d = OB[o.kind];
     if (o.hit) { o.hx += o.hvx * dt; o.hy += o.hvy * dt; o.hvy += 1600 * dt; o.rot += dt * o.spin; continue; }
-    if (d.vx) { const nx = o.x + d.vx * dt; if (!overGap(nx, 0) && !overGap(nx + o.w, 0)) o.x = nx; o.ph += dt * (o.kind === 'lizard' ? 22 : o.kind === 'dbike' || o.kind === 'buggy' ? 16 : 10); }
+    if (d.vx && o.x - worldX < W + 400) { const nx = o.x + d.vx * dt; if (!overGap(nx, 0) && !overGap(nx + o.w, 0)) o.x = nx; o.ph += dt * (o.kind === 'lizard' ? 22 : o.kind === 'dbike' || o.kind === 'buggy' ? 16 : 10); }
     if (d.side) { o.x = o.x0 + Math.sin(playT * 2.4 + o.seed) * 26; o.ph += dt * 8; }
     o.lift = d.bounce ? Math.abs(Math.sin(playT * 4.2 + o.seed)) * 46 : 0;
     if (d.bounce) o.ph -= dt * 6;
@@ -1822,6 +1884,27 @@ function drawObstacle(c, o, sx) {
     c.strokeStyle = '#f57c20'; c.lineWidth = 3; c.beginPath(); c.moveTo(-26, -16); c.lineTo(-12, -36); c.lineTo(10, -36); c.lineTo(26, -16); c.lineTo(-26, -16); c.moveTo(-12, -36); c.lineTo(-4, -16); c.moveTo(10, -36); c.lineTo(4, -16); c.stroke();
     c.strokeStyle = INK; c.lineWidth = 1.4; c.beginPath(); c.moveTo(22, -16); c.lineTo(24, -52); c.stroke(); c.fillStyle = '#e23b4a'; c.beginPath(); c.moveTo(24, -52); c.lineTo(34 + Math.sin(t * 12) * 2, -48); c.lineTo(24, -44); c.fill();
     c.fillStyle = 'rgba(240,210,160,.6)'; c.beginPath(); c.arc(32, -6, 6, 0, TAU); c.arc(40, -10, 4, 0, TAU); c.fill(); }
+  // side roads: the souq alley
+  else if (k === 'spice') { for (const [bx, col] of [[-10, '#c8202b'], [10, '#e3a33b']]) { c.fillStyle = col; c.beginPath(); c.moveTo(bx - 9, -13); c.lineTo(bx, -h); c.lineTo(bx + 9, -13); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = '#b98a5c'; c.beginPath(); c.moveTo(bx - 10, -14); c.lineTo(bx + 10, -14); c.lineTo(bx + 8, 0); c.lineTo(bx - 8, 0); c.closePath(); c.fill(); c.stroke(); } }
+  else if (k === 'handcart') { c.fillStyle = '#e8d5b0'; for (const sx of [-12, 4]) { c.beginPath(); c.ellipse(sx, -29, 11, 8, 0, 0, TAU); c.fill(); c.stroke(); }
+    c.fillStyle = '#a8743f'; c.beginPath(); c.rect(-w / 2 + 2, -24, w - 14, 9); c.fill(); c.stroke(); c.beginPath(); c.moveTo(w / 2 - 12, -20); c.lineTo(w / 2, -32); c.stroke();
+    c.fillStyle = '#3a2418'; c.beginPath(); c.arc(-8, -9, 9, 0, TAU); c.fill(); c.stroke(); c.save(); c.translate(-8, -9); c.rotate(o.ph); c.strokeStyle = '#d9a96f'; c.beginPath(); c.moveTo(-8, 0); c.lineTo(8, 0); c.moveTo(0, -8); c.lineTo(0, 8); c.stroke(); c.restore(); }
+  // side roads: the mall
+  else if (k === 'trolley') { c.fillStyle = '#e23b4a'; c.beginPath(); c.roundRect(-9, -31, 14, 14, 2); c.fill(); c.stroke();
+    c.fillStyle = 'rgba(207,216,220,.6)'; c.strokeStyle = '#59636b'; c.beginPath(); c.moveTo(-18, -34); c.lineTo(17, -34); c.lineTo(13, -13); c.lineTo(-14, -13); c.closePath(); c.fill(); c.stroke();
+    c.lineWidth = 1; c.beginPath(); for (const gx of [-9, 0, 9]) { c.moveTo(gx, -34); c.lineTo(gx * 0.8, -13); } c.moveTo(-16, -24); c.lineTo(15, -24); c.stroke();
+    c.lineWidth = 2.2; c.beginPath(); c.moveTo(-18, -34); c.lineTo(-23, -h); c.moveTo(-14, -13); c.lineTo(-14, -6); c.moveTo(13, -13); c.lineTo(13, -6); c.stroke();
+    c.fillStyle = '#2b1a12'; c.strokeStyle = INK; c.lineWidth = 1.4; for (const wx of [-14, 13]) { c.beginPath(); c.arc(wx, -4, 4, 0, TAU); c.fill(); } }
+  else if (k === 'wetsign') { c.fillStyle = '#ffd23f'; c.beginPath(); c.moveTo(-13, 0); c.lineTo(-4, -h); c.lineTo(4, -h); c.lineTo(13, 0); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = INK; c.fillRect(-1.6, -27, 3.2, 13); c.beginPath(); c.arc(0, -8, 2.2, 0, TAU); c.fill(); }
+  else if (k === 'plantpot') { c.fillStyle = '#3f8f4f'; for (const a of [-1, -0.5, 0, 0.5, 1]) { c.save(); c.translate(0, -16); c.rotate(a); c.beginPath(); c.ellipse(0, -15, 5, 15, 0, 0, TAU); c.fill(); c.stroke(); c.restore(); }
+    c.fillStyle = '#c96f4a'; c.beginPath(); c.moveTo(-11, 0); c.lineTo(11, 0); c.lineTo(14, -17); c.lineTo(-14, -17); c.closePath(); c.fill(); c.stroke(); }
+  else if (k === 'suitcase') { c.beginPath(); c.moveTo(-6, -31); c.lineTo(-6, -h); c.lineTo(6, -h); c.lineTo(6, -31); c.stroke();
+    c.fillStyle = '#3fa7d6'; c.beginPath(); c.roundRect(-w / 2, -32, w, 29, 4); c.fill(); c.stroke(); c.strokeStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.moveTo(-6, -29); c.lineTo(-6, -6); c.moveTo(6, -29); c.lineTo(6, -6); c.stroke();
+    c.fillStyle = '#2b1a12'; for (const wx of [-10, 10]) { c.beginPath(); c.arc(wx, -2, 2.6, 0, TAU); c.fill(); } }
+  else if (k === 'robot') { c.fillStyle = '#eef2f4'; c.beginPath(); c.roundRect(-w / 2, -14, w, 13, 6); c.fill(); c.stroke(); c.fillStyle = '#59636b'; c.fillRect(-w / 2 + 3, -4, w - 6, 3);
+    c.fillStyle = Math.floor(t * 4) % 2 ? '#3fa7d6' : '#7bd389'; c.beginPath(); c.arc(0, -15, 3.5, 0, TAU); c.fill(); c.stroke(); }
   c.restore();
 }
 
@@ -3067,6 +3150,115 @@ function bridge(c, p, x) {
   c.fillStyle = col; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.roundRect(x, p.y, p.w, DECK_H, 3); c.fill(); c.stroke();
   c.fillStyle = 'rgba(255,255,255,.28)'; c.fillRect(x + 3, p.y + 2, p.w - 6, 3); c.fillStyle = 'rgba(0,0,0,.22)'; c.fillRect(x + 2, u - 3, p.w - 4, 3);
 }
+// ---- side roads: the gate outside, and the two places inside ----
+const SIDE_COL = { souq: ['#c9a36b', '#8a5a35'], mall: ['#eef2f4', '#1f7a74'] };
+function doorstep(c, p, x) { // two stone steps up to the gate
+  const [a] = SIDE_COL[p.door]; c.fillStyle = a; c.strokeStyle = INK; c.lineWidth = 2;
+  c.beginPath(); c.rect(x, p.y + 31, 40, GROUND - p.y - 31); c.fill(); c.stroke(); c.beginPath(); c.rect(x + 34, p.y, p.w - 34, GROUND - p.y); c.fill(); c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.3)'; c.fillRect(x + 2, p.y + 33, 36, 3); c.fillRect(x + 36, p.y + 2, p.w - 38, 3);
+}
+function gateShape(c, th, w, h) { // drawn from the middle of its foot
+  c.strokeStyle = INK; c.lineWidth = 2; c.lineJoin = 'round';
+  if (th === 'souq') {
+    c.fillStyle = '#c9a36b'; c.beginPath(); c.rect(-w / 2, -h, w, h); c.fill(); c.stroke();
+    c.fillStyle = '#b98a5c'; for (let k = -w / 2 + 6; k < w / 2 - 8; k += 22) { c.beginPath(); c.rect(k, -h - 12, 12, 12); c.fill(); c.stroke(); } // battlements
+    c.fillStyle = '#2b1a12'; c.beginPath(); c.moveTo(-w / 2 + 20, 0); c.lineTo(-w / 2 + 20, -h * 0.55); c.quadraticCurveTo(-w / 2 + 20, -h * 0.82, 0, -h * 0.9); c.quadraticCurveTo(w / 2 - 20, -h * 0.82, w / 2 - 20, -h * 0.55); c.lineTo(w / 2 - 20, 0); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = 'rgba(255,190,90,.35)'; c.beginPath(); c.arc(0, -h * 0.42, w * 0.2, 0, TAU); c.fill();
+    c.strokeStyle = INK; c.lineWidth = 1.4; c.beginPath(); c.moveTo(0, -h * 0.9); c.lineTo(0, -h * 0.66); c.stroke(); c.fillStyle = '#ffd23f'; c.beginPath(); c.moveTo(0, -h * 0.66); c.lineTo(7, -h * 0.58); c.lineTo(0, -h * 0.48); c.lineTo(-7, -h * 0.58); c.closePath(); c.fill(); c.stroke(); // a lantern
+    for (const [sx, col] of [[-1, '#a8322d'], [1, '#1f7a74']]) { c.fillStyle = col; c.beginPath(); c.rect(sx * (w / 2 - 14) - 7, -h * 0.7, 14, h * 0.34); c.fill(); c.stroke(); } // cloth hung by the door
+  } else {
+    c.fillStyle = '#eef2f4'; c.beginPath(); c.roundRect(-w / 2, -h, w, h, 6); c.fill(); c.stroke();
+    c.fillStyle = 'rgba(120,190,215,.75)'; c.beginPath(); c.rect(-w / 2 + 14, -h * 0.72, w - 28, h * 0.72); c.fill(); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 3; c.beginPath(); c.moveTo(-w / 2 + 26, -h * 0.6); c.lineTo(-w / 2 + 44, -h * 0.3); c.moveTo(6, -h * 0.64); c.lineTo(28, -h * 0.26); c.stroke();
+    c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.moveTo(0, -h * 0.72); c.lineTo(0, 0); c.stroke();
+    c.fillStyle = '#1f7a74'; c.beginPath(); c.roundRect(-w / 2 - 8, -h * 0.88, w + 16, h * 0.17, 5); c.fill(); c.stroke();
+    c.fillStyle = '#fffaf0'; c.beginPath(); c.roundRect(-9, -h * 0.85, 18, h * 0.1, 2); c.fill(); c.strokeStyle = '#fffaf0'; c.lineWidth = 2; c.beginPath(); c.arc(0, -h * 0.85, 5, Math.PI, 0); c.stroke(); // a shopping bag
+  }
+}
+function sideSignAt(c, x, th) { // up and in for a gift and sweets; straight on for the main road
+  if (x < -70 || x > W + 70) return;
+  c.save(); c.translate(x, GROUND); c.lineJoin = 'round'; c.strokeStyle = INK; c.lineWidth = 2;
+  c.fillStyle = '#8a5a35'; c.beginPath(); c.rect(-4, -112, 8, 112); c.fill(); c.stroke();
+  const board = (y, col) => { c.fillStyle = col; c.beginPath(); c.moveTo(-36, y - 15); c.lineTo(36, y - 15); c.lineTo(52, y); c.lineTo(36, y + 15); c.lineTo(-36, y + 15); c.closePath(); c.fill(); c.stroke(); };
+  c.save(); c.translate(0, -92); c.rotate(-0.13); c.translate(0, 92); board(-92, th === 'souq' ? '#f6e3b4' : '#d7eef2');
+  c.save(); c.translate(-22, -80); c.scale(0.16, 0.16); gateShape(c, th, 150, 150); c.restore(); // the place, small
+  c.lineWidth = 1.4; c.strokeStyle = INK; c.fillStyle = '#c8202b'; c.beginPath(); c.roundRect(-2, -98, 15, 14, 2); c.fill(); c.stroke(); c.fillStyle = '#ffe066'; c.fillRect(4, -98, 3, 14); c.fillRect(-2, -93, 15, 3);
+  c.fillStyle = '#ffb400'; c.beginPath(); c.arc(26, -91, 6, 0, TAU); c.fill(); c.stroke(); c.restore();
+  c.strokeStyle = INK; c.lineWidth = 2; board(-52, '#d8f3dc');
+  c.strokeStyle = '#2d6a4f'; c.lineWidth = 3; c.beginPath(); c.moveTo(-26, -45); c.lineTo(22, -45); c.stroke(); c.lineWidth = 3.4; c.beginPath(); c.moveTo(-10, -58); c.lineTo(-3, -51); c.lineTo(10, -64); c.stroke();
+  c.restore();
+}
+function sideGate(c, q) { // on the main road: the sign, the gate on its doorstep, and a smaller arch where the side road comes back
+  sideSignAt(c, q.sign - worldX + ABX, q.theme);
+  const x = q.x0 - worldX + ABX; if (x > -120 && x < W + 120) { c.save(); c.translate(x, GROUND - SIDE_STEP_Y); gateShape(c, q.theme, 150, 190); c.restore(); }
+  const xo = q.x1 - worldX + ABX; if (xo > -100 && xo < W + 100) { c.save(); c.translate(xo - 90, GROUND); c.globalAlpha = 0.9; gateShape(c, q.theme, 110, 150); c.restore(); }
+}
+function sideDoors(c, q) { // inside: daylight through the way in and the way out
+  for (const wx of [q.x0, q.x1]) { const x = wx - worldX + ABX; if (x < -120 || x > W + 120) continue;
+    const g = c.createLinearGradient(x - 70, 0, x + 70, 0); g.addColorStop(0, 'rgba(255,244,214,0)'); g.addColorStop(0.5, 'rgba(255,244,214,.95)'); g.addColorStop(1, 'rgba(255,244,214,0)');
+    c.fillStyle = '#9fd8ff'; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.moveTo(x - 52, GROUND); c.lineTo(x - 52, GROUND - 120); c.quadraticCurveTo(x - 52, GROUND - 178, x, GROUND - 186); c.quadraticCurveTo(x + 52, GROUND - 178, x + 52, GROUND - 120); c.lineTo(x + 52, GROUND); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = g; c.fillRect(x - 70, GROUND - 190, 140, 190); }
+}
+const SOUQ_CLOTH = ['#a8322d', '#1f7a74', '#e3a33b', '#7a1f5a', '#2b6cb0'], MALL_SIGN = ['#1f7a74', '#e2735b', '#7a1f5a', '#e3a33b', '#2b6cb0'];
+function interior(c, q) {
+  const top = -offY - 20, P = q.theme === 'souq' ? 300 : 340, off = worldX * 0.92, i0 = Math.floor((off - ABX - 40) / P);
+  if (q.theme === 'souq') {
+    const wall = c.createLinearGradient(0, top, 0, GROUND); wall.addColorStop(0, '#6b4a2c'); wall.addColorStop(0.35, '#b98a5c'); wall.addColorStop(1, '#c9a36b'); c.fillStyle = wall; c.fillRect(-20, top, W + 40, GROUND - top);
+    for (let i = i0; i * P - off + ABX < W + 20; i++) {
+      const x = i * P - off + ABX, v = Math.floor(sr(i * 3.7 + 1) * 3); c.strokeStyle = INK; c.lineWidth = 2; c.lineJoin = 'round';
+      c.fillStyle = '#3b2416'; c.beginPath(); c.moveTo(x + 40, GROUND); c.lineTo(x + 40, GROUND - 130); c.quadraticCurveTo(x + 40, GROUND - 196, x + 160, GROUND - 204); c.quadraticCurveTo(x + 280, GROUND - 196, x + 280, GROUND - 130); c.lineTo(x + 280, GROUND); c.closePath(); c.fill(); c.stroke();
+      if (v === 0) { // carpets hung in the doorway
+        for (let k = 0; k < 3; k++) { const cx = x + 66 + k * 68, col = SOUQ_CLOTH[Math.floor(sr(i * 5 + k) * 5)], hh = 96 + sr(i + k * 2.2) * 40; c.fillStyle = col; c.beginPath(); c.rect(cx, GROUND - 170, 52, hh); c.fill(); c.stroke();
+          c.strokeStyle = 'rgba(255,243,214,.75)'; c.lineWidth = 3; c.beginPath(); for (let yy = 16; yy < hh - 8; yy += 22) { c.moveTo(cx + 6, GROUND - 170 + yy); c.lineTo(cx + 46, GROUND - 170 + yy); } c.stroke(); c.strokeStyle = INK; c.lineWidth = 2; }
+      } else if (v === 1) { // lanterns
+        for (let k = 0; k < 4; k++) { const lx = x + 78 + k * 54, ly = GROUND - 150 + sr(i * 2.9 + k) * 50; c.lineWidth = 1.2; c.beginPath(); c.moveTo(lx, GROUND - 198); c.lineTo(lx, ly - 12); c.stroke();
+          c.fillStyle = 'rgba(255,200,90,.28)'; c.beginPath(); c.arc(lx, ly, 22, 0, TAU); c.fill(); c.fillStyle = SOUQ_CLOTH[(i + k) % 5 < 0 ? 0 : Math.abs(i + k) % 5]; c.lineWidth = 1.6; c.beginPath(); c.moveTo(lx, ly - 12); c.lineTo(lx + 9, ly); c.lineTo(lx, ly + 13); c.lineTo(lx - 9, ly); c.closePath(); c.fill(); c.stroke();
+          c.fillStyle = '#ffe066'; c.beginPath(); c.arc(lx, ly, 3.4, 0, TAU); c.fill(); }
+        c.lineWidth = 2;
+      } else { // a spice stall
+        c.fillStyle = '#8a5a35'; c.beginPath(); c.rect(x + 62, GROUND - 62, 196, 62); c.fill(); c.stroke();
+        for (let k = 0; k < 5; k++) { const sx = x + 82 + k * 39; c.fillStyle = ['#c8202b', '#e3a33b', '#d9772b', '#4f8a3a', '#7a1f5a'][k]; c.beginPath(); c.moveTo(sx - 16, GROUND - 62); c.lineTo(sx, GROUND - 92); c.lineTo(sx + 16, GROUND - 62); c.closePath(); c.fill(); c.stroke(); }
+        c.fillStyle = '#e8d5b0'; for (const sx of [x + 96, x + 150, x + 214]) { c.beginPath(); c.ellipse(sx, GROUND - 140, 20, 13, 0, 0, TAU); c.fill(); c.stroke(); }
+      }
+      c.fillStyle = '#b98a5c'; c.beginPath(); c.rect(x - 14, top, 42, GROUND - top); c.fill(); c.stroke(); c.fillStyle = '#d9a96f'; c.fillRect(x - 12, GROUND - 214, 38, 8); // the pier between two shops
+      c.fillStyle = SOUQ_CLOTH[Math.abs(i * 2 + 1) % 5]; c.beginPath(); c.moveTo(x + 34, GROUND - 216); c.lineTo(x + 286, GROUND - 216); for (let k = 6; k >= 0; k--) c.lineTo(x + 34 + k * 42, GROUND - 216 + (k % 2 ? 0 : 16)); c.closePath(); c.fill(); c.stroke(); // a scalloped cloth over the arch
+    }
+    c.fillStyle = '#4a2f1c'; c.fillRect(-20, top, W + 40, GROUND - 252 - top); c.fillStyle = '#3a2418'; for (let x = -((worldX * 1.05) % 96); x < W + 20; x += 96) c.fillRect(x, top, 14, GROUND - 244 - top); // roof beams
+    if (!REDUCED) { c.fillStyle = 'rgba(255,232,170,.13)'; for (let x = -((worldX * 1.05) % 384); x < W + 60; x += 384) { c.beginPath(); c.moveTo(x + 40, GROUND - 252); c.lineTo(x + 86, GROUND - 252); c.lineTo(x + 10, GROUND); c.lineTo(x - 80, GROUND); c.closePath(); c.fill(); } } // light through the roof
+  } else {
+    c.fillStyle = '#eef2f4'; c.fillRect(-20, top, W + 40, GROUND - top);
+    const sky2 = c.createLinearGradient(0, top, 0, GROUND - 250); sky2.addColorStop(0, '#9fd8ff'); sky2.addColorStop(1, '#e8f6ff'); c.fillStyle = sky2; c.fillRect(-20, top, W + 40, GROUND - 250 - top); // the glass roof
+    c.strokeStyle = 'rgba(89,99,107,.55)'; c.lineWidth = 3; c.beginPath(); for (let x = -((worldX * 0.7) % 120); x < W + 20; x += 120) { c.moveTo(x, top); c.lineTo(x + 40, GROUND - 250); } c.stroke();
+    for (let i = i0; i * P - off + ABX < W + 20; i++) {
+      const x = i * P - off + ABX, v = Math.floor(sr(i * 4.3 + 2) * 4), col = MALL_SIGN[Math.abs(i) % 5]; c.strokeStyle = INK; c.lineWidth = 2; c.lineJoin = 'round';
+      c.fillStyle = 'rgba(205,225,235,.9)'; c.beginPath(); c.rect(x + 30, GROUND - 236, P - 44, 54); c.fill(); c.stroke(); // the gallery upstairs
+      c.fillStyle = col; c.globalAlpha = 0.5; c.fillRect(x + 44, GROUND - 228, P - 72, 22); c.globalAlpha = 1;
+      if (v === 3) { // an aquarium wall
+        c.fillStyle = '#2b8fc4'; c.beginPath(); c.rect(x + 30, GROUND - 168, P - 44, 168); c.fill(); c.stroke();
+        for (let k = 0; k < 6; k++) { const fx = x + 50 + ((sr(i * 3 + k) * (P - 90) + t * (12 + k * 5)) % (P - 90)), fy = GROUND - 150 + sr(i + k * 1.7) * 120; c.fillStyle = ['#ffd23f', '#ff8a5b', '#fffaf0'][k % 3]; c.beginPath(); c.ellipse(fx, fy, 9, 4.5, 0, 0, TAU); c.fill(); c.beginPath(); c.moveTo(fx - 8, fy); c.lineTo(fx - 15, fy - 5); c.lineTo(fx - 15, fy + 5); c.closePath(); c.fill(); }
+        c.fillStyle = 'rgba(255,255,255,.16)'; c.beginPath(); c.moveTo(x + 60, GROUND - 168); c.lineTo(x + 110, GROUND - 168); c.lineTo(x + 50, GROUND); c.lineTo(x + 30, GROUND); c.lineTo(x + 30, GROUND - 100); c.closePath(); c.fill();
+      } else { // a shopfront: a sign, glass, and what's in the window
+        c.fillStyle = col; c.beginPath(); c.roundRect(x + 30, GROUND - 176, P - 44, 30, 4); c.fill(); c.stroke();
+        c.fillStyle = '#fffaf0'; for (let k = 0; k < 4; k++) { c.beginPath(); c.roundRect(x + P / 2 - 46 + k * 24, GROUND - 168, 16 - (k % 2) * 5, 14, 3); c.fill(); }
+        c.fillStyle = 'rgba(170,215,232,.6)'; c.beginPath(); c.rect(x + 30, GROUND - 146, P - 44, 146); c.fill(); c.stroke();
+        if (v === 0) for (const mx of [x + 96, x + 176, x + 250]) { c.fillStyle = MALL_SIGN[Math.abs(i + Math.round(mx)) % 5]; c.beginPath(); c.arc(mx, GROUND - 104, 9, 0, TAU); c.fill(); c.beginPath(); c.moveTo(mx - 14, GROUND - 92); c.lineTo(mx + 14, GROUND - 92); c.lineTo(mx + 18, GROUND - 22); c.lineTo(mx - 18, GROUND - 22); c.closePath(); c.fill(); c.stroke(); } // mannequins
+        else if (v === 1) for (let k = 0; k < 3; k++) { c.fillStyle = '#fffaf0'; c.fillRect(x + 56, GROUND - 120 + k * 36, P - 96, 5); for (let b = 0; b < 6; b++) { c.fillStyle = MALL_SIGN[(b + k + Math.abs(i)) % 5]; c.fillRect(x + 64 + b * 36, GROUND - 138 + k * 36, 20, 18); } } // shelves
+        else { c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(x + P / 2 - 7, GROUND - 70, 42, 0, TAU); c.fill(); c.stroke(); c.fillStyle = col; c.beginPath(); c.arc(x + P / 2 - 7, GROUND - 70, 26, 0, TAU); c.fill(); } // a big round display
+        c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 4; c.beginPath(); c.moveTo(x + 52, GROUND - 130); c.lineTo(x + 84, GROUND - 60); c.stroke();
+      }
+      c.strokeStyle = INK; c.lineWidth = 2; c.fillStyle = '#fffaf0'; c.beginPath(); c.rect(x - 14, GROUND - 250, 44, 250); c.fill(); c.stroke(); c.fillStyle = '#e3a33b'; c.fillRect(x + 4, GROUND - 250, 8, 250); // a pilaster with a gold strip
+      c.fillStyle = 'rgba(255,255,255,.55)'; c.strokeStyle = 'rgba(89,99,107,.8)'; c.lineWidth = 1.6; c.beginPath(); c.rect(x + 30, GROUND - 196, P - 44, 16); c.fill(); c.stroke(); // the glass rail
+    }
+    c.fillStyle = 'rgba(255,255,255,.9)'; for (let x = -((worldX * 0.92) % 170); x < W + 20; x += 170) { c.beginPath(); c.arc(x + 60, GROUND - 244, 5, 0, TAU); c.fill(); } // ceiling lights
+  }
+}
+function sideFloor(c, q) {
+  const souq = q.theme === 'souq', P = souq ? 64 : 88;
+  c.fillStyle = souq ? '#b79a78' : '#e9dfcf'; c.fillRect(-20, GROUND, W + 40, H - GROUND + 20);
+  c.strokeStyle = souq ? 'rgba(70,45,25,.4)' : 'rgba(120,105,85,.35)'; c.lineWidth = 1.4; c.beginPath();
+  for (let x = -(worldX % P); x < W + 20; x += P) { c.moveTo(x, GROUND); c.lineTo(x - (souq ? 0 : 26), H + 20); } c.moveTo(-20, GROUND + 26); c.lineTo(W + 20, GROUND + 26); c.stroke();
+  c.fillStyle = souq ? 'rgba(60,36,20,.28)' : 'rgba(255,255,255,.55)'; c.fillRect(-20, GROUND, W + 40, souq ? 5 : 7);
+}
 // the bridge frame runs on under the deck holes: two girders, so the holes read as missing planks
 function girders(c, f) {
   const x0 = f.d0 - worldX + ABX, x1 = f.x1 - worldX + ABX; if (x1 < 0 || x0 > W) return;
@@ -3090,7 +3282,7 @@ function forkSign(c, f) {
   c.restore();
 }
 function platform(c, p) {
-  const x = p.x - worldX + ABX; if (x > W || x + p.w < 0) return; if (p.deck) { bridge(c, p, x); return; } const style = ZONES[p.z].plat;
+  const x = p.x - worldX + ABX; if (x > W || x + p.w < 0) return; if (p.deck) { bridge(c, p, x); return; } if (p.door) { doorstep(c, p, x); return; } const style = ZONES[p.z].plat;
   if (style === 'plank') { c.strokeStyle = '#5a3a22'; c.lineWidth = 5; c.beginPath(); c.moveTo(x + 12, p.y); c.lineTo(x + 12, GROUND + 4); c.moveTo(x + p.w - 12, p.y); c.lineTo(x + p.w - 12, GROUND + 4); c.stroke();
     c.fillStyle = '#a8743f'; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.roundRect(x, p.y, p.w, 12, 3); c.fill(); c.stroke(); c.strokeStyle = 'rgba(43,26,18,.4)'; c.lineWidth = 1; c.beginPath(); for (let k = 20; k < p.w; k += 26) { c.moveTo(x + k, p.y + 2); c.lineTo(x + k, p.y + 10); } c.stroke();
     c.fillStyle = '#e23b4a'; c.strokeStyle = INK; c.lineWidth = 1.4; c.beginPath(); c.arc(x + p.w - 24, p.y + 20, 7, 0, TAU); c.fill(); c.stroke(); c.strokeStyle = '#fff'; c.lineWidth = 2.4; c.beginPath(); c.arc(x + p.w - 24, p.y + 20, 7, 0.3, 1.2); c.stroke(); c.beginPath(); c.arc(x + p.w - 24, p.y + 20, 7, 3.4, 4.3); c.stroke(); return; }
@@ -3197,20 +3389,22 @@ function render() {
   const A = zoneAt(routeM), na = nextAreaAt(routeM), B = (A + 1) % NZ, blend = clamp((routeM - (na - 35)) / 35, 0, 1), tf = tunnelF(routeM);
   ctx.setTransform(RES, 0, 0, RES, 0, offY * RES);
   if (shake > 0 && !REDUCED) ctx.translate(rnd(-2, 2) * shake * 2.5, rnd(-2, 2) * shake * 2.5);
-  if (tf < 1) {
+  if (inSide) interior(ctx, inSide);
+  else if (tf < 1) {
     sky(ctx); clouds(ctx);
     layer('far', A, B, blend); landmarks(ctx, 'far'); haze(ctx, GROUND - 230, 0.38); drawBirds(ctx); layer('midfar', A, B, blend); landmarks(ctx, 'midfar');
     haze(ctx, GROUND - 120, 0.22); layerSpan('mid', 0.42); landmarks(ctx, 'near'); layerSpan('near', 0.75);
     haze(ctx, GROUND - 170, 0.26); // pushes the street scenery back, so the obstacles in front read clearly
     if (SK.n > 0.02) { ctx.fillStyle = `rgba(12,16,48,${SK.n * 0.42})`; ctx.fillRect(-20, -offY - 20, W + 40, GROUND + offY + 22); }
   }
-  if (tf > 0) aquarium(ctx, tf);
-  ground(ctx);
+  if (tf > 0 && !inSide) aquarium(ctx, tf);
+  if (inSide) sideFloor(ctx, inSide); else ground(ctx);
   if (tf > 0) { ctx.fillStyle = `rgba(20,110,160,${tf * 0.3})`; ctx.fillRect(-20, GROUND, W + 40, H - GROUND + 20); }
-  if (SK.n > 0.02) { ctx.fillStyle = `rgba(12,16,48,${SK.n * 0.28})`; ctx.fillRect(-20, GROUND, W + 40, H - GROUND + 20); }
+  if (SK.n > 0.02 && !inSide) { ctx.fillStyle = `rgba(12,16,48,${SK.n * 0.28})`; ctx.fillRect(-20, GROUND, W + 40, H - GROUND + 20); }
   drawLights(ctx);
   ctx.textBaseline = 'alphabetic';
   for (const f of forks) { forkSign(ctx, f); girders(ctx, f); }
+  if (inSide) sideDoors(ctx, inSide); else for (const q of sides) sideGate(ctx, q);
   for (const p of plats) platform(ctx, p);
   for (const it of items) if (!it.got) { const x = it.x - worldX + ABX; if (x > -30 && x < W + 30) drawItem(ctx, it.kind, x, it.y, it.c || it.x * 0.01, it.mag); }
   for (const o of obs) { const x = o.x - worldX + ABX; if (x > -120 && x < W + 80) {
@@ -3248,13 +3442,14 @@ function render() {
   if (race && (st === 'play' || st === 'pause')) drawCountdown(ctx);
   const drafting = st === 'play' && race && boost <= 0 && kid.scoot <= 0 && draftK() > 1.02; // slipstream: fainter wind lines
   if (st === 'play' && (boost > 0 || kid.scoot > 0 || drafting) && !REDUCED) { ctx.strokeStyle = drafting ? 'rgba(255,255,255,.3)' : 'rgba(255,255,255,.55)'; ctx.lineWidth = 2; ctx.beginPath(); for (let i = 0; i < 10; i++) { const y = 40 + sr(i * 3.3) * 280, x = ((sr(i) * W - t * 1400) % W + W) % W; ctx.moveTo(x, y); ctx.lineTo(x + 40 + sr(i) * 60, y); } ctx.stroke(); }
-  if (qLevel < 3) foreground(ctx, A);
+  if (qLevel < 3 && !inSide) foreground(ctx, A);
   const dsx = st === 'over' ? ABX - 40 : fx;
   if (dad.sayT > 0 && !race) bubble(ctx, Math.max(60, dsx + 10), (st === 'over' ? GROUND : dad.y) - 104, dad.say);
   if (kid.sayT > 0 && st !== 'over') bubble(ctx, ABX + 18, kid.y - 74, kid.say, true);
   if (kid.sayT > 0 && st === 'over' && stT > 0.5) bubble(ctx, ABX + 30, GROUND - 100, kid.say, true);
   if (st === 'play' && lead < 0.25) { const a = (0.25 - lead) * 2 * (0.6 + 0.4 * Math.sin(t * 10)); const g = ctx.createLinearGradient(0, 0, W * 0.3, 0);
     g.addColorStop(0, 'rgba(200,32,43,' + a + ')'); g.addColorStop(1, 'rgba(200,32,43,0)'); ctx.fillStyle = g; ctx.fillRect(-10, -offY, W * 0.3, H + offY); }
+  if (sideFade > 0) { ctx.fillStyle = `rgba(24,14,10,${sideFade * 0.8})`; ctx.fillRect(-20, -offY - 20, W + 40, H + offY + 40); } // a blink of dark through the gate
   drawStorm(ctx); itemBtn();
   drawBanner(ctx); drawStopBanner(ctx);
   if (st === 'pause') { ctx.fillStyle = 'rgba(20,15,35,.55)'; ctx.fillRect(-20, -offY - 20, W + 40, H + offY + 40); ctx.fillStyle = '#fffaf0'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
@@ -3613,17 +3808,18 @@ async function boot() {
 const DEV = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname); // the testing hooks below exist only on a local server, so they can't be used to cheat in a race
 if (DEV) window.__abood = {
   get say() { return dad.sayT > 0 ? dad.say : ''; },
-  get state() { return { x: Math.round(worldX), y: Math.round(kid.y), on: kid.on, sweets: candies, genAhead: Math.round(genX - worldX), obs: obs.length, items: items.length, gaps: gaps.length, paceT, assist: +assist.toFixed(2), mercyT, st, dist, lead, zone: zoneNow, qLevel, res: RES, bakeRes, tiles: TILES.size, sprites: SPR.size, build: BUILD }; },
+  get state() { return { inSide: inSide ? inSide.theme : '', x: Math.round(worldX), y: Math.round(kid.y), on: kid.on, sweets: candies, genAhead: Math.round(genX - worldX), obs: obs.length, items: items.length, gaps: gaps.length, paceT, assist: +assist.toFixed(2), mercyT, st, dist, lead, zone: zoneNow, qLevel, res: RES, bakeRes, tiles: TILES.size, sprites: SPR.size, build: BUILD }; },
   // goto(run metres, route metres?): jump within a run; with a second number, also move along the route
-  goto: (d, r) => { if (r != null) startM = r - d; worldX = d * 40; dist = d; routeM = startM + d; zoneNow = zoneAt(routeM); genX = worldX + 500; gaps = []; obs = []; items = []; plats = []; forks = []; lead = 0.6;
+  goto: (d, r) => { if (r != null) startM = r - d; worldX = d * 40; dist = d; routeM = startM + d; zoneNow = zoneAt(routeM); genX = worldX + 500; gaps = []; obs = []; items = []; plats = []; forks = []; sides = []; inSide = null; sideStash = null; lead = 0.6;
     nextStop = stopAfter(routeM); prevStopAt = routeM; },
   route: r => { startM = r - dist; routeM = r; },
   set: o => { if (o.sweets != null) candies = o.sweets; if (o.lead != null) lead = o.lead; if (o.hits != null) closeCalls = o.hits; if (o.inv != null) kid.inv = o.inv; },
   spawn: (kind, ahead = 320) => { if (OB[kind]) addObs(worldX + ahead, kind); }, // put an obstacle in front of Abood
   get grace() { return +graceT.toFixed(2); },
   // the course ahead, to check that both players in a race get the same one
-  fork: () => { nextFork = genX; }, // testing: the next thing on the course is a fork
-  get course() { return { forks: forks.map(f => Math.round(f.x0) + '-' + Math.round(f.x1)), decks: plats.filter(p => p.deck).map(p => [Math.round(p.x), Math.round(p.w)]), obs: obs.map(o => o.kind + '@' + Math.round(o.x0)), gaps: gaps.map(g => Math.round(g.x0)), plats: plats.map(p => Math.round(p.x)), items: items.filter(i => i.kind !== 'candy').map(i => i.kind + '@' + Math.round(i.x)) }; },
+  fork: () => { nextFork = genX; }, side: th => { forceSide = th || 'souq'; nextSide = genX; }, // testing: the next thing on the course is a fork, or a gate into a side road
+  // testing: the next thing on the course is a fork
+  get course() { return { sides: sides.map(q => [Math.round(q.x0), Math.round(q.x1), q.theme, q.obs.length, q.items.filter(i => i.kind !== 'candy').map(i => i.kind + '@' + Math.round(i.x)).join(',')]), forks: forks.map(f => Math.round(f.x0) + '-' + Math.round(f.x1)), decks: plats.filter(p => p.deck).map(p => [Math.round(p.x), Math.round(p.w)]), obs: obs.map(o => o.kind + '@' + Math.round(o.x0)), gaps: gaps.map(g => Math.round(g.x0)), plats: plats.map(p => Math.round(p.x)), items: items.filter(i => i.kind !== 'candy').map(i => i.kind + '@' + Math.round(i.x)) }; },
   ghost: (m = 3, air = false) => { if (!race) return; const t0 = performance.now() - 400; Object.assign(race.opp, { here: true, run: true, out: false, gone: false, lost: false, round: race.seed, buf: [0, 1].map(i => ({ t: t0 + i * 300, x: worldX + m * 40 + i * 4, y: air ? GROUND - 80 : GROUND, a: air, sc: false })) }); }, // put the friend's ghost m metres ahead
   raceTime: sec => { if (race) race.runT = sec; }, // testing: jump the race clock
   luck: (n = 1000) => { if (!race) return; const c = {}; for (let i = 0; i < n; i++) { const k = luckRoll().kind; c[k] = (c[k] || 0) + 1; } return { tier: luckTier(), c }; }, // testing: what luck boxes give from here
