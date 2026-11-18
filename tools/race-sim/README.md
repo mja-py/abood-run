@@ -10,7 +10,7 @@ Forks (bridge over an underpass) are simulated too: bots decide at each fork, ta
 
 Items wait on the item button as in the game: `cfg.HOLD` is `'now'` (bots fire at once) or `'smart'` (bots keep marbles and sandstorms until the friend is coming up to a hazard). The sandstorm shortens how far ahead a bot can see for `STORM_T` seconds.
 
-Side roads (the souq alley and the mall) are simulated on the zones that have them (1, 2, 5, 6, 10): bots decide at each gate, turning in more often when behind. `cfg.side` forces it (`1` always, `0` never); `SIDES: false` turns them off.
+Side roads (the souq alley and the mall) are simulated on every zone (souq on 0, 1, 3, 8, 9; mall on the rest): bots decide at each gate, turning in more often when behind. `cfg.side` forces it (`1` always, `0` never); `SIDES: false` turns them off.
 
 Columns: `betW` how often the first-named (better) player wins a round, `match` the same for best of 3, `margin` the average finish gap in seconds, `<1s%` races decided by under a second, `chg` lead changes per race, `cb15` / `cb30` how often the player 15 / 30 m behind at 400 m still wins, `mbHit%` marbles that land, `forks` forks per player per race, `bridge%` how often the bridge was chosen, `done%` how many of those bridges were completed, `st/r` sandstorms per race, `hurt/st` extra hits or falls per sandstorm received, `sides` side-road gates per player per race, `side%` how often bots turned in, `hits/side` hits taken per side road.
 
