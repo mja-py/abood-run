@@ -33,13 +33,27 @@ const ZONE_OBS = [
   ['basket', 'ball', 'cat', 'flower', 'cooler', 'escooter'], ['goat', 'sack', 'rock', 'bush', 'dallah', 'basket'],
   ['escooter', 'ball', 'dbag', 'cone', 'flower', 'ring'],
 ];
-const OB = { spice: { w: 40, h: 26 }, handcart: { w: 54, h: 36, vx: -50 }, trolley: { w: 46, h: 40, vx: -70 }, wetsign: { w: 26, h: 38 }, plantpot: { w: 30, h: 46 }, suitcase: { w: 30, h: 38 }, robot: { w: 40, h: 18, vx: -40 },
+const OB = { grill: { w: 30, h: 40 }, hay: { w: 44, h: 30 }, bucket: { w: 24, h: 24 }, buoy: { w: 26, h: 30 }, bollard: { w: 20, h: 34 }, ropes: { w: 38, h: 18 }, duck: { w: 36, h: 32 }, flagpin: { w: 20, h: 44 }, scope: { w: 24, h: 44 },
+  spice: { w: 40, h: 26 }, handcart: { w: 54, h: 36, vx: -50 }, trolley: { w: 46, h: 40, vx: -70 }, wetsign: { w: 26, h: 38 }, plantpot: { w: 30, h: 46 }, suitcase: { w: 30, h: 38 }, robot: { w: 40, h: 18, vx: -40 },
   box: { w: 34, h: 32 }, bin: { w: 30, h: 46 }, cat: { w: 34, h: 30 }, cone: { w: 24, h: 36 }, goat: { w: 44, h: 38, vx: -45 }, ball: { w: 22, h: 22, bounce: 1, vx: -60 },
   sack: { w: 30, h: 36 }, carpet: { w: 58, h: 20 }, crab: { w: 30, h: 18, side: 1 }, cooler: { w: 40, h: 30 }, rock: { w: 42, h: 28 }, bush: { w: 38, h: 30 }, lizard: { w: 46, h: 14, vx: -110 },
   bike: { w: 44, h: 30 }, gas: { w: 22, h: 36 }, dbag: { w: 32, h: 30 }, dbike: { w: 60, h: 54, vx: -170 }, crate: { w: 32, h: 40 }, chairs: { w: 30, h: 46 },
   castle: { w: 40, h: 28 }, mandoos: { w: 36, h: 32 }, ring: { w: 30, h: 30, vx: -40 }, gbag: { w: 22, h: 40 }, cart: { w: 50, h: 40, vx: -120 }, escooter: { w: 40, h: 38 }, basket: { w: 32, h: 24 }, flower: { w: 30, h: 32 }, dallah: { w: 28, h: 34 }, wood: { w: 44, h: 20 }, buggy: { w: 58, h: 38, vx: -150 } };
-const SIDE = { souq: ['sack', 'carpet', 'dallah', 'mandoos', 'wood', 'cat', 'spice', 'handcart'], mall: ['trolley', 'wetsign', 'plantpot', 'suitcase', 'dbag', 'box', 'robot'] };
-const sideTheme = zi => [0, 1, 3, 8, 9].includes(zi) ? 'souq' : 'mall';
+const SIDE = {
+  picnic: { obs: ['grill', 'cooler', 'basket', 'ball', 'castle', 'chairs', 'cat'], mix: [0.55, 0.75] },
+  souq: { obs: ['sack', 'carpet', 'dallah', 'mandoos', 'wood', 'cat', 'spice', 'handcart'], mix: [0.6, 0.78] },
+  mall: { obs: ['trolley', 'wetsign', 'plantpot', 'suitcase', 'dbag', 'box', 'robot'], mix: [0.6, 0.78] },
+  boats: { obs: ['crate', 'buoy', 'ropes', 'crab', 'cooler', 'wood', 'bucket', 'cat'], mix: [0.6, 0.76] },
+  water: { obs: ['duck', 'ring', 'ball', 'cooler', 'wetsign', 'chairs'], mix: [0.52, 0.8] },
+  marina: { obs: ['bollard', 'ropes', 'buoy', 'suitcase', 'dbag', 'cooler', 'bike'], mix: [0.58, 0.74] },
+  dome: { obs: ['robot', 'plantpot', 'cone', 'escooter', 'box', 'flower', 'suitcase'], mix: [0.56, 0.8] },
+  range: { obs: ['gbag', 'flagpin', 'basket', 'ball', 'cone', 'bucket', 'flower'], mix: [0.6, 0.74] },
+  stables: { obs: ['hay', 'bucket', 'sack', 'wood', 'cat', 'crate'], mix: [0.62, 0.78] },
+  farm: { obs: ['goat', 'hay', 'sack', 'basket', 'dallah', 'bush', 'rock', 'bucket'], mix: [0.6, 0.8] },
+  birds: { obs: ['scope', 'crab', 'bush', 'rock', 'cooler', 'wood', 'basket'], mix: [0.54, 0.74] },
+};
+const SIDE_OF = ['picnic', 'souq', 'mall', 'boats', 'water', 'marina', 'dome', 'range', 'stables', 'farm', 'birds']; // the areas in route order: Al Mamzar, the Creek, Downtown, Jumeirah, the Palm, JBR, Expo City, the golf course, Nad Al Sheba, Al Khawaneej, Creek Harbour
+const sideTheme = zi => SIDE_OF[zi];
 const seeded = a => () => { a = (a + 0x6D2B79F5) | 0; let x = Math.imul(a ^ (a >>> 15), 1 | a); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
 const runSpeed = d => 310 + Math.min(260, d * 0.05);
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
@@ -82,14 +96,14 @@ function genSide(P, crand, crnd) {
   const sd = { x0: gx, x1: gx + crnd(c.SIDE_LEN[0], c.SIDE_LEN[1]), theme, seed: (crand() * 4294967296) >>> 0 };
   P.plats.push({ x: gx - 130, y: GROUND - c.SIDE_STEP_Y, w: 220 });
   // its own lists, from its own seed
-  const keep = [P.gaps, P.plats, P.obs, P.items, P.crand], r2 = seeded(sd.seed), rn = (a, b) => a + r2() * (b - a), pk = a => a[Math.floor(r2() * a.length)], pool = SIDE[theme], still = pool.filter(k => !OB[k].vx);
+  const keep = [P.gaps, P.plats, P.obs, P.items, P.crand], r2 = seeded(sd.seed), rn = (a, b) => a + r2() * (b - a), pk = a => a[Math.floor(r2() * a.length)], pool = SIDE[theme].obs, still = pool.filter(k => !OB[k].vx), [po, pp] = SIDE[theme].mix;
   P.gaps = []; P.plats = []; P.obs = []; P.items = []; P.crand = r2;
   const spread = Math.sqrt(runSpeed(Math.max(0, (sd.x0 - 900) / 40) + c.SPRINT_HARD) / 320), end = sd.x1 - 520; let x = sd.x0 + 300, mid = (sd.x0 + end) / 2;
   while (x < end) {
     if (mid && x > mid) { box(P, x, GROUND - 74); x += 260; mid = 0; continue; }
     const r = r2();
-    if (r < 0.6) { const k = pk(pool); if (OB[k].vx) x += 120; addObs(P, x, k); r2(); if (r2() < 0.35) { const dx = rn(200, 250) * spread; addObs(P, x + dx, pk(still)); x += dx; } x += rn(230, 340) * spread; }
-    else if (r < 0.78) { const w = rn(170, 240), y = GROUND - rn(85, 115); P.plats.push({ x, y, w }); x += w + rn(220, 300); }
+    if (r < po) { const k = pk(pool); if (OB[k].vx) x += 120; addObs(P, x, k); r2(); if (r2() < 0.35) { const dx = rn(200, 250) * spread; addObs(P, x + dx, pk(still)); x += dx; } x += rn(230, 340) * spread; }
+    else if (r < pp) { const w = rn(170, 240), y = GROUND - rn(85, 115); P.plats.push({ x, y, w }); x += w + rn(220, 300); }
     else { r2(); x += rn(260, 330); }
   }
   box(P, end + 140, GROUND - 74); sd.bx = end + 140;

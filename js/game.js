@@ -256,7 +256,8 @@ function reset() {
 }
 
 // ---------- level generation ----------
-const OB = { spice: { w: 40, h: 26 }, handcart: { w: 54, h: 36, vx: -50 }, trolley: { w: 46, h: 40, vx: -70 }, wetsign: { w: 26, h: 38 }, plantpot: { w: 30, h: 46 }, suitcase: { w: 30, h: 38 }, robot: { w: 40, h: 18, vx: -40 },
+const OB = { grill: { w: 30, h: 40 }, hay: { w: 44, h: 30 }, bucket: { w: 24, h: 24 }, buoy: { w: 26, h: 30 }, bollard: { w: 20, h: 34 }, ropes: { w: 38, h: 18 }, duck: { w: 36, h: 32 }, flagpin: { w: 20, h: 44 }, scope: { w: 24, h: 44 },
+  spice: { w: 40, h: 26 }, handcart: { w: 54, h: 36, vx: -50 }, trolley: { w: 46, h: 40, vx: -70 }, wetsign: { w: 26, h: 38 }, plantpot: { w: 30, h: 46 }, suitcase: { w: 30, h: 38 }, robot: { w: 40, h: 18, vx: -40 },
   box: { w: 34, h: 32 }, bin: { w: 30, h: 46 }, cat: { w: 34, h: 30 }, cone: { w: 24, h: 36 }, goat: { w: 44, h: 38, vx: -45 }, ball: { w: 22, h: 22, bounce: 1, vx: -60 },
   sack: { w: 30, h: 36 }, carpet: { w: 58, h: 20 }, crab: { w: 30, h: 18, side: 1 }, cooler: { w: 40, h: 30 }, rock: { w: 42, h: 28 }, bush: { w: 38, h: 30 }, lizard: { w: 46, h: 14, vx: -110 },
   bike: { w: 44, h: 30 }, gas: { w: 22, h: 36 }, dbag: { w: 32, h: 30 }, dbike: { w: 60, h: 54, vx: -170 }, crate: { w: 32, h: 40 }, chairs: { w: 30, h: 46 },
@@ -293,10 +294,24 @@ function genFork() {
 // length. The rule is fixed and the sign shows it: inside there are no holes, more sweets, two power-up boxes (one
 // halfway, one near the end) and a jar, but more in the way. Each side road is laid out from its own seed when its gate is made, so both
 // players of a race get the same one whether they turn in or not.
-const SIDE = { souq: { z: 1, obs: ['sack', 'carpet', 'dallah', 'mandoos', 'wood', 'cat', 'spice', 'handcart'] }, mall: { z: 2, obs: ['trolley', 'wetsign', 'plantpot', 'suitcase', 'dbag', 'box', 'robot'] } };
+// One place per area. obs: what is in the way; mix: the share of obstacles, then of obstacles and ledges together (the rest is rows of sweets);
+// step and board: the colour of the doorstep and of the signboard; floor: its colour, joints, front edge, joint spacing, slant and edge height.
+const SIDE = {
+  picnic: { obs: ['grill', 'cooler', 'basket', 'ball', 'castle', 'chairs', 'cat'], mix: [0.55, 0.75], step: '#b98a5c', board: '#e6f2d8', floor: ['#e3cf9f', 'rgba(120,95,50,.35)', 'rgba(255,255,255,.3)', 72, 0, 5] },
+  souq: { obs: ['sack', 'carpet', 'dallah', 'mandoos', 'wood', 'cat', 'spice', 'handcart'], mix: [0.6, 0.78], step: '#c9a36b', board: '#f6e3b4', floor: ['#b79a78', 'rgba(70,45,25,.4)', 'rgba(60,36,20,.28)', 64, 0, 5] },
+  mall: { obs: ['trolley', 'wetsign', 'plantpot', 'suitcase', 'dbag', 'box', 'robot'], mix: [0.6, 0.78], step: '#eef2f4', board: '#d7eef2', floor: ['#e9dfcf', 'rgba(120,105,85,.35)', 'rgba(255,255,255,.55)', 88, 26, 7] },
+  boats: { obs: ['crate', 'buoy', 'ropes', 'crab', 'cooler', 'wood', 'bucket', 'cat'], mix: [0.6, 0.76], step: '#8f9a9c', board: '#d7eef2', floor: ['#8f9a9c', 'rgba(40,55,60,.35)', 'rgba(255,255,255,.25)', 96, 20, 5] },
+  water: { obs: ['duck', 'ring', 'ball', 'cooler', 'wetsign', 'chairs'], mix: [0.52, 0.8], step: '#e8c38f', board: '#d5f4fb', floor: ['#bfe9ee', 'rgba(255,255,255,.85)', 'rgba(255,255,255,.6)', 56, 0, 6] },
+  marina: { obs: ['bollard', 'ropes', 'buoy', 'suitcase', 'dbag', 'cooler', 'bike'], mix: [0.58, 0.74], step: '#a8743f', board: '#e6f6ff', floor: ['#a8743f', 'rgba(60,36,20,.45)', 'rgba(255,240,210,.3)', 34, 0, 4] },
+  dome: { obs: ['robot', 'plantpot', 'cone', 'escooter', 'box', 'flower', 'suitcase'], mix: [0.56, 0.8], step: '#e9e2d4', board: '#efe6ff', floor: ['#d9d2e6', 'rgba(90,70,120,.3)', 'rgba(255,255,255,.5)', 100, 30, 6] },
+  range: { obs: ['gbag', 'flagpin', 'basket', 'ball', 'cone', 'bucket', 'flower'], mix: [0.6, 0.74], step: '#fffaf0', board: '#d8f3dc', floor: ['#4f9f55', 'rgba(255,255,255,.35)', 'rgba(255,255,255,.25)', 120, 0, 4] },
+  stables: { obs: ['hay', 'bucket', 'sack', 'wood', 'cat', 'crate'], mix: [0.62, 0.78], step: '#8a5a35', board: '#f6e3b4', floor: ['#d9b877', 'rgba(120,85,30,.35)', 'rgba(255,240,200,.3)', 44, 12, 5] },
+  farm: { obs: ['goat', 'hay', 'sack', 'basket', 'dallah', 'bush', 'rock', 'bucket'], mix: [0.6, 0.8], step: '#c9a36b', board: '#f6e7c4', floor: ['#e6c98f', 'rgba(140,100,50,.3)', 'rgba(255,255,255,.25)', 80, 18, 4] },
+  birds: { obs: ['scope', 'crab', 'bush', 'rock', 'cooler', 'wood', 'basket'], mix: [0.54, 0.74], step: '#9c6b3c', board: '#fde9d2', floor: ['#9c6b3c', 'rgba(50,30,16,.45)', 'rgba(255,240,210,.3)', 30, 0, 4] },
+};
+const SIDE_OF = ['picnic', 'souq', 'mall', 'boats', 'water', 'marina', 'dome', 'range', 'stables', 'farm', 'birds']; // the areas in route order: Al Mamzar, the Creek, Downtown, Jumeirah, the Palm, JBR, Expo City, the golf course, Nad Al Sheba, Al Khawaneej, Creek Harbour
 const SIDE_FIRST = [5000, 9000], SIDE_EVERY = [14000, 20000], SIDE_LEN = [2400, 3200], SIDE_STEP_Y = 62, SIDE_IN = 30;
-const SOUQ_ZONES = [0, 1, 3, 8, 9]; // a souq alley in Al Mamzar, by the Creek, in Jumeirah, Nad Al Sheba and Al Khawaneej; a mall everywhere else
-const sideTheme = zi => forceSide || (SOUQ_ZONES.includes(zi) ? 'souq' : 'mall');
+const sideTheme = zi => forceSide || SIDE_OF[zi];
 function genSide() {
   const zi = zoneAt(routeOfX(genX)), theme = sideTheme(zi), gx = genX + 620; forceSide = ''; // a clear run-up, so nobody lands on the doorstep by accident
   const sd = { x0: gx, x1: gx + crnd(SIDE_LEN[0], SIDE_LEN[1]), theme, sign: gx - 420, z: zi, seed: (crand() * 4294967296) >>> 0 };
@@ -306,19 +321,19 @@ function genSide() {
   genX = gx + 260; calmTo = gx + 1000; nextSide = sd.x1 + crnd(SIDE_EVERY[0], SIDE_EVERY[1]); nextFork = Math.max(nextFork, sd.x1 + 500); // no bridge until the side road is back
 }
 function fillSide(sd) { // lay the side road into its own lists, from its own seed
-  const keep = [gaps, plats, obs, items, crand], pool = SIDE[sd.theme].obs, still = pool.filter(k => !OB[k].vx), pz = SIDE[sd.theme].z;
+  const keep = [gaps, plats, obs, items, crand], S = SIDE[sd.theme], pool = S.obs, still = pool.filter(k => !OB[k].vx), pz = sd.z, [po, pp] = S.mix;
   gaps = []; plats = []; obs = []; items = []; crand = seeded(sd.seed);
   const gd = race ? Math.max(0, (sd.x0 - 900) / 40) + SPRINT_HARD : dist, spread = Math.sqrt(runSpeed(gd) / 320), end = sd.x1 - 520;
   let x = sd.x0 + 300, mid = (sd.x0 + end) / 2;
   while (x < end) {
     if (mid && x > mid) { box(x, GROUND - 74); x += 260; mid = 0; continue; } // a first box halfway: the main road has its own boxes, so the side road must pay better
     const r = crand();
-    if (r < 0.6) {
+    if (r < po) {
       const k = cpick(pool); if (OB[k].vx) x += 120; // room in front of something that rolls towards you
       addObs(x, k); if (crand() < 0.5) candyArc(x - 50, x + OB[k].w + 50, GROUND - 50, 62);
       if (crand() < 0.35) { const dx = crnd(200, 250) * spread; addObs(x + dx, cpick(still)); x += dx; }
       x += crnd(230, 340) * spread;
-    } else if (r < 0.78) {
+    } else if (r < pp) {
       const w = crnd(170, 240), y = GROUND - crnd(85, 115); plats.push({ x, y, w, z: pz });
       for (let cx = x + 24; cx < x + w - 10; cx += 34) items.push({ x: cx, y: y - 26, kind: 'candy', c: cx });
       x += w + crnd(220, 300);
@@ -1064,7 +1079,7 @@ function drawGhost(c) {
     tag(c, name, x, y - 98); if (o.emUntil > performance.now()) emoBubble(c, x, y - 128, o.em);
   } else {
     const m = Math.round(Math.abs(g.x - worldX) / 40), ahead = g.x > worldX;
-    const their = apart && g.sd && sides.find(q => g.x >= q.x0 && g.x < q.x1), place = !apart ? '' : ' · ' + T(g.sd ? 'sd_p_' + (their ? their.theme : 'souq') : 'sd_p_road');
+    const their = apart && g.sd && sides.find(q => g.x >= q.x0 && g.x < q.x1), place = !apart ? '' : ' · ' + T(g.sd ? 'sd_p_' + (their ? their.theme : sideTheme(zoneNow)) : 'sd_p_road');
     tag(c, T(ahead ? 'mp_ahead' : 'mp_behind', name, m) + place, ahead ? W - 80 : 80, 150); if (o.emUntil > performance.now()) emoBubble(c, ahead ? W - 80 : 80, 118, o.em);
   }
 }
@@ -1906,6 +1921,25 @@ function drawObstacle(c, o, sx) {
     c.fillStyle = '#2b1a12'; for (const wx of [-10, 10]) { c.beginPath(); c.arc(wx, -2, 2.6, 0, TAU); c.fill(); } }
   else if (k === 'robot') { c.fillStyle = '#eef2f4'; c.beginPath(); c.roundRect(-w / 2, -14, w, 13, 6); c.fill(); c.stroke(); c.fillStyle = '#59636b'; c.fillRect(-w / 2 + 3, -4, w - 6, 3);
     c.fillStyle = Math.floor(t * 4) % 2 ? '#3fa7d6' : '#7bd389'; c.beginPath(); c.arc(0, -15, 3.5, 0, TAU); c.fill(); c.stroke(); }
+  // side roads: the other places
+  else if (k === 'grill') { c.beginPath(); c.moveTo(-8, -16); c.lineTo(-12, 0); c.moveTo(8, -16); c.lineTo(12, 0); c.moveTo(0, -16); c.lineTo(0, -2); c.stroke();
+    c.fillStyle = '#3b3b46'; c.beginPath(); c.ellipse(0, -26, w / 2, 11, 0, 0, Math.PI); c.closePath(); c.fill(); c.stroke(); c.fillStyle = '#c8202b'; c.beginPath(); c.ellipse(0, -27, w / 2, 10, 0, Math.PI, 0); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#2b1a12'; c.beginPath(); c.roundRect(-4, -h, 8, 4, 2); c.fill(); c.stroke(); }
+  else if (k === 'hay') { c.fillStyle = '#e8c860'; c.beginPath(); c.roundRect(-w / 2, -h, w, h, 5); c.fill(); c.stroke(); c.strokeStyle = 'rgba(140,100,20,.55)'; c.lineWidth = 1.2; c.beginPath(); for (let x = -16; x <= 16; x += 8) { c.moveTo(x, -h + 4); c.lineTo(x + 3, -4); } c.stroke();
+    c.strokeStyle = '#a8322d'; c.lineWidth = 2; c.beginPath(); c.moveTo(-10, -h); c.lineTo(-10, 0); c.moveTo(10, -h); c.lineTo(10, 0); c.stroke(); }
+  else if (k === 'bucket') { c.beginPath(); c.arc(0, -17, 7, Math.PI, 0); c.stroke(); c.fillStyle = '#b8c2c8'; c.beginPath(); c.moveTo(-w / 2, -18); c.lineTo(w / 2, -18); c.lineTo(w / 2 - 3, 0); c.lineTo(-w / 2 + 3, 0); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#39b6d8'; c.beginPath(); c.ellipse(0, -18, w / 2, 3, 0, 0, TAU); c.fill(); c.stroke(); }
+  else if (k === 'buoy') { c.beginPath(); c.arc(0, -25, 4, 0, TAU); c.stroke(); c.fillStyle = '#f57c20'; c.beginPath(); c.arc(0, -12, 12, 0, TAU); c.fill(); c.stroke(); c.fillStyle = '#fffaf0'; c.fillRect(-11.4, -14.5, 22.8, 5); }
+  else if (k === 'bollard') { c.fillStyle = '#59636b'; c.beginPath(); c.roundRect(-6, -h + 8, 12, h - 8, 2); c.fill(); c.stroke(); c.beginPath(); c.roundRect(-w / 2, -h, w, 10, 5); c.fill(); c.stroke(); c.beginPath(); c.roundRect(-w / 2, -5, w, 5, 2); c.fill(); c.stroke();
+    c.strokeStyle = '#c9a36b'; c.lineWidth = 3; c.beginPath(); c.moveTo(-7, -18); c.lineTo(7, -15); c.moveTo(-7, -13); c.lineTo(7, -10); c.stroke(); }
+  else if (k === 'ropes') { c.fillStyle = '#c9a36b'; for (const y of [-4, -9, -14]) { c.beginPath(); c.ellipse(0, y, w / 2 - (y < -10 ? 3 : 0), 4.5, 0, 0, TAU); c.fill(); c.stroke(); } c.fillStyle = '#8a6a3c'; c.beginPath(); c.ellipse(0, -14, 7, 2, 0, 0, TAU); c.fill(); }
+  else if (k === 'duck') { c.fillStyle = '#ffd23f'; c.beginPath(); c.ellipse(0, -10, w / 2, 10, 0, 0, TAU); c.fill(); c.stroke(); c.beginPath(); c.arc(-7, -23, 9, 0, TAU); c.fill(); c.stroke();
+    c.fillStyle = '#f57c20'; c.beginPath(); c.moveTo(-15, -25); c.lineTo(-22, -22); c.lineTo(-15, -19); c.closePath(); c.fill(); c.stroke(); c.fillStyle = INK; c.beginPath(); c.arc(-9, -25, 1.5, 0, TAU); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.arc(4, -10, 8, 3.6, 4.8); c.stroke(); }
+  else if (k === 'flagpin') { c.beginPath(); c.moveTo(0, -4); c.lineTo(0, -h); c.stroke(); c.fillStyle = '#e23b4a'; c.beginPath(); c.moveTo(0, -h); c.lineTo(w / 2, -h + 6); c.lineTo(0, -h + 12); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#3a8f4a'; c.beginPath(); c.ellipse(0, -3, w / 2, 3.5, 0, 0, TAU); c.fill(); c.stroke(); c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(5, -6, 3, 0, TAU); c.fill(); c.stroke(); }
+  else if (k === 'scope') { c.beginPath(); c.moveTo(0, -30); c.lineTo(-w / 2 + 1, 0); c.moveTo(0, -30); c.lineTo(w / 2 - 1, 0); c.moveTo(0, -30); c.lineTo(1, -2); c.stroke();
+    c.save(); c.translate(0, -35); c.rotate(-0.3); c.fillStyle = '#2f6f5a'; c.beginPath(); c.roundRect(-13, -5, 24, 9, 3); c.fill(); c.stroke(); c.fillStyle = '#9fd8ff'; c.beginPath(); c.ellipse(-13, -0.5, 2.5, 5, 0, 0, TAU); c.fill(); c.stroke(); c.restore(); }
   c.restore();
 }
 
@@ -3151,10 +3185,9 @@ function bridge(c, p, x) {
   c.fillStyle = col; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.roundRect(x, p.y, p.w, DECK_H, 3); c.fill(); c.stroke();
   c.fillStyle = 'rgba(255,255,255,.28)'; c.fillRect(x + 3, p.y + 2, p.w - 6, 3); c.fillStyle = 'rgba(0,0,0,.22)'; c.fillRect(x + 2, u - 3, p.w - 4, 3);
 }
-// ---- side roads: the gate outside, and the two places inside ----
-const SIDE_COL = { souq: ['#c9a36b', '#8a5a35'], mall: ['#eef2f4', '#1f7a74'] };
+// ---- side roads: the gate outside, and the place inside ----
 function doorstep(c, p, x) { // two stone steps up to the gate
-  const [a] = SIDE_COL[p.door]; c.fillStyle = a; c.strokeStyle = INK; c.lineWidth = 2;
+  c.fillStyle = SIDE[p.door].step; c.strokeStyle = INK; c.lineWidth = 2;
   c.beginPath(); c.rect(x, p.y + 31, 40, GROUND - p.y - 31); c.fill(); c.stroke(); c.beginPath(); c.rect(x + 34, p.y, p.w - 34, GROUND - p.y); c.fill(); c.stroke();
   c.fillStyle = 'rgba(255,255,255,.3)'; c.fillRect(x + 2, p.y + 33, 36, 3); c.fillRect(x + 36, p.y + 2, p.w - 38, 3);
 }
@@ -3167,21 +3200,21 @@ function gateShape(c, th, w, h) { // drawn from the middle of its foot
     c.fillStyle = 'rgba(255,190,90,.35)'; c.beginPath(); c.arc(0, -h * 0.42, w * 0.2, 0, TAU); c.fill();
     c.strokeStyle = INK; c.lineWidth = 1.4; c.beginPath(); c.moveTo(0, -h * 0.9); c.lineTo(0, -h * 0.66); c.stroke(); c.fillStyle = '#ffd23f'; c.beginPath(); c.moveTo(0, -h * 0.66); c.lineTo(7, -h * 0.58); c.lineTo(0, -h * 0.48); c.lineTo(-7, -h * 0.58); c.closePath(); c.fill(); c.stroke(); // a lantern
     for (const [sx, col] of [[-1, '#a8322d'], [1, '#1f7a74']]) { c.fillStyle = col; c.beginPath(); c.rect(sx * (w / 2 - 14) - 7, -h * 0.7, 14, h * 0.34); c.fill(); c.stroke(); } // cloth hung by the door
-  } else {
+  } else if (th === 'mall') {
     c.fillStyle = '#eef2f4'; c.beginPath(); c.roundRect(-w / 2, -h, w, h, 6); c.fill(); c.stroke();
     c.fillStyle = 'rgba(120,190,215,.75)'; c.beginPath(); c.rect(-w / 2 + 14, -h * 0.72, w - 28, h * 0.72); c.fill(); c.stroke();
     c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 3; c.beginPath(); c.moveTo(-w / 2 + 26, -h * 0.6); c.lineTo(-w / 2 + 44, -h * 0.3); c.moveTo(6, -h * 0.64); c.lineTo(28, -h * 0.26); c.stroke();
     c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.moveTo(0, -h * 0.72); c.lineTo(0, 0); c.stroke();
     c.fillStyle = '#1f7a74'; c.beginPath(); c.roundRect(-w / 2 - 8, -h * 0.88, w + 16, h * 0.17, 5); c.fill(); c.stroke();
     c.fillStyle = '#fffaf0'; c.beginPath(); c.roundRect(-9, -h * 0.85, 18, h * 0.1, 2); c.fill(); c.strokeStyle = '#fffaf0'; c.lineWidth = 2; c.beginPath(); c.arc(0, -h * 0.85, 5, Math.PI, 0); c.stroke(); // a shopping bag
-  }
+  } else gate2(c, th, w, h);
 }
 function sideSignAt(c, x, th) { // up and in for a gift and sweets; straight on for the main road
   if (x < -70 || x > W + 70) return;
   c.save(); c.translate(x, GROUND); c.lineJoin = 'round'; c.strokeStyle = INK; c.lineWidth = 2;
   c.fillStyle = '#8a5a35'; c.beginPath(); c.rect(-4, -112, 8, 112); c.fill(); c.stroke();
   const board = (y, col) => { c.fillStyle = col; c.beginPath(); c.moveTo(-36, y - 15); c.lineTo(36, y - 15); c.lineTo(52, y); c.lineTo(36, y + 15); c.lineTo(-36, y + 15); c.closePath(); c.fill(); c.stroke(); };
-  c.save(); c.translate(0, -92); c.rotate(-0.13); c.translate(0, 92); board(-92, th === 'souq' ? '#f6e3b4' : '#d7eef2');
+  c.save(); c.translate(0, -92); c.rotate(-0.13); c.translate(0, 92); board(-92, SIDE[th].board);
   c.save(); c.translate(-22, -80); c.scale(0.16, 0.16); gateShape(c, th, 150, 150); c.restore(); // the place, small
   c.lineWidth = 1.4; c.strokeStyle = INK; c.fillStyle = '#c8202b'; c.beginPath(); c.roundRect(-2, -98, 15, 14, 2); c.fill(); c.stroke(); c.fillStyle = '#ffe066'; c.fillRect(4, -98, 3, 14); c.fillRect(-2, -93, 15, 3);
   c.fillStyle = '#ffb400'; c.beginPath(); c.arc(26, -91, 6, 0, TAU); c.fill(); c.stroke(); c.restore();
@@ -3201,7 +3234,152 @@ function sideDoors(c, q) { // inside: daylight through the way in and the way ou
     c.fillStyle = g; c.fillRect(x - 70, GROUND - 190, 140, 190); }
 }
 const SOUQ_CLOTH = ['#a8322d', '#1f7a74', '#e3a33b', '#7a1f5a', '#2b6cb0'], MALL_SIGN = ['#1f7a74', '#e2735b', '#7a1f5a', '#e3a33b', '#2b6cb0'];
+// ---- every other place: small drawing helpers, the gates, and what you see inside ----
+const sInk = (c, w = 2) => { c.strokeStyle = INK; c.lineWidth = w; c.lineJoin = 'round'; };
+const sR = (c, col, x, y, w, h, r) => { c.fillStyle = col; c.beginPath(); if (r) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h); c.fill(); c.stroke(); };
+const sC = (c, col, x, y, r) => { c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); c.stroke(); };
+const sP = (c, col, p) => { c.fillStyle = col; c.beginPath(); c.moveTo(p[0], p[1]); for (let k = 2; k < p.length; k += 2) c.lineTo(p[k], p[k + 1]); c.closePath(); c.fill(); c.stroke(); };
+function bays(c, P, par, fn) { const off = worldX * par, i0 = Math.floor((off - ABX - 40) / P); for (let i = i0; i * P - off + ABX < W + 20; i++) fn(i * P - off + ABX, i); } // one call per stretch of wall, sliding by at its own speed
+function wash(c, top, a, b) { const g = c.createLinearGradient(0, top, 0, GROUND); g.addColorStop(0, a); g.addColorStop(1, b); c.fillStyle = g; c.fillRect(-20, top, W + 40, GROUND - top); }
+function horseHead(c, x, y, col) { // a horse looking out over its stable door
+  sInk(c, 1.8); sP(c, col, [x - 30, y, x + 18, y, x + 36, y - 44, x + 6, y - 64, x - 12, y - 40]);
+  c.strokeStyle = '#2a1a14'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.moveTo(x + 1, y - 58); c.quadraticCurveTo(x - 15, y - 40, x - 24, y - 8); c.stroke(); c.lineCap = 'butt'; sInk(c, 1.8);
+  sP(c, col, [x + 4, y - 60, x + 9, y - 80, x + 19, y - 62]);
+  c.save(); c.translate(x + 24, y - 54); c.rotate(0.5); c.fillStyle = col; c.beginPath(); c.ellipse(16, 0, 27, 12.5, 0, 0, TAU); c.fill(); c.stroke(); c.fillStyle = INK; c.beginPath(); c.arc(5, -4, 2.4, 0, TAU); c.arc(37, 2, 1.7, 0, TAU); c.fill(); c.restore();
+}
+function flamingo(c, fx, fy, k, s = 1) {
+  const bob = REDUCED ? 0 : Math.sin(t * 1.5 + k) * 1.5; c.save(); c.translate(fx, fy); c.scale(s, s);
+  c.strokeStyle = '#d65a80'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -18); if (Math.abs(k) % 2) { c.moveTo(0, -11); c.lineTo(5, -15); } c.stroke();
+  c.fillStyle = '#f48fb1'; c.strokeStyle = 'rgba(60,20,30,.5)'; c.lineWidth = 1; c.beginPath(); c.ellipse(0, -22 + bob, 9, 5.5, -0.2, 0, TAU); c.fill(); c.stroke();
+  c.strokeStyle = '#f48fb1'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(6, -24 + bob); c.quadraticCurveTo(14, -33, 7, -40 + bob); c.stroke();
+  c.fillStyle = '#2a1a14'; c.beginPath(); c.moveTo(7, -41 + bob); c.lineTo(13, -38 + bob); c.lineTo(7, -37 + bob); c.fill(); c.restore();
+}
+// a gate: two posts, the way in, a head in the place's own shape, and its emblem on a board
+const GATE = { // posts, the way in, the head, and the head's shape: 0 a flat board, 1 a gable, 2 an arch, 3 palm thatch, 4 a tent
+  picnic: ['#a8743f', '#3f7d3a', '#8a5a35', 1], boats: ['#3d6470', '#1d3138', '#2b6cb0', 1], water: ['#e8c38f', '#1c9cc0', '#ff7a3d', 2], marina: ['#fffaf0', '#3d9ec4', '#2b6cb0', 0], dome: ['#f6e3b4', '#2a2350', '#e3a33b', 2],
+  range: ['#fffaf0', '#3a8f4a', '#fffaf0', 4], stables: ['#8a5a35', '#2b1a12', '#6f4a2b', 1], farm: ['#c9a36b', '#7a5434', '#b98a5c', 3], birds: ['#8a5a35', '#7fc4c9', '#6f4a2b', 0] };
+const EMB = { // each about 30 wide, around 0,0
+  picnic: c => { c.strokeStyle = '#7a5434'; c.lineWidth = 3; c.beginPath(); c.moveTo(0, 11); c.lineTo(1, -3); c.stroke(); c.strokeStyle = '#3f7d3a'; c.beginPath(); for (const a of [-2.7, -2.1, -1.1, -0.4]) { c.moveTo(1, -3); c.lineTo(1 + Math.cos(a) * 13, 1 + Math.sin(a) * 10); } c.stroke(); },
+  boats: c => { c.fillStyle = '#2b6cb0'; c.beginPath(); c.ellipse(-3, 0, 10, 5.5, 0, 0, TAU); c.fill(); c.beginPath(); c.moveTo(6, 0); c.lineTo(14, -6); c.lineTo(14, 6); c.fill(); },
+  water: c => { c.strokeStyle = '#1c9cc0'; c.lineWidth = 3; c.beginPath(); for (const y of [-4, 5]) { c.moveTo(-13, y); c.quadraticCurveTo(-8.5, y - 7, -4, y); c.quadraticCurveTo(0, y + 7, 4, y); c.quadraticCurveTo(8.5, y - 7, 13, y); } c.stroke(); },
+  marina: c => { c.fillStyle = '#2b6cb0'; c.beginPath(); c.moveTo(-12, 4); c.lineTo(12, 4); c.lineTo(8, 10); c.lineTo(-8, 10); c.fill(); c.fillStyle = '#e23b4a'; c.beginPath(); c.moveTo(0, -11); c.lineTo(0, 2); c.lineTo(10, 2); c.fill(); },
+  dome: c => { c.strokeStyle = '#c98a1f'; c.lineWidth = 2.4; c.beginPath(); c.arc(0, 9, 13, Math.PI, 0); c.moveTo(-7, 9); c.quadraticCurveTo(0, -14, 7, 9); c.moveTo(-13, 9); c.lineTo(13, 9); c.stroke(); },
+  range: c => { c.strokeStyle = INK; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-2, 10); c.lineTo(-2, -11); c.stroke(); c.fillStyle = '#e23b4a'; c.beginPath(); c.moveTo(-2, -11); c.lineTo(11, -6); c.lineTo(-2, -1); c.fill(); c.fillStyle = '#3a8f4a'; c.fillRect(-12, 9, 24, 3); },
+  stables: c => { c.strokeStyle = '#59636b'; c.lineWidth = 4; c.beginPath(); c.arc(0, -1, 8, -0.25 * Math.PI, 1.25 * Math.PI); c.stroke(); },
+  farm: c => { c.fillStyle = '#7a3f1c'; for (const [dx, dy] of [[-6, -2], [0, -6], [6, -2], [-3, 5], [3, 5]]) { c.beginPath(); c.ellipse(dx, dy, 3.4, 5, 0, 0, TAU); c.fill(); } },
+  birds: c => flamingo(c, -3, 13, 0, 0.62) };
+function gate2(c, th, w, h) {
+  const [post, hole, head, cap] = GATE[th], x = w / 2, s = w / 150;
+  c.fillStyle = hole; c.beginPath(); c.rect(-x + 16, -h * 0.8, w - 32, h * 0.8); c.fill(); c.stroke();
+  c.fillStyle = 'rgba(255,225,160,.16)'; c.beginPath(); c.moveTo(-x + 16, 0); c.lineTo(-x * 0.3, -h * 0.8); c.lineTo(x * 0.3, -h * 0.8); c.lineTo(x - 16, 0); c.fill(); // light falling in
+  sR(c, post, -x, -h * 0.82, 20 * s, h * 0.82, 3); sR(c, post, x - 20 * s, -h * 0.82, 20 * s, h * 0.82, 3);
+  if (cap === 1) sP(c, head, [-x - 12, -h * 0.8, 0, -h * 1.06, x + 12, -h * 0.8]);
+  else if (cap === 2) { c.fillStyle = head; c.beginPath(); c.ellipse(0, -h * 0.8, x + 8, h * 0.26, 0, Math.PI, 0); c.closePath(); c.fill(); c.stroke(); }
+  else if (cap === 3) { const p = [-x - 12, -h, x + 12, -h]; for (let k = 0; k <= 8; k++) p.push(x + 12 - (w + 24) * k / 8, -h * (k % 2 ? 0.74 : 0.82)); sP(c, head, p); }
+  else if (cap === 4) sP(c, head, [-x - 12, -h * 0.8, -x * 0.5, -h * 1.06, 0, -h * 0.88, x * 0.5, -h * 1.06, x + 12, -h * 0.8]);
+  else sR(c, head, -x - 8, -h, w + 16, h * 0.2, 5);
+  c.save(); c.translate(0, -h * 0.9); c.scale(s, s); c.lineWidth = 2; sR(c, '#fffaf0', -22, -16, 44, 32, 5); EMB[th](c); c.restore();
+}
+const PLACE = {
+  // Al Mamzar Beach Park: the pergola walk through the palms, with the lagoon behind
+  picnic(c, top) { const G = GROUND; wash(c, top, '#9fd8ff', '#e9f6d8');
+    c.fillStyle = '#58b7c9'; c.fillRect(-20, G - 96, W + 40, 32); c.fillStyle = '#f1dfae'; c.fillRect(-20, G - 66, W + 40, 20); c.fillStyle = '#8fc468'; c.fillRect(-20, G - 48, W + 40, 48);
+    bays(c, 330, 0.92, (x, i) => { const v = Math.floor(sr(i * 3.1 + 4) * 3); palm(c, x + 60, G - 6, 150 + sr(i) * 30, i); sInk(c);
+      if (v === 0) { // a picnic table
+        sR(c, '#a8743f', x + 120, G - 44, 130, 9, 2); sR(c, '#8a5a35', x + 104, G - 24, 50, 7, 2); sR(c, '#8a5a35', x + 216, G - 24, 50, 7, 2); c.beginPath(); c.moveTo(x + 142, G - 35); c.lineTo(x + 130, G); c.moveTo(x + 228, G - 35); c.lineTo(x + 240, G); c.stroke();
+        sR(c, '#e23b4a', x + 150, G - 62, 30, 18, 3); sC(c, '#5a9a45', x + 212, G - 53, 9); }
+      else if (v === 1) { // a barbecue, smoking
+        sR(c, '#3b3b46', x + 150, G - 60, 60, 22, 4); c.beginPath(); c.moveTo(x + 160, G - 38); c.lineTo(x + 152, G); c.moveTo(x + 200, G - 38); c.lineTo(x + 208, G); c.stroke(); c.fillStyle = '#e2735b'; c.fillRect(x + 156, G - 64, 48, 4);
+        if (!REDUCED) { c.fillStyle = 'rgba(255,255,255,.4)'; for (let k = 0; k < 3; k++) { const a = (t * 0.5 + k / 3) % 1; c.beginPath(); c.arc(x + 180 + Math.sin(a * 5 + k) * 8, G - 72 - a * 70, 6 + a * 10, 0, TAU); c.fill(); } } }
+      else { // a beach chalet
+        sR(c, ['#fffaf0', '#d7eef2', '#f6e3b4'][Math.abs(i) % 3], x + 120, G - 110, 140, 110); sP(c, '#c8553d', [x + 108, G - 110, x + 190, G - 158, x + 272, G - 110]); sR(c, '#1f7a74', x + 172, G - 64, 36, 64, 3); sR(c, '#9fd8ff', x + 132, G - 90, 28, 28); sR(c, '#9fd8ff', x + 222, G - 90, 28, 28); }
+      sInk(c); sR(c, '#8a5a35', x - 10, G - 236, 16, 236); });
+    sInk(c); sR(c, '#a8743f', -20, G - 250, W + 40, 16); c.fillStyle = '#6f4a2b'; for (let x = -((worldX * 1.05) % 46); x < W + 20; x += 46) c.fillRect(x, top, 12, G - 250 - top); },
+  // Jumeirah fishing harbour: the boat shed
+  boats(c, top) { const G = GROUND; wash(c, top, '#31505c', '#6f97a0');
+    c.strokeStyle = 'rgba(20,40,48,.35)'; c.lineWidth = 2; c.beginPath(); for (let y = G - 230; y < G; y += 26) { c.moveTo(-20, y); c.lineTo(W + 20, y); } c.stroke();
+    bays(c, 340, 0.92, (x, i) => { const v = Math.floor(sr(i * 2.7 + 9) * 3); sInk(c);
+      sR(c, '#9fd8ff', x + 36, G - 200, 64, 46, 3); c.beginPath(); c.moveTo(x + 68, G - 200); c.lineTo(x + 68, G - 154); c.moveTo(x + 36, G - 177); c.lineTo(x + 100, G - 177); c.stroke();
+      if (v === 0) { // a wooden boat up on stands
+        sP(c, '#8a5a35', [x + 110, G - 100, x + 316, G - 100, x + 288, G - 40, x + 142, G - 40]); c.fillStyle = '#fffaf0'; c.fillRect(x + 118, G - 94, 190, 7); sP(c, '#2b6cb0', [x + 136, G - 54, x + 294, G - 54, x + 288, G - 40, x + 142, G - 40]);
+        c.beginPath(); c.moveTo(x + 164, G - 40); c.lineTo(x + 152, G); c.moveTo(x + 266, G - 40); c.lineTo(x + 278, G); c.stroke(); }
+      else if (v === 1) { // nets hung up to dry, with their floats
+        c.strokeStyle = 'rgba(240,230,200,.8)'; c.lineWidth = 1.2; c.beginPath(); for (let k = 0; k < 9; k++) { c.moveTo(x + 130 + k * 21, G - 190); c.lineTo(x + 122 + k * 23, G - 60); } for (let y = 0; y < 6; y++) { c.moveTo(x + 128, G - 180 + y * 22); c.quadraticCurveTo(x + 215, G - 166 + y * 22, x + 304, G - 180 + y * 22); } c.stroke();
+        sInk(c, 1.4); for (let k = 0; k < 5; k++) sC(c, k % 2 ? '#e2735b' : '#ffd23f', x + 138 + k * 40, G - 58 + (k % 2) * 6, 7); }
+      else { // fish boxes and a life ring
+        for (let k = 0; k < 3; k++) sR(c, '#2b6cb0', x + 126 + k * 56, G - 40, 50, 40, 3); for (let k = 0; k < 2; k++) sR(c, '#3d86c6', x + 154 + k * 56, G - 78, 50, 38, 3); ring(c, x + 286, G - 150, 22, 0.4); }
+      sInk(c); sR(c, '#27424c', x - 12, top, 30, G - top); });
+    c.fillStyle = '#1d3138'; c.fillRect(-20, top, W + 40, G - 246 - top); c.fillStyle = '#152429'; for (let x = -((worldX * 1.05) % 110); x < W + 20; x += 110) c.fillRect(x, top, 16, G - 236 - top);
+    for (let x = -((worldX * 0.98) % 220); x < W + 40; x += 220) { sInk(c, 1.2); c.beginPath(); c.moveTo(x + 60, G - 246); c.lineTo(x + 60, G - 214); c.stroke(); c.fillStyle = 'rgba(255,220,130,.25)'; c.beginPath(); c.arc(x + 60, G - 206, 22, 0, TAU); c.fill(); sC(c, '#ffe066', x + 60, G - 206, 7); } },
+  // the Palm: the water park, with slides looping overhead
+  water(c, top) { const G = GROUND; wash(c, top, '#7fd3f2', '#d5f4fb');
+    bays(c, 360, 0.92, (x, i) => { const v = Math.floor(sr(i * 3.3 + 6) * 3); sInk(c);
+      if (v === 0) { for (let k = 0; k < 4; k++) sR(c, k % 2 ? '#e8c38f' : '#d9a96f', x + 100 + k * 24, G - 56 - k * 44, 200 - k * 48, k ? 44 : 56); sR(c, '#3b2416', x + 182, G - 50, 36, 50, 18); } // the stepped slide tower
+      else if (v === 1) { sR(c, '#39b6d8', x + 90, G - 28, 230, 28, 12); jets(c, x + 110, x + 290, G - 28, 60, 6, () => 'rgba(255,255,255,.8)'); sInk(c); c.beginPath(); c.moveTo(x + 205, G - 28); c.lineTo(x + 205, G - 150); c.stroke(); sP(c, '#ffd23f', [x + 178, G - 178, x + 232, G - 178, x + 222, G - 146, x + 188, G - 146]); } // a splash pool and its tipping bucket
+      else for (const ux of [x + 130, x + 262]) { c.beginPath(); c.moveTo(ux, G); c.lineTo(ux, G - 110); c.stroke(); sP(c, '#d9a96f', [ux - 52, G - 100, ux, G - 140, ux + 52, G - 100]); sR(c, '#fffaf0', ux - 44, G - 22, 62, 8, 3); sP(c, '#e2735b', [ux + 18, G - 22, ux + 38, G - 46, ux + 45, G - 41, ux + 28, G - 16]); } }); // thatched umbrellas and loungers
+    c.lineCap = 'round'; bays(c, 300, 1.02, (x, i) => { c.strokeStyle = INK; c.lineWidth = 27; c.beginPath(); c.moveTo(x, G - 232); c.bezierCurveTo(x + 90, G - 160, x + 210, G - 300, x + 300, G - 232); c.stroke();
+      c.strokeStyle = ['#ff7a3d', '#e23b8a', '#7bc043', '#ffd23f'][Math.abs(i) % 4]; c.lineWidth = 23; c.stroke(); c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 5; c.stroke(); }); c.lineCap = 'butt'; },
+  // the marina by JBR: a pier between the yachts
+  marina(c, top) { const G = GROUND; wash(c, top, '#8fd0f5', '#e6f6ff');
+    c.fillStyle = 'rgba(120,150,180,.45)'; bays(c, 150, 0.3, (x, i) => { const h = 110 + sr(i * 1.7) * 110; c.fillRect(x, G - 60 - h, 54 + sr(i) * 30, h); });
+    c.fillStyle = '#3d9ec4'; c.fillRect(-20, G - 64, W + 40, 64); c.strokeStyle = 'rgba(255,255,255,.4)'; c.lineWidth = 1.4; c.beginPath(); for (let x = -((worldX * 0.6) % 60); x < W + 20; x += 60) { c.moveTo(x, G - 44); c.quadraticCurveTo(x + 10, G - 48, x + 20, G - 44); c.moveTo(x + 30, G - 18); c.quadraticCurveTo(x + 40, G - 22, x + 50, G - 18); } c.stroke();
+    bays(c, 380, 0.92, (x, i) => { const v = Math.floor(sr(i * 4.1 + 2) * 3), b = REDUCED ? 0 : Math.sin(t * 1.4 + i) * 2; sInk(c);
+      if (v < 2) { sP(c, '#fffaf0', [x + 70, G - 60 + b, x + 330, G - 60 + b, x + 300, G - 14 + b, x + 100, G - 14 + b]); sR(c, '#eef2f4', x + 130, G - 96 + b, 150, 36, 6); c.fillStyle = '#2b6cb0'; for (let k = 0; k < 4; k++) c.fillRect(x + 142 + k * 34, G - 86 + b, 24, 12); c.fillStyle = v ? '#e2735b' : '#1f7a74'; c.fillRect(x + 86, G - 32 + b, 228, 6);
+        if (v) { c.beginPath(); c.moveTo(x + 200, G - 96 + b); c.lineTo(x + 200, G - 226 + b); c.stroke(); sP(c, '#fffaf0', [x + 205, G - 222 + b, x + 205, G - 108 + b, x + 288, G - 108 + b]); } } // a yacht at its berth
+      else { sR(c, '#fffaf0', x + 130, G - 120, 150, 120, 4); sP(c, '#2b6cb0', [x + 118, G - 120, x + 292, G - 120, x + 280, G - 150, x + 130, G - 150]); sR(c, '#9fd8ff', x + 146, G - 96, 60, 44, 3); sR(c, '#1f7a74', x + 224, G - 76, 40, 76, 3); } // the harbour master's kiosk
+      sInk(c); sR(c, '#8a5a35', x - 8, G - 60, 16, 60, 3); sR(c, '#fffaf0', x - 9, G - 64, 18, 8, 3); c.strokeStyle = '#c9a36b'; c.lineWidth = 3; c.beginPath(); c.moveTo(x, G - 46); c.quadraticCurveTo(x + 40, G - 18, x + 84, G - 30); c.stroke(); }); // a mooring post and its rope
+    bays(c, 240, 1, (x, i) => { sInk(c, 1.2); c.beginPath(); c.moveTo(x, G - 250); c.quadraticCurveTo(x + 120, G - 214, x + 240, G - 250); c.stroke(); for (let k = 1; k < 8; k++) { const f = k / 8, bx = x + 240 * f, by = G - 250 + 72 * f * (1 - f); sP(c, MALL_SIGN[(k + Math.abs(i)) % 5], [bx - 7, by, bx + 7, by, bx, by + 14]); } }); }, // bunting
+  // Expo City: under the great trellis dome, with colours thrown across it
+  dome(c, top) { const G = GROUND; wash(c, top, '#2a2350', '#6a4a86');
+    if (!REDUCED) for (let k = 0; k < 4; k++) { const span = W + 300, gx = (((k * 260 - worldX * 0.5 + t * 14) % span) + span) % span - 150; c.fillStyle = ['rgba(255,170,90,.18)', 'rgba(120,220,255,.18)', 'rgba(255,120,190,.18)', 'rgba(150,255,170,.16)'][k]; c.beginPath(); c.arc(gx, G - 170 - (k % 2) * 40, 90, 0, TAU); c.fill(); }
+    c.strokeStyle = 'rgba(245,225,170,.5)'; c.lineWidth = 2.2; c.beginPath(); const o = (worldX * 0.5) % 120; for (let x = -280 - o; x < W + 280; x += 120) { c.moveTo(x, G); c.quadraticCurveTo(x + 60, G - 260, x + 280, top); c.moveTo(x + 120, G); c.quadraticCurveTo(x + 60, G - 260, x - 160, top); } c.stroke();
+    bays(c, 360, 0.92, (x, i) => { const v = Math.floor(sr(i * 3.9 + 5) * 3); sInk(c);
+      if (v === 0) { sR(c, '#e9e2d4', x + 100, G - 26, 210, 26, 8); tree(c, x + 150, 0.9); tree(c, x + 252, 1.1); } // a garden bed
+      else if (v === 1) { sP(c, '#f2efe8', [x + 100, G, x + 120, G - 170, x + 300, G - 190, x + 310, G]); sR(c, '#2a2350', x + 180, G - 110, 54, 110, 4); c.fillStyle = '#e3a33b'; c.fillRect(x + 128, G - 150, 160, 8); } // a pavilion's tall door
+      else { sR(c, '#39b6d8', x + 110, G - 150, 190, 150, 6); c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 2; c.beginPath(); for (let k = 0; k < 9; k++) { const wy = REDUCED ? 40 : (t * 90 + k * 37) % 126; c.moveTo(x + 122 + k * 21, G - 150 + wy); c.lineTo(x + 122 + k * 21, G - 126 + wy); } c.stroke(); } // a wall of falling water
+      sInk(c); sR(c, '#f6e3b4', x - 8, G - 120, 16, 120, 6); sC(c, '#ffe066', x, G - 130, 10); }); },
+  // the golf course: the driving range, looking out over the fairway
+  range(c, top) { const G = GROUND; wash(c, top, '#9fd8ff', '#dff3ff');
+    c.fillStyle = '#7fc35f'; c.fillRect(-20, G - 120, W + 40, 120); c.fillStyle = '#6bb04d'; bays(c, 260, 0.5, (x, i) => { c.beginPath(); c.ellipse(x + 100, G - 70 - sr(i) * 30, 90, 16, 0, 0, TAU); c.fill(); });
+    bays(c, 200, 0.6, (x, i) => { const d = Math.abs(i) % 3; sInk(c, 1.4); c.beginPath(); c.moveTo(x + 60, G - 60 - d * 14); c.lineTo(x + 60, G - 100 - d * 14); c.stroke(); sP(c, ['#e23b4a', '#ffd23f', '#2b6cb0'][d], [x + 60, G - 100 - d * 14, x + 82, G - 93 - d * 14, x + 60, G - 86 - d * 14]); if (d === 1) { c.fillStyle = '#f1dfae'; c.beginPath(); c.ellipse(x + 140, G - 50, 34, 9, 0, 0, TAU); c.fill(); } }); // distance flags and bunkers
+    bays(c, 300, 0.92, (x, i) => { const v = Math.floor(sr(i * 2.3 + 8) * 3); sInk(c); sR(c, '#3a8f4a', x + 60, G - 8, 200, 8, 2);
+      if (v === 0) { sR(c, '#e23b4a', x + 190, G - 34, 44, 26, 4); sInk(c, 1.2); for (let k = 0; k < 6; k++) sC(c, '#fffaf0', x + 198 + (k % 3) * 14, G - 36 - Math.floor(k / 3) * 7, 5); } // a basket of balls
+      else if (v === 1) { c.beginPath(); for (let k = 0; k < 3; k++) { c.moveTo(x + 126 + k * 7, G - 70); c.lineTo(x + 121 + k * 10, G - 104); } c.stroke(); sR(c, '#2b6cb0', x + 120, G - 74, 26, 66, 8); } // a golf bag
+      else { c.beginPath(); c.moveTo(x + 150, G - 8); c.lineTo(x + 150, G - 14); c.stroke(); sC(c, '#fffaf0', x + 150, G - 19, 5); } // a ball on its tee
+      sInk(c); sR(c, '#fffaf0', x - 8, G - 240, 16, 240); sC(c, '#1f7a74', x, G - 150, 13); });
+    sInk(c); bays(c, 300, 0.92, x => { c.fillStyle = '#fffaf0'; c.beginPath(); c.moveTo(x, top); c.lineTo(x, G - 236); c.quadraticCurveTo(x + 150, G - 276, x + 300, G - 236); c.lineTo(x + 300, top); c.closePath(); c.fill(); c.beginPath(); c.moveTo(x, G - 236); c.quadraticCurveTo(x + 150, G - 276, x + 300, G - 236); c.stroke(); }); }, // the white tent roof
+  // Nad Al Sheba: the racing stables
+  stables(c, top) { const G = GROUND; wash(c, top, '#7a5434', '#b98a5c');
+    c.strokeStyle = 'rgba(50,30,16,.3)'; c.lineWidth = 2; c.beginPath(); for (let y = G - 220; y < G; y += 30) { c.moveTo(-20, y); c.lineTo(W + 20, y); } c.stroke();
+    bays(c, 300, 0.92, (x, i) => { const v = Math.floor(sr(i * 3.5 + 1) * 4), col = ['#8a5230', '#2f2622', '#d9b98a', '#efe9dd'][Math.abs(i) % 4]; sInk(c); sR(c, '#5a3f28', x + 50, G - 190, 200, 190, 4);
+      if (v < 3) horseHead(c, x + 136, G - 84, col); // a horse looking out
+      else { sInk(c); sR(c, '#e8c860', x + 80, G - 150, 140, 64, 6); c.strokeStyle = 'rgba(120,90,20,.5)'; c.beginPath(); for (let k = 0; k < 6; k++) { c.moveTo(x + 92 + k * 22, G - 146); c.lineTo(x + 98 + k * 22, G - 90); } c.stroke(); } // hay in an empty stall
+      sInk(c); sR(c, '#8a5a35', x + 50, G - 86, 200, 86, 3); c.beginPath(); c.moveTo(x + 50, G - 86); c.lineTo(x + 250, G); c.moveTo(x + 250, G - 86); c.lineTo(x + 50, G); c.stroke(); sR(c, '#e3a33b', x + 120, G - 216, 60, 16, 3);
+      sR(c, '#6f4a2b', x - 14, top, 34, G - top); c.strokeStyle = '#c0c4c8'; c.lineWidth = 4; c.beginPath(); c.arc(x + 3, G - 150, 10, -0.25 * Math.PI, 1.25 * Math.PI); c.stroke(); }); // the half door, a name plate, and a horseshoe on the post
+    c.fillStyle = '#3a2418'; c.fillRect(-20, top, W + 40, G - 246 - top); c.fillStyle = '#2b1a12'; for (let x = -((worldX * 1.05) % 100); x < W + 20; x += 100) c.fillRect(x, top, 14, G - 238 - top);
+    for (let x = -((worldX * 0.98) % 300); x < W + 40; x += 300) { c.fillStyle = 'rgba(255,220,130,.22)'; c.beginPath(); c.arc(x + 150, G - 222, 26, 0, TAU); c.fill(); sInk(c, 1.4); sC(c, '#ffe066', x + 150, G - 226, 7); } },
+  // Al Khawaneej: a date farm, under palm-frond shade
+  farm(c, top) { const G = GROUND; wash(c, top, '#f3d9a4', '#f6e7c4');
+    c.fillStyle = '#e3c48a'; bays(c, 420, 0.4, (x, i) => { c.beginPath(); c.ellipse(x + 200, G - 50, 240, 50 + sr(i) * 30, 0, Math.PI, 0); c.fill(); }); c.fillRect(-20, G - 50, W + 40, 50);
+    bays(c, 340, 0.92, (x, i) => { const v = Math.floor(sr(i * 2.9 + 7) * 3); datePalm(c, x + 60, 170 + sr(i) * 30, i); datePalm(c, x + 290, 150 + sr(i + 3) * 30, i + 2); sInk(c);
+      if (v === 0) { camel(c, x + 170, G - 4, 0, 1.5); sInk(c); for (let k = 0; k < 5; k++) sR(c, '#a8743f', x + 92 + k * 44, G - 46, 7, 46); c.fillStyle = '#a8743f'; c.fillRect(x + 92, G - 40, 183, 5); c.fillRect(x + 92, G - 22, 183, 5); } // a camel behind a fence
+      else if (v === 1) { c.beginPath(); c.moveTo(x + 138, G - 44); c.lineTo(x + 138, G - 98); c.lineTo(x + 212, G - 98); c.lineTo(x + 212, G - 44); c.stroke(); sR(c, '#8a5a35', x + 168, G - 86, 14, 16, 2); sR(c, '#c9a36b', x + 130, G - 44, 90, 44, 6); sR(c, '#39b6d8', x + 138, G - 44, 74, 8, 3); } // a well
+      else { for (let k = 0; k < 3; k++) sR(c, '#c68a4e', x + 120 + k * 50, G - 34, 46, 34, 3); for (let k = 0; k < 2; k++) { sR(c, '#c68a4e', x + 145 + k * 50, G - 66, 46, 32, 3); c.fillStyle = '#7a3f1c'; c.beginPath(); c.ellipse(x + 168 + k * 50, G - 66, 18, 6, 0, Math.PI, 0); c.fill(); } } }); // boxes of dates
+    c.fillStyle = '#39b6d8'; c.fillRect(-20, G - 9, W + 40, 6); // the falaj
+    sInk(c, 1.6); c.fillStyle = '#b98a5c'; c.fillRect(-20, top, W + 40, G - 250 - top); const o = (worldX * 1.05) % 28, n0 = Math.floor(worldX * 1.05 / 28);
+    c.fillStyle = '#c9a36b'; c.beginPath(); c.moveTo(-28 - o, G - 252); for (let k = -1; k * 28 - o < W + 40; k++) { c.lineTo(k * 28 - o + 14, G - 226 - sr(n0 + k) * 12); c.lineTo(k * 28 - o + 28, G - 252); } c.closePath(); c.fill(); c.stroke(); },
+  // Dubai Creek Harbour: a timber walk by the Ras Al Khor lagoon, with flamingos out on the water
+  birds(c, top) { const G = GROUND; wash(c, top, '#f7c9a8', '#fde9d2');
+    c.fillStyle = 'rgba(110,130,160,.4)'; bays(c, 170, 0.25, (x, i) => { const h = 90 + sr(i * 1.3) * 130; c.fillRect(x, G - 96 - h, 40 + sr(i) * 26, h); });
+    c.fillStyle = '#7fc4c9'; c.fillRect(-20, G - 100, W + 40, 100); c.fillStyle = '#3f6d3a'; bays(c, 120, 0.55, (x, i) => { c.beginPath(); c.arc(x + 40, G - 98, 22 + sr(i) * 12, Math.PI, 0); c.fill(); });
+    bays(c, 76, 0.75, (x, i) => { if (sr(i * 5.3) < 0.7) flamingo(c, x + sr(i) * 30, G - 50 - (Math.abs(i) % 3) * 12, i); });
+    bays(c, 320, 0.92, (x, i) => { sInk(c); sR(c, '#c9a36b', x + 12, G - 44, 296, 44); c.strokeStyle = 'rgba(90,60,30,.45)'; c.lineWidth = 1.2; c.beginPath(); for (let k = 0; k < 24; k++) { c.moveTo(x + 18 + k * 12, G - 44); c.lineTo(x + 18 + k * 12, G); } c.stroke();
+      if (Math.abs(i) % 2) { sInk(c, 1.6); sR(c, '#fffaf0', x + 120, G - 156, 86, 60, 4); flamingo(c, x + 152, G - 104, 0, 1.2); } // a board showing which birds to look for
+      sInk(c); sR(c, '#8a5a35', x - 10, top, 22, G - top); });
+    c.fillStyle = '#6f4a2b'; c.fillRect(-20, top, W + 40, G - 246 - top); c.fillStyle = '#8a5a35'; for (let x = -((worldX * 1.05) % 60); x < W + 20; x += 60) c.fillRect(x, G - 252, 44, 8); },
+};
 function interior(c, q) {
+  if (PLACE[q.theme]) { PLACE[q.theme](c, -offY - 20); return; }
   const top = -offY - 20, P = q.theme === 'souq' ? 300 : 340, off = worldX * 0.92, i0 = Math.floor((off - ABX - 40) / P);
   if (q.theme === 'souq') {
     const wall = c.createLinearGradient(0, top, 0, GROUND); wall.addColorStop(0, '#6b4a2c'); wall.addColorStop(0.35, '#b98a5c'); wall.addColorStop(1, '#c9a36b'); c.fillStyle = wall; c.fillRect(-20, top, W + 40, GROUND - top);
@@ -3254,11 +3432,11 @@ function interior(c, q) {
   }
 }
 function sideFloor(c, q) {
-  const souq = q.theme === 'souq', P = souq ? 64 : 88;
-  c.fillStyle = souq ? '#b79a78' : '#e9dfcf'; c.fillRect(-20, GROUND, W + 40, H - GROUND + 20);
-  c.strokeStyle = souq ? 'rgba(70,45,25,.4)' : 'rgba(120,105,85,.35)'; c.lineWidth = 1.4; c.beginPath();
-  for (let x = -(worldX % P); x < W + 20; x += P) { c.moveTo(x, GROUND); c.lineTo(x - (souq ? 0 : 26), H + 20); } c.moveTo(-20, GROUND + 26); c.lineTo(W + 20, GROUND + 26); c.stroke();
-  c.fillStyle = souq ? 'rgba(60,36,20,.28)' : 'rgba(255,255,255,.55)'; c.fillRect(-20, GROUND, W + 40, souq ? 5 : 7);
+  const [fill, line, edge, P, slant, eh] = SIDE[q.theme].floor;
+  c.fillStyle = fill; c.fillRect(-20, GROUND, W + 40, H - GROUND + 20);
+  c.strokeStyle = line; c.lineWidth = 1.4; c.beginPath();
+  for (let x = -(worldX % P); x < W + 20 + slant; x += P) { c.moveTo(x, GROUND); c.lineTo(x - slant, H + 20); } c.moveTo(-20, GROUND + 26); c.lineTo(W + 20, GROUND + 26); c.stroke();
+  c.fillStyle = edge; c.fillRect(-20, GROUND, W + 40, eh);
 }
 // the bridge frame runs on under the deck holes: two girders, so the holes read as missing planks
 function girders(c, f) {
@@ -3727,7 +3905,7 @@ function loop(now) {
     const sim = Math.min(raw, RACE_STEP_MAX);
     for (let left = sim; left > 1e-4 && st === 'play'; left -= 0.033) update(Math.min(left, 0.033));
     if (st === 'play') raceLag(raw - sim, hid);
-  } else update(clamp(raw, 0, 0.033));
+  } else if (!devHold) update(clamp(raw, 0, 0.033));
   render(); stepSwap(clamp(raw, 0, 0.05));
   if (!$('menu').hidden) drawAvatar($('avMenu'), kidBase(), t * 8, kid.sayT > 0 ? 'tongue' : 'grin', false);
   else if (!$('over').hidden) drawAvatar($('avOver'), kidBase(), t * 3, 'o', true);
@@ -3807,7 +3985,9 @@ async function boot() {
 
 // test / tooling hook
 const DEV = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname); // the testing hooks below exist only on a local server, so they can't be used to cheat in a race
+let devHold = false; // testing: keep drawing but stop a solo run where it is, to look at one frame
 if (DEV) window.__abood = {
+  hold: on => { devHold = !!on; },
   get say() { return dad.sayT > 0 ? dad.say : ''; },
   get state() { return { inSide: inSide ? inSide.theme : '', x: Math.round(worldX), y: Math.round(kid.y), on: kid.on, sweets: candies, genAhead: Math.round(genX - worldX), obs: obs.length, items: items.length, gaps: gaps.length, paceT, assist: +assist.toFixed(2), mercyT, st, dist, lead, zone: zoneNow, qLevel, res: RES, bakeRes, tiles: TILES.size, sprites: SPR.size, build: BUILD }; },
   // goto(run metres, route metres?): jump within a run; with a second number, also move along the route
