@@ -295,7 +295,8 @@ function genFork() {
 // players of a race get the same one whether they turn in or not.
 const SIDE = { souq: { z: 1, obs: ['sack', 'carpet', 'dallah', 'mandoos', 'wood', 'cat', 'spice', 'handcart'] }, mall: { z: 2, obs: ['trolley', 'wetsign', 'plantpot', 'suitcase', 'dbag', 'box', 'robot'] } };
 const SIDE_FIRST = [5000, 9000], SIDE_EVERY = [14000, 20000], SIDE_LEN = [2400, 3200], SIDE_STEP_Y = 62, SIDE_IN = 30;
-const sideTheme = zi => forceSide || (zi === 1 ? 'souq' : zi === 2 || zi === 5 || zi === 6 || zi === 10 ? 'mall' : ''); // souq alley by the Creek; malls in Downtown, JBR, Expo, Creek Harbour
+const SOUQ_ZONES = [0, 1, 3, 8, 9]; // a souq alley in Al Mamzar, by the Creek, in Jumeirah, Nad Al Sheba and Al Khawaneej; a mall everywhere else
+const sideTheme = zi => forceSide || (SOUQ_ZONES.includes(zi) ? 'souq' : 'mall');
 function genSide() {
   const zi = zoneAt(routeOfX(genX)), theme = sideTheme(zi), gx = genX + 620; forceSide = ''; // a clear run-up, so nobody lands on the doorstep by accident
   const sd = { x0: gx, x1: gx + crnd(SIDE_LEN[0], SIDE_LEN[1]), theme, sign: gx - 420, z: zi, seed: (crand() * 4294967296) >>> 0 };
@@ -3817,7 +3818,7 @@ if (DEV) window.__abood = {
   spawn: (kind, ahead = 320) => { if (OB[kind]) addObs(worldX + ahead, kind); }, // put an obstacle in front of Abood
   get grace() { return +graceT.toFixed(2); },
   // the course ahead, to check that both players in a race get the same one
-  fork: () => { nextFork = genX; }, side: th => { forceSide = th || 'souq'; nextSide = genX; }, // testing: the next thing on the course is a fork, or a gate into a side road
+  fork: () => { nextFork = genX; }, side: th => { forceSide = th || ''; nextSide = genX; }, // testing: the next thing on the course is a fork, or a gate into a side road (the area's own, unless a theme is named)
   // testing: the next thing on the course is a fork
   get course() { return { sides: sides.map(q => [Math.round(q.x0), Math.round(q.x1), q.theme, q.obs.length, q.items.filter(i => i.kind !== 'candy').map(i => i.kind + '@' + Math.round(i.x)).join(',')]), forks: forks.map(f => Math.round(f.x0) + '-' + Math.round(f.x1)), decks: plats.filter(p => p.deck).map(p => [Math.round(p.x), Math.round(p.w)]), obs: obs.map(o => o.kind + '@' + Math.round(o.x0)), gaps: gaps.map(g => Math.round(g.x0)), plats: plats.map(p => Math.round(p.x)), items: items.filter(i => i.kind !== 'candy').map(i => i.kind + '@' + Math.round(i.x)) }; },
   ghost: (m = 3, air = false) => { if (!race) return; const t0 = performance.now() - 400; Object.assign(race.opp, { here: true, run: true, out: false, gone: false, lost: false, round: race.seed, buf: [0, 1].map(i => ({ t: t0 + i * 300, x: worldX + m * 40 + i * 4, y: air ? GROUND - 80 : GROUND, a: air, sc: false })) }); }, // put the friend's ghost m metres ahead

@@ -39,7 +39,7 @@ const OB = { spice: { w: 40, h: 26 }, handcart: { w: 54, h: 36, vx: -50 }, troll
   bike: { w: 44, h: 30 }, gas: { w: 22, h: 36 }, dbag: { w: 32, h: 30 }, dbike: { w: 60, h: 54, vx: -170 }, crate: { w: 32, h: 40 }, chairs: { w: 30, h: 46 },
   castle: { w: 40, h: 28 }, mandoos: { w: 36, h: 32 }, ring: { w: 30, h: 30, vx: -40 }, gbag: { w: 22, h: 40 }, cart: { w: 50, h: 40, vx: -120 }, escooter: { w: 40, h: 38 }, basket: { w: 32, h: 24 }, flower: { w: 30, h: 32 }, dallah: { w: 28, h: 34 }, wood: { w: 44, h: 20 }, buggy: { w: 58, h: 38, vx: -150 } };
 const SIDE = { souq: ['sack', 'carpet', 'dallah', 'mandoos', 'wood', 'cat', 'spice', 'handcart'], mall: ['trolley', 'wetsign', 'plantpot', 'suitcase', 'dbag', 'box', 'robot'] };
-const sideTheme = zi => zi === 1 ? 'souq' : zi === 2 || zi === 5 || zi === 6 || zi === 10 ? 'mall' : '';
+const sideTheme = zi => [0, 1, 3, 8, 9].includes(zi) ? 'souq' : 'mall';
 const seeded = a => () => { a = (a + 0x6D2B79F5) | 0; let x = Math.imul(a ^ (a >>> 15), 1 | a); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
 const runSpeed = d => 310 + Math.min(260, d * 0.05);
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
